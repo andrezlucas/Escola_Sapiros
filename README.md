@@ -7,11 +7,11 @@ Certifique-se de ter instalado:
 1. **Clone o repositório**
 
 ```bash ou no Terminal
-git clone https://github.com/SEU-USUARIO/escola-sapiros.git
+git clone git clone https://github.com/pauloricardoxp/Escola_Sapiros.git
 
 2. **Entre na pasta do projeto**
 
-cd escola-sapiros
+cd Escola_Sapiros
 
 3. **Instale as dependências**
 
@@ -20,4 +20,5 @@ npm install
 4. **Execute o servidor de desenvolvimento**
 
 npm run dev
+
 
