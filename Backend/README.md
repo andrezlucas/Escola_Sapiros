@@ -7,8 +7,13 @@
 - MySQL instalado e rodando
 - NestJS CLI instalado globalmente: `npm install -g @nestjs/cli`
 
-### Dependências principais
-@nestjs/typeorm, typeorm, mysql2, @nestjs/config, bcrypt, class-validator, class-transformer
+### Dependências usadas
+
+npm i @nestjs/typeorm typeorm mysql2
+npm i @nestjs/config
+npm install bcrypt class-validator class-transformer
+npm install -D @types/bcrypt
+
 
 
 # Instale as dependências
