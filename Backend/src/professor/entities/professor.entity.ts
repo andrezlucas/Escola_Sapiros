@@ -1,0 +1,28 @@
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, JoinColumn } from 'typeorm';
+import { Turma } from '../../turma/entities/turma.entity';
+import { Usuario } from '../../usuario/entities/usuario.entity';
+
+@Entity('professores')
+export class Professor {
+  @PrimaryGeneratedColumn()
+  id_professor: number;
+
+  @Column()
+  nome_professor: string;
+
+  @Column({ unique: true })
+  cpf_professor: string;
+
+  @Column()
+  email_professor: string;
+
+  @Column()
+  telefone_professor: string;
+
+  @OneToMany(() => Turma, turma => turma.professor)
+  turmas: Turma[];
+
+  @OneToOne(() => Usuario)
+  @JoinColumn({ name: 'usuario_id' })
+  usuario: Usuario;
+}

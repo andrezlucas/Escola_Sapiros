@@ -5,6 +5,11 @@ import { UsuarioModule } from './usuario/usuario.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ProfessorModule } from './professor/professor.module';
+import { AlunoModule } from './aluno/aluno.module';
+import { ResponsavelModule } from './responsavel/responsavel.module';
+import { SecretariaModule } from './secretaria/secretaria.module';
+import { TurmaModule } from './turma/turma.module';
 
 @Module({
   imports: [
@@ -27,6 +32,11 @@ import { AppService } from './app.service';
 
     UsuarioModule,
     AuthModule,
+    ProfessorModule,
+    AlunoModule,
+    ResponsavelModule,
+    SecretariaModule,
+    TurmaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
