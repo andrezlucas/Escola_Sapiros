@@ -1,4 +1,4 @@
-# Backend - Escola 
+# Backend - Escola Sapiros
 
 ## Como rodar o projeto localmente
 
@@ -7,17 +7,18 @@
 - MySQL instalado e rodando
 - NestJS CLI instalado globalmente: `npm install -g @nestjs/cli`
 
+
+# Instalar todas as dependências
+npm install
+
 ### Dependências usadas
 
 npm i @nestjs/typeorm typeorm mysql2
 npm i @nestjs/config
 npm install bcrypt class-validator class-transformer
 npm install -D @types/bcrypt
+npm install @nestjs/mapped-types
 
-
-
-# Instale as dependências
-npm install
 
 # Configuração  de um .env padrão
 MYSQL_DB_HOST=localhost
