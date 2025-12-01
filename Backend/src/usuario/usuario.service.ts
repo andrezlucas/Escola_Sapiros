@@ -13,26 +13,33 @@ export class UsuarioService {
     private usuarioRepository: Repository<Usuario>,
   ) {}
 
-  async findAll(): Promise<Usuario[]> {
-    // Nunca retorne a senha ao cliente (ideal: usar select para omitir)
+  // Listar todos os usuários (sem senha)
+  async findAll(): Promise<Omit<Usuario, 'senha'>[]> {
     const usuarios = await this.usuarioRepository.find();
     return usuarios.map(u => {
       const { senha, ...resto } = u;
-      return resto as Usuario;
+      return resto;
     });
   }
 
-  async findOne(id: number): Promise<Usuario> {
+  // Buscar usuário por ID (UUID)
+  async findOne(id: string): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
     if (!usuario) throw new NotFoundException('Usuário não encontrado');
     return usuario;
   }
 
-  async findByRole(role: Role): Promise<Usuario[]> {
-    return this.usuarioRepository.find({ where: { role } });
+  // Buscar usuários por role
+  async findByRole(role: Role): Promise<Omit<Usuario, 'senha'>[]> {
+    const usuarios = await this.usuarioRepository.find({ where: { role } });
+    return usuarios.map(u => {
+      const { senha, ...resto } = u;
+      return resto;
+    });
   }
 
-  async create(dto: CreateUsuarioDto): Promise<Usuario> {
+  // Criar usuário (com hash de senha)
+  async create(dto: CreateUsuarioDto): Promise<Omit<Usuario, 'senha'>> {
     const salt = await bcrypt.genSalt();
     const senhaHash = await bcrypt.hash(dto.senha, salt);
 
@@ -42,11 +49,12 @@ export class UsuarioService {
     });
 
     const salvo = await this.usuarioRepository.save(novoUsuario);
-    const { senha, ...resto } = salvo as any;
-    return resto as Usuario;
+    const { senha, ...resto } = salvo;
+    return resto;
   }
 
-  async update(id: number, dto: UpdateUsuarioDto): Promise<Usuario> {
+  // Atualizar usuário
+  async update(id: string, dto: UpdateUsuarioDto): Promise<Omit<Usuario, 'senha'>> {
     const usuario = await this.findOne(id);
 
     if (dto.senha) {
@@ -56,15 +64,17 @@ export class UsuarioService {
 
     Object.assign(usuario, dto);
     const salvo = await this.usuarioRepository.save(usuario);
-    const { senha, ...resto } = salvo as any;
-    return resto as Usuario;
+    const { senha, ...resto } = salvo;
+    return resto;
   }
 
-  async remove(id: number): Promise<void> {
+  // Remover usuário
+  async remove(id: string): Promise<void> {
     const usuario = await this.findOne(id);
     await this.usuarioRepository.remove(usuario);
   }
 
+  // Buscar por CPF ou Email
   async findByCpfOrEmail(identifier: string): Promise<Usuario | null> {
     return this.usuarioRepository.findOne({
       where: [{ cpf: identifier }, { email: identifier }],

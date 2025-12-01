@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+
 
 export enum Role {
   ALUNO = 'aluno',
@@ -8,8 +9,8 @@ export enum Role {
 
 @Entity('usuarios')
 export class Usuario {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   nome: string;
@@ -25,6 +26,76 @@ export class Usuario {
 
   @Column({ unique: true, nullable: true })
   telefone: string;
+
+  @Column({ type: 'date' })
+   data_nascimento: Date;
+ 
+   @Column({ type: 'enum', enum: ['MASCULINO', 'FEMININO', 'OUTRO', 'NAO_INFORMADO'], default: 'NAO_INFORMADO' })
+   sexo: string;
+   
+   // Documento RG
+   @Column({ name: 'rg_numero' })
+   rgNumero: string;
+   
+   @Column({ name: 'rg_data_emissao', type: 'date', nullable: true })
+   rgDataEmissao: Date;
+   
+   @Column({ name: 'rg_orgao_emissor', nullable: true })
+   rgOrgaoEmissor: string;
+   
+   // Endereço
+   @Column({ name: 'endereco_logradouro' })
+   enderecoLogradouro: string;
+   
+   @Column({ name: 'endereco_numero' })
+   enderecoNumero: string;
+   
+   @Column({ name: 'endereco_cep' })
+   enderecoCep: string;
+   
+   @Column({ name: 'endereco_complemento', nullable: true })
+   enderecoComplemento: string;
+   
+   @Column({ name: 'endereco_bairro' })
+   enderecoBairro: string;
+   
+   @Column({ name: 'endereco_estado', length: 2 })
+   enderecoEstado: string;
+   
+   @Column({ name: 'endereco_cidade' })
+   enderecoCidade: string;
+   
+   @Column()
+   nacionalidade: string; 
+   @Column()
+   naturalidade: string;
+ 
+
+   // Informações Complementares
+   @Column({ name: 'possui_necessidades_especiais', default: false })
+  possuiNecessidadesEspeciais: boolean;
+
+   @Column({ name: 'descricao_necessidades_especiais', nullable: true })
+   descricaoNecessidadesEspeciais: string;
+
+  @Column({ name: 'possui_alergias', default: false })
+  possuiAlergias: boolean;
+
+  @Column({ name: 'descricao_alergias', nullable: true })
+  descricaoAlergias: string;
+
+  @Column({ name: 'autorizacao_uso_imagem', default: false })
+  autorizacaoUsoImagem: boolean;
+
+
+
+// Preenche automático as tabelas com a criação e atualização do ultimo registro para maior controle.
+
+  @CreateDateColumn()
+  UsuariocriadoEm: Date;
+
+  @UpdateDateColumn()
+  UsuarioatualizadoEm: Date;
 
   @Column({
     type: 'enum',

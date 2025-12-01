@@ -8,6 +8,10 @@ import { AppService } from './app.service';
 import { ProfessorModule } from './professor/professor.module';
 import { AlunoModule } from './aluno/aluno.module';
 import { CoordenacaoModule } from './coordenacao/coordenacao.module';
+import { DisciplinaModule } from './disciplina/disciplina.module';
+import { NotaModule } from './nota/nota.module';
+import { FrequenciaModule } from './frequencia/frequencia.module';
+import { AvisosModule } from './avisos/avisos.module';
 
 @Module({
   imports: [
@@ -34,6 +38,10 @@ import { CoordenacaoModule } from './coordenacao/coordenacao.module';
     ProfessorModule,
     AlunoModule,
     CoordenacaoModule,
+    DisciplinaModule,
+    NotaModule,
+    FrequenciaModule,
+    AvisosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
