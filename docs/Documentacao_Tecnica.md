@@ -190,30 +190,30 @@ src/
 
 | ID | Nome | Tela Correspondente | Status |
 |----|------|----------------------|--------|
-| RF001 | Autenticação de Usuário | Tela de Login | — |
-| RF002 | Perfis e Níveis de Acesso (RBAC) | Dashboard de cada perfil | — |
-| RF003 | Cadastro de Alunos | Cadastro → Alunos | — |
-| RF004 | Cadastro de Responsáveis | Cadastro → Responsáveis | — |
-| RF005 | Cadastro de Turmas | Cadastro → Turmas | — |
-| RF006 | Cadastro de Disciplinas | Cadastro → Disciplinas | — |
-| RF007 | Cadastro de Habilidades | Habilidades → Cadastro | — |
-| RF008 | Parâmetros Pedagógicos | Configurações → Pedagógico | — |
-| RF009 | Lançamento de Notas | Professor → Lançamento de Notas | — |
-| RF010 | Lançamento de Faltas | Professor → Chamada | — |
-| RF011 | Criação de Atividades (AVA) | Atividades → Criar Atividade | — |
-| RF012 | Entrega de Atividades | Aluno → Atividade | — |
-| RF013 | Consolidação de Período | Coordenação → Consolidação | — |
-| RF014 | Emissão de Boletim PDF | Secretaria → Boletim | — |
-| RF015 | Emissão de Histórico Escolar | Secretaria → Histórico | — |
-| RF016 | QR Code de Verificação | Página Pública → Validação QR | — |
-| RF017 | Emissão de Declarações | Secretaria → Declarações | — |
-| RF018 | Mural de Avisos | Tela → Avisos | — |
-| RF019 | Calendário Escolar | Tela → Calendário | — |
-| RF020 | Relatórios Gerais | Relatórios → Geral | — |
-| RF021 | Dashboards | Dashboards → Aluno / Professor / Coordenação | — |
-| RF022 | Solicitação de Documentos | Aluno/Responsável → Solicitações | — |
-| RF023 | Logs de Alterações | Administração → Auditoria | — |
-| RF024 | IA Mínima para Comandos Simples | Barra de Busca / Caixa de Comandos | — |
+| RF001 | Autenticação de Usuário | Tela de Login | Concluído |
+| RF002 | Perfis e Níveis de Acesso (RBAC) | Dashboard de cada perfil | Em andamento |
+| RF003 | Cadastro de Alunos | Cadastro → Alunos | Em andamento |
+| RF004 | Cadastro de Responsáveis | Cadastro → Responsáveis | Em andamento |
+| RF005 | Cadastro de Turmas | Cadastro → Turmas | Em andamento |
+| RF006 | Cadastro de Disciplinas | Cadastro → Disciplinas | Em andamento |
+| RF007 | Cadastro de Habilidades | Habilidades → Cadastro | Em andamento |
+| RF008 | Parâmetros Pedagógicos | Configurações → Pedagógico | Em andamento |
+| RF009 | Lançamento de Notas | Professor → Lançamento de Notas | Em andamento |
+| RF010 | Lançamento de Faltas | Professor → Chamada | Em andamento |
+| RF011 | Criação de Atividades (AVA) | Atividades → Criar Atividade | Concluído |
+| RF012 | Entrega de Atividades | Aluno → Atividade | Concluído |
+| RF013 | Consolidação de Período | Coordenação → Consolidação | Não iniciado |
+| RF014 | Emissão de Boletim PDF | Secretaria → Boletim | Não iniciado |
+| RF015 | Emissão de Histórico Escolar | Secretaria → Histórico | Não iniciado |
+| RF016 | QR Code de Verificação | Página Pública → Validação QR | Não iniciado |
+| RF017 | Emissão de Declarações | Secretaria → Declarações | Não iniciado |
+| RF018 | Mural de Avisos | Tela → Avisos | Em andamento |
+| RF019 | Calendário Escolar | Tela → Calendário | Em andamento |
+| RF020 | Relatórios Gerais | Relatórios → Geral | Em andamento |
+| RF021 | Dashboards | Dashboards → Aluno / Professor / Coordenação | Em andamento |
+| RF022 | Solicitação de Documentos | Aluno/Responsável → Solicitações | Não iniciado |
+| RF023 | Logs de Alterações | Administração → Auditoria | Não iniciado |
+| RF024 | IA Mínima para Comandos Simples | Barra de Busca / Caixa de Comandos | Não iniciado |
 
 
 ---
