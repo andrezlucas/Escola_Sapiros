@@ -19,7 +19,7 @@ function SideBarMenu({navigateTo}: SideBarMenuProps) {
     { icon: IoHomeOutline, label: "Home",viewName: "dashboard/coordenacao"},
     { icon: HiOutlineClipboardDocumentList, label: "Documentos",viewName: "documentos" },
     { icon: FaRegEdit, label: "Matrícula\nTransferências",viewName: "matriculas" },
-    { icon: HiOutlineCalendarDateRange, label: "Calendário",viewName: "calendario" },
+    { icon: HiOutlineCalendarDateRange, label: "Calendário",viewName: "calendario", },
     { icon: HiOutlineAcademicCap, label: "Portal do Aluno",viewName: "portaldoAluno" },
     { icon: IoMdTv, label: "Mural",viewName: "mural" },
   ];
@@ -30,6 +30,7 @@ function SideBarMenu({navigateTo}: SideBarMenuProps) {
     { icon: HiOutlineArrowLeftStartOnRectangle, label: "Logout",viewName: "logout" },
   ];
 
+  //COR VERDE = #3d7e8f
   return (
     <aside className="fixed top-0 left-0 h-screen w-52 bg-[#3d7e8f] flex flex-col p-4">
       

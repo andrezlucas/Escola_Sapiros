@@ -99,3 +99,19 @@
     scale: 0.9;
   }
 }
+
+.mini-calendar {
+  width: 260px;
+  font-size: 0.85rem;
+}
+
+.mini-calendar .react-calendar__tile {
+  padding: 4px;
+}
+
+.mini-calendar .react-calendar__navigation button {
+  min-width: 20px;
+  font-size: 0.75rem;
+  padding: 2px;
+}
+

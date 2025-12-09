@@ -9,18 +9,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./Button";
 import { ToastContainer, toast } from "react-toastify";
 import { MaskCPF } from "../utils/MaskCPF";
-
 function FormLogin() {
   const {
     register,
     handleSubmit,
     formState: { errors },
-    setValue
+    setValue,
   } = useForm();
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
@@ -32,24 +30,32 @@ function FormLogin() {
           senha: data.senha,
         }),
       });
-
       const result = await response.json();
-
       if (!response.ok) {
-        if (result.message === "Credenciais inválidas") {
+        const msg = result.message;
+        if (msg?.includes("Senha temporária")) {
+          toast.info("Enviamos um e-mail para redefinir sua senha.");
+          navigate("/senha-bloqueada");
+          setLoading(false);
+          return;
+        }
+        if (msg?.toLowerCase().includes("senha expirou")) {
+          toast.info("Sua senha expirou. Redefina para continuar.");
+          navigate("/senha-bloqueada");
+          setLoading(false);
+          return;
+        }
+        if (msg === "Credenciais inválidas") {
           toast.error("Usuário não encontrado");
         } else {
-          toast.error(result.message || "Usuário não encontrado");
+          toast.error(msg || "Erro ao fazer login");
         }
         setLoading(false);
         return;
       }
-
       localStorage.setItem("token", result.token);
       localStorage.setItem("role", result.usuario.role);
-
       const role = result.usuario.role?.toLowerCase().trim();
-
       switch (role) {
         case "coordenacao":
           navigate("dashboard/coordenacao");
@@ -72,37 +78,31 @@ function FormLogin() {
       setLoading(false);
     }
   };
-
   const validarIdentificador = (valor: string) => {
     if (ValidarCpf(valor) || ValidarEmail(valor)) {
       return true;
     }
     return "Digite um CPF ou e-mail válido";
   };
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {" "}
       <Input
         label="CPF/E-mail"
         placeholder="Digite seu CPF ou e-mail"
         icon={<FaUser />}
         {...register("identificador", {
           required: "CPF ou e-mail é obrigatório",
-          validate: {
-            validarIdentificador,
-          },
+          validate: { validarIdentificador },
           onChange: (e) => {
             let value = e.target.value;
             if (/[a-zA-Z@]/.test(value)) return;
-
             const masked = MaskCPF(value);
-
             setValue("identificador", masked);
           },
         })}
         error={errors?.identificador?.message as string}
-      />
-
+      />{" "}
       <Input
         label="Senha"
         type="password"
@@ -113,27 +113,27 @@ function FormLogin() {
           minLength: { value: 8, message: "Mínimo 8 caracteres" },
         })}
         error={errors?.senha?.message as string}
-      />
-
+      />{" "}
       <div className="flex justify-between items-center pt-2">
+        {" "}
         <Checkbox
           label="Lembrar"
           checked={isChecked}
           onChange={(e) => setIsChecked(e.target.checked)}
-        />
-
+        />{" "}
         <Link
           to={"/redefinir-senha"}
           className="text-[#1D5D7F] text-base font-normal hover:underline"
         >
-          Esqueceu a senha?
-        </Link>
-      </div>
-
+          {" "}
+          Esqueceu a senha?{" "}
+        </Link>{" "}
+      </div>{" "}
       <Button type="submit" disabled={loading}>
-        {loading ? "Entrando..." : "Entrar"}
-      </Button>
-      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
+        {" "}
+        {loading ? "Entrando..." : "Entrar"}{" "}
+      </Button>{" "}
+      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />{" "}
     </form>
   );
 }
