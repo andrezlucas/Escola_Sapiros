@@ -110,6 +110,7 @@ export class DisciplinaService {
 
       // coletar disciplinas das turmas do professor
       const turmas = await this.turmaRepository.find({
+        
         where: { professor: { id_professor: professor.id } as any },
         relations: ['disciplinas'],
       });
