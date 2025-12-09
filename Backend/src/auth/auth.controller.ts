@@ -14,13 +14,13 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Post('request-password-reset')
+  @Post('senha-bloqueada')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async requestPasswordReset(@Body() dto: RequestResetPasswordDto) {
     return this.authService.requestPasswordReset(dto.email);
   }
 
-  @Post('reset-password')
+  @Post('nova-senha')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.novaSenha);

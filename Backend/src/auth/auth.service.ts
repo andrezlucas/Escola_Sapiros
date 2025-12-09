@@ -104,7 +104,7 @@ export class AuthService {
     const resetToken = this.tokenRepository.create({ token, usuario, expiraEm });
     await this.tokenRepository.save(resetToken);
 
-    const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const link = `${process.env.FRONTEND_URL}/nova-senha?token=${token}`;
     const html = `
       <h2>Redefinição de Senha</h2>
       <p>Você solicitou redefinir sua senha. Clique no link abaixo para criar uma nova senha:</p>
