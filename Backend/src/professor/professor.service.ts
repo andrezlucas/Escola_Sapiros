@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial, DataSource } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { Professor } from './entities/professor.entity';
-import { Usuario } from '../usuario/entities/usuario.entity';
+import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { UpdateProfessorDto } from './dto/update-professor.dto';
 
@@ -13,96 +14,86 @@ export class ProfessorService {
     private readonly professorRepository: Repository<Professor>,
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    private dataSource: DataSource,
   ) {}
 
-  /**
-   * Cria um professor. Se for passado usuarioId, vincula o usuário (UUID string).
-   * Verifica se o usuário existe e se já não está vinculado a outro professor.
-   */
-  async create(createProfessorDto: CreateProfessorDto): Promise<Professor> {
-    const { formacao, usuarioId } = createProfessorDto;
+  async create(createDto: CreateProfessorDto): Promise<Professor> {
+    const { nome, email, cpf, registroFuncional, cargaHoraria, cargo } = createDto;
 
-    let usuario: Usuario | undefined;
-    if (usuarioId) {
-      usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } }) as Usuario | undefined;
-      if (!usuario) throw new NotFoundException('Usuário não encontrado');
-
-      const jaVinculado = await this.professorRepository.findOne({
-        where: { usuario: usuario },
-      });
-      if (jaVinculado) {
-        throw new BadRequestException('Usuário já está vinculado a outro professor');
-      }
-    }
-
-    const professor = this.professorRepository.create({
-      formacao: formacao ?? undefined,
-      usuario,
+    const exists = await this.usuarioRepository.findOne({
+      where: [{ cpf: cpf }, { email: email }],
     });
+    if (exists) throw new ConflictException('CPF ou Email já cadastrado');
 
-    return this.professorRepository.save(professor);
+    const professorExists = await this.professorRepository.findOne({ where: { registroFuncional } });
+    if (professorExists) throw new ConflictException('Registro Funcional já cadastrado');
+
+    return this.dataSource.transaction(async (manager) => {
+      // 1. Criar o Usuário base
+      const userData: DeepPartial<Usuario> = {
+        nome: nome,
+        email: email,
+        cpf: cpf,
+        senha: await bcrypt.hash('Sapiros@123', 10),
+        role: Role.PROFESSOR,
+      };
+
+      const novoUsuario = manager.create(Usuario, userData);
+      const usuarioSalvo = await manager.save(Usuario, novoUsuario);
+
+      // 2. Criar o Professor (JTI Manual)
+      const professorData: DeepPartial<Professor> = {
+        id: usuarioSalvo.id,
+        usuario: usuarioSalvo,
+        registroFuncional: registroFuncional,
+        cargaHoraria: cargaHoraria || 0,
+        cargo: cargo,
+      };
+      
+      const novoProfessor = manager.create(Professor, professorData);
+
+      return await manager.save(Professor, novoProfessor);
+    });
   }
 
-  /**
-   * Retorna todos os professores com usuário e turmas carregados.
-   */
   async findAll(): Promise<Professor[]> {
     return this.professorRepository.find({ relations: ['usuario', 'turmas'] });
   }
 
-  /**
-   * Busca um professor por UUID (id_professor).
-   */
   async findOne(id: string): Promise<Professor> {
+    // Busca por 'id' que é a PK/FK do usuário
     const professor = await this.professorRepository.findOne({
-      where: { id_professor: id },
+      where: { id },
       relations: ['usuario', 'turmas'],
     });
     if (!professor) throw new NotFoundException('Professor não encontrado');
     return professor;
   }
 
-  /*
-   * Atualiza formacao e vinculação de usuário.
-   * - Se updateProfessorDto.usuarioId for fornecido e truthy: vincula o usuário (verifica existência e conflito).
-   * - Se updateProfessorDto.usuarioId for fornecido e falsy ('' ou null): desvincula o usuário.
-   * - Se não for fornecido, mantém vínculo atual.
-   */
-  async update(id: string, updateProfessorDto: UpdateProfessorDto): Promise<Professor> {
+  async update(id: string, updateDto: UpdateProfessorDto): Promise<Professor> {
     const professor = await this.findOne(id);
+    const usuario = professor.usuario;
 
-    if (updateProfessorDto.formacao !== undefined) {
-      professor.formacao = updateProfessorDto.formacao;
-    }
+    // 1. Atualizar a tabela base (Usuario)
+    if (updateDto.nome) usuario.nome = updateDto.nome;
+    if (updateDto.email) usuario.email = updateDto.email;
+    if (updateDto.cpf) usuario.cpf = updateDto.cpf;
 
-    if (updateProfessorDto.usuarioId !== undefined) {
-      const usuarioId = updateProfessorDto.usuarioId;
-      if (usuarioId) {
-        const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
-        if (!usuario) throw new NotFoundException('Usuário não encontrado');
+    await this.usuarioRepository.save(usuario);
 
-        const existente = await this.professorRepository.findOne({
-          where: { usuario: usuario },
-        });
-        if (existente && existente.id_professor !== professor.id_professor) {
-          throw new BadRequestException('Usuário já está vinculado a outro professor');
-        }
-
-        professor.usuario = usuario;
-      } else {
-        // desvincular usuário
-        professor.usuario = null;
-      }
-    }
-
+    // 2. Atualizar a tabela filha (Professor)
+    if (updateDto.registroFuncional) professor.registroFuncional = updateDto.registroFuncional;
+    if (updateDto.cargaHoraria !== undefined) professor.cargaHoraria = updateDto.cargaHoraria;
+    if (updateDto.cargo) professor.cargo = updateDto.cargo;
+    
     return this.professorRepository.save(professor);
   }
 
- 
-   // Remove professor por UUID.
-  
   async remove(id: string): Promise<void> {
     const professor = await this.findOne(id);
     await this.professorRepository.remove(professor);
+    
+    // Deletar o registro na tabela base (Usuario)
+    await this.usuarioRepository.delete(id); 
   }
 }

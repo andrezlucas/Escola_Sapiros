@@ -1,10 +1,26 @@
-import {Injectable,NotFoundException,BadRequestException, ForbiddenException,} from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial, DataSource } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+
 import { Coordenacao } from './entities/coordenacao.entity';
 import { CreateCoordenacaoDto } from './dto/create-coordenacao.dto';
 import { UpdateCoordenacaoDto } from './dto/update-coordenacao.dto';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
+
+// Função auxiliar para parsear datas (se necessário, inclua aqui se o DTO for usar datas)
+const parseDate = (value: string | Date, fieldName: string): Date => {
+    if (value instanceof Date) return value;
+    const d = new Date(value);
+    if (isNaN(d.getTime())) throw new ConflictException(`${fieldName} inválida: "${value}"`);
+    return d;
+};
 
 @Injectable()
 export class CoordenacaoService {
@@ -13,15 +29,8 @@ export class CoordenacaoService {
     private readonly coordenacaoRepository: Repository<Coordenacao>,
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    private dataSource: DataSource,
   ) {}
-
-  
-
-  private async findUsuarioOrFail(id: string) {
-    const usuario = await this.usuarioRepository.findOne({ where: { id } });
-    if (!usuario) throw new NotFoundException(`Usuário com ID ${id} não encontrado`);
-    return usuario;
-  }
 
   private assertIsCoordenacao(user: any) {
     if (!user) throw new ForbiddenException('Usuário não autenticado');
@@ -30,91 +39,82 @@ export class CoordenacaoService {
     }
   }
 
-  
+  async create(createDto: CreateCoordenacaoDto): Promise<Coordenacao> {
+    const { nome, email, cpf, funcao, ...restoUsuario } = createDto;
 
-  /**
-   * Cria um registro de coordenação.
-   * createDto.usuarioId deve ser UUID do usuário existente.
-   * user é o req.user passado pelo controller; usamos any para evitar erro de tipagem do Request.
-   */
-  async create(createDto: CreateCoordenacaoDto, user: any): Promise<Coordenacao> {
-    this.assertIsCoordenacao(user);
-
-    const usuario = await this.findUsuarioOrFail(createDto.usuarioId);
-
-    // opcional: checar se já existe coordenação para esse usuário
-    const exists = await this.coordenacaoRepository.findOne({
-      where: { usuario: { id: usuario.id } as any },
+    const exists = await this.usuarioRepository.findOne({
+      where: [{ cpf: cpf }, { email: email }],
     });
-    if (exists) throw new BadRequestException('Já existe um registro de coordenação para este usuário');
+    if (exists) throw new ConflictException('CPF ou Email já cadastrado');
 
-    const coord = this.coordenacaoRepository.create({
-      funcao: createDto.funcao,
-      usuario,
+    return this.dataSource.transaction(async (manager) => {
+      // 1. Criar o Usuário base (com senha padrão)
+      const userData: DeepPartial<Usuario> = {
+        nome: nome,
+        email: email,
+        cpf: cpf,
+        senha: await bcrypt.hash('Sapiros@123', 10), // Senha padrão
+        role: Role.COORDENACAO,
+        // Campos que NÃO estão mais no Usuario, mas são obrigatórios no DB
+        // Depende da sua refatoração final do Usuario.entity.ts
+      };
+      
+      const novoUsuario = manager.create(Usuario, userData);
+      const usuarioSalvo = await manager.save(Usuario, novoUsuario);
+
+      // 2. Criar a Coordenação (JTI Manual)
+      const coordData: DeepPartial<Coordenacao> = {
+        id: usuarioSalvo.id,
+        usuario: usuarioSalvo,
+        funcao: funcao,
+      };
+
+      const coord = manager.create(Coordenacao, coordData);
+      return await manager.save(Coordenacao, coord);
     });
-
-    return this.coordenacaoRepository.save(coord);
   }
 
-  /**
-   * Lista todos os registros de coordenação.
-   * Apenas coordenação pode listar aqui (conforme controller).
-   */
-  async findAll(user: any): Promise<Coordenacao[]> {
-    this.assertIsCoordenacao(user);
+  async findAll(): Promise<Coordenacao[]> {
     return this.coordenacaoRepository.find({ relations: ['usuario'] });
   }
 
-  /**
-   * Busca um registro por id_coordenacao.
-   * Apenas coordenação pode acessar.
-   */
-  async findOne(id: string, user: any): Promise<Coordenacao> {
-    this.assertIsCoordenacao(user);
+  async findOne(id: string): Promise<Coordenacao> {
     const coord = await this.coordenacaoRepository.findOne({
-      where: { id_coordenacao: id },
+      where: { id },
       relations: ['usuario'],
     });
     if (!coord) throw new NotFoundException(`Coordenacao com ID ${id} não encontrada`);
     return coord;
   }
 
-  /**
-   * Atualiza um registro de coordenação.
-   * Apenas coordenação pode atualizar.
-   */
-  async update(id: string, updateDto: UpdateCoordenacaoDto, user: any): Promise<Coordenacao> {
-    this.assertIsCoordenacao(user);
-
+  async update(id: string, updateDto: UpdateCoordenacaoDto): Promise<Coordenacao> {
     const coord = await this.coordenacaoRepository.findOne({
-      where: { id_coordenacao: id },
+      where: { id },
       relations: ['usuario'],
     });
     if (!coord) throw new NotFoundException(`Coordenacao com ID ${id} não encontrada`);
 
-    if (updateDto.funcao !== undefined) coord.funcao = updateDto.funcao;
+    // 1. Atualizar a tabela base (Usuario)
+    const usuario = coord.usuario;
+    if (updateDto.nome) usuario.nome = updateDto.nome;
+    if (updateDto.email) usuario.email = updateDto.email;
 
-    if (updateDto.usuarioId !== undefined && updateDto.usuarioId !== coord.usuario.id) {
-      const usuario = await this.findUsuarioOrFail(updateDto.usuarioId);
-      coord.usuario = usuario;
-    }
+    await this.usuarioRepository.save(usuario);
+
+    // 2. Atualizar a tabela filha (Coordenacao)
+    if (updateDto.funcao !== undefined) coord.funcao = updateDto.funcao;
 
     return this.coordenacaoRepository.save(coord);
   }
 
-  /**
-   * Remove um registro de coordenação.
-   * Apenas coordenação pode remover.
-   */
-  async remove(id: string, user: any): Promise<void> {
-    this.assertIsCoordenacao(user);
-
+  async remove(id: string): Promise<void> {
     const coord = await this.coordenacaoRepository.findOne({
-      where: { id_coordenacao: id },
+      where: { id },
       relations: ['usuario'],
     });
     if (!coord) throw new NotFoundException(`Coordenacao com ID ${id} não encontrada`);
 
     await this.coordenacaoRepository.remove(coord);
+    await this.usuarioRepository.delete(id);
   }
 }

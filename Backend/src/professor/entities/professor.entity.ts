@@ -1,24 +1,27 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { Column, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 
 @Entity('professores')
 export class Professor {
-  @PrimaryGeneratedColumn('uuid')
-  id_professor: string;
+  @PrimaryColumn('uuid')
+  id: string;
 
-  @Column('text', { nullable: true })
-  formacao: string;
+  @OneToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'id' })
+  usuario: Usuario;
+
+  @Column({ name: 'registro_funcional', unique: true, nullable: true })
+  registroFuncional?: string;
+
+  @Column({ nullable: true })
+  cargo?: string;
+
+  @Column({ name: 'carga_horaria', type: 'float', default: 0 })
+  cargaHoraria: number;
 
   @OneToMany(() => Turma, turma => turma.professor)
   turmas: Turma[];
-
-  @ManyToOne(() => Usuario, { nullable: true })
-  @JoinColumn({ name: 'usuario_id' })
-  usuario: Usuario | null;
-
-
-  // Preenche automático as tabelas com a criação e atualização do ultimo registro para maior controle.
 
   @CreateDateColumn()
   ProfessorcriadoEm: Date;

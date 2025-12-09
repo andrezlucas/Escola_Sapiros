@@ -29,10 +29,14 @@ import { MailModule } from './mail/mail.module';
         username: process.env.MYSQL_DB_USER,
         password: process.env.MYSQL_DB_PASSWORD,
         database: process.env.MYSQL_DB_NAME,
-        autoLoadEntities: true,
-        synchronize: true,
-        dropSchema: false,
-      }),
+       autoLoadEntities: true,        // Carrega todas as entidades automaticamente
+        synchronize: false,            // Nunca use synchronize com migrations
+        migrationsRun: true,           // Executa todas as migrations pendentes
+        migrations: ['dist/database/migrations/*.js'],
+        cli: {
+          migrationsDir: 'src/database/migrations',
+        },
+        }),
     }),
 
     UsuarioModule,

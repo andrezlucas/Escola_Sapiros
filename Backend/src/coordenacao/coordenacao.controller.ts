@@ -16,53 +16,44 @@ type AuthRequest = Request & { user?: Usuario | any };
 export class CoordenacaoController {
   constructor(private readonly coordenacaoService: CoordenacaoService) {}
 
-  // Criar: apenas coordenação
   @Roles(Role.COORDENACAO)
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(
     @Body() createCoordenacaoDto: CreateCoordenacaoDto,
-    @Req() req: AuthRequest,
   ): Promise<Coordenacao> {
-    return await this.coordenacaoService.create(createCoordenacaoDto, req.user);
+    return await this.coordenacaoService.create(createCoordenacaoDto);
   }
 
-  // Listar: apenas coordenação
   @Roles(Role.COORDENACAO)
   @Get()
-  async findAll(@Req() req: AuthRequest): Promise<Coordenacao[]> {
-    return await this.coordenacaoService.findAll(req.user);
+  async findAll(): Promise<Coordenacao[]> {
+    return await this.coordenacaoService.findAll();
   }
 
-  // Ver: apenas coordenação
   @Roles(Role.COORDENACAO)
   @Get(':id')
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @Req() req: AuthRequest,
   ): Promise<Coordenacao> {
-    return await this.coordenacaoService.findOne(id, req.user);
+    return await this.coordenacaoService.findOne(id);
   }
 
-  // Atualizar: apenas coordenação
   @Roles(Role.COORDENACAO)
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCoordenacaoDto: UpdateCoordenacaoDto,
-    @Req() req: AuthRequest,
   ): Promise<Coordenacao> {
-    return await this.coordenacaoService.update(id, updateCoordenacaoDto, req.user);
+    return await this.coordenacaoService.update(id, updateCoordenacaoDto);
   }
 
-  // Deletar: apenas coordenação
   @Roles(Role.COORDENACAO)
   @Delete(':id')
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @Req() req: AuthRequest,
   ): Promise<void> {
-    return await this.coordenacaoService.remove(id, req.user);
+    return await this.coordenacaoService.remove(id);
   }
 }

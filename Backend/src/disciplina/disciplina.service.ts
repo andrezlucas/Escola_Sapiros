@@ -110,7 +110,7 @@ export class DisciplinaService {
 
       // coletar disciplinas das turmas do professor
       const turmas = await this.turmaRepository.find({
-        where: { professor: { id_professor: professor.id_professor } as any },
+        where: { professor: { id_professor: professor.id } as any },
         relations: ['disciplinas'],
       });
       const disciplinaIds = turmas.flatMap(t => (t.disciplinas || []).map(d => d.id_disciplina));

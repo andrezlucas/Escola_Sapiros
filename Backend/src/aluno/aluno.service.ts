@@ -1,15 +1,14 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial, In, DataSource } from 'typeorm'; // Adicionamos DataSource
+import { Repository, DeepPartial, In, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { Aluno } from './entities/aluno.entity';
-import { Usuario, Role } from '../usuario/entities/usuario.entity'; // Importamos Usuario
+import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { Turma } from '../turma/entities/turma.entity';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
 
-// Função para garantir que uma data seja válida ou lança exceção (para campos NOT NULL)
 const parseDate = (value: string | Date, fieldName: string): Date => {
   if (value instanceof Date) {
     return value;
@@ -24,7 +23,6 @@ const parseDate = (value: string | Date, fieldName: string): Date => {
   return d;
 };
 
-// Função para lidar com datas opcionais (para campos nullable: true)
 const parseOptionalDate = (value?: string | Date): Date | undefined => {
   if (!value) return undefined;
   if (value instanceof Date) return value;
@@ -38,89 +36,87 @@ export class AlunoService {
     @InjectRepository(Aluno)
     private alunoRepository: Repository<Aluno>,
     
-    @InjectRepository(Usuario) // 🔑 OBRIGATÓRIO para JTI Manual
+    @InjectRepository(Usuario)
     private usuarioRepository: Repository<Usuario>,
 
     @InjectRepository(Turma)
     private turmaRepository: Repository<Turma>,
     
-    private dataSource: DataSource, // Injetar DataSource para transações
+    private dataSource: DataSource,
   ) {}
 
   async create(createAlunoDto: CreateAlunoDto): Promise<Aluno> {
-    // 1. VALIDAÇÕES: Usando o relacionamento 'usuario' para buscar CPF/Email/Telefone
-    
-    if (await this.alunoRepository.findOne({ 
-      where: { usuario: { cpf: createAlunoDto.cpf } } 
-    })) {
-      throw new ConflictException('CPF já cadastrado');
-    }
-    
-    if (createAlunoDto.email && await this.alunoRepository.findOne({ 
-      where: { usuario: { email: createAlunoDto.email } } 
-    })) {
-      throw new ConflictException('Email já cadastrado');
-    }
-    
-    if (createAlunoDto.telefone && await this.alunoRepository.findOne({ 
-      where: { usuario: { telefone: createAlunoDto.telefone } } 
-    })) {
-      throw new ConflictException('Telefone já cadastrado');
+    if (
+      await this.usuarioRepository.findOne({
+        where: [{ cpf: createAlunoDto.cpf }, { email: createAlunoDto.email }],
+      })
+    ) {
+      throw new ConflictException('CPF ou Email já cadastrado');
     }
 
-    // 2. CRIAÇÃO SEGURA COM TRANSAÇÃO
-    
     return this.dataSource.transaction(async (manager) => {
-        // 2a. Preparar dados do USUÁRIO (Base)
-    const userData: DeepPartial<Usuario> = {
-    nome: createAlunoDto.nome,
-    email: createAlunoDto.email,
-    cpf: createAlunoDto.cpf,
-    telefone: createAlunoDto.telefone,
-    senha: await bcrypt.hash('Sapiros@123', 10), // FIXO
-    data_nascimento: parseDate(createAlunoDto.data_nascimento, 'Data de Nascimento'),
-    sexo: createAlunoDto.sexo,
-    rgNumero: createAlunoDto.rgNumero,
-    rgDataEmissao: parseOptionalDate(createAlunoDto.rgDataEmissao),
-    rgOrgaoEmissor: createAlunoDto.rgOrgaoEmissor,
-    enderecoLogradouro: createAlunoDto.enderecoLogradouro,
-    enderecoNumero: createAlunoDto.enderecoNumero,
-    enderecoCep: createAlunoDto.enderecoCep,
-    enderecoComplemento: createAlunoDto.enderecoComplemento,
-    enderecoBairro: createAlunoDto.enderecoBairro,
-    enderecoEstado: createAlunoDto.enderecoEstado,
-    enderecoCidade: createAlunoDto.enderecoCidade,
-    nacionalidade: createAlunoDto.nacionalidade,
-    naturalidade: createAlunoDto.naturalidade,
-    possuiNecessidadesEspeciais: createAlunoDto.possuiNecessidadesEspeciais || false,
-    descricaoNecessidadesEspeciais: createAlunoDto.descricaoNecessidadesEspeciais,
-    possuiAlergias: createAlunoDto.possuiAlergias || false,
-    descricaoAlergias: createAlunoDto.descricaoAlergias,
-    autorizacaoUsoImagem: createAlunoDto.autorizacaoUsoImagem || false,
-    role: Role.ALUNO,
-  };
-
+      // 2a. Preparar dados do USUÁRIO (Base - Apenas Login/Identificação)
+      const userData: DeepPartial<Usuario> = {
+        nome: createAlunoDto.nome,
+        email: createAlunoDto.email,
+        cpf: createAlunoDto.cpf,
+        senha: await bcrypt.hash('Sapiros@123', 10),
+        role: Role.ALUNO,
+      };
 
       const novoUsuario = manager.create(Usuario, userData);
       const usuarioSalvo = await manager.save(Usuario, novoUsuario);
 
-      // 2b. Preparar dados do ALUNO (Específico)
+      // 2b. Preparar dados do ALUNO (Específico + Dados Pessoais/Cadastrais)
       const alunoData: DeepPartial<Aluno> = {
-        //  Chaves do JTI Manual: Usa o ID do usuário como FK/PK do aluno
+        // Chaves do JTI Manual
         id: usuarioSalvo.id,
-        usuario: usuarioSalvo, 
+        usuario: usuarioSalvo,
 
+        // Dados Específicos do Aluno
         matricula_aluno: await this.generateMatricula(),
         serieAno: createAlunoDto.serieAno,
         escolaOrigem: createAlunoDto.escolaOrigem,
+
+        // Dados Pessoais (Movidos de Usuario para Aluno)
+        telefone: createAlunoDto.telefone,
+        data_nascimento: parseDate(
+          createAlunoDto.data_nascimento,
+          'Data de Nascimento',
+        ),
+        sexo: createAlunoDto.sexo,
+        rgNumero: createAlunoDto.rgNumero,
+        rgDataEmissao: parseOptionalDate(createAlunoDto.rgDataEmissao),
+        rgOrgaoEmissor: createAlunoDto.rgOrgaoEmissor,
+        enderecoLogradouro: createAlunoDto.enderecoLogradouro,
+        enderecoNumero: createAlunoDto.enderecoNumero,
+        enderecoCep: createAlunoDto.enderecoCep,
+        enderecoComplemento: createAlunoDto.enderecoComplemento,
+        enderecoBairro: createAlunoDto.enderecoBairro,
+        enderecoEstado: createAlunoDto.enderecoEstado,
+        enderecoCidade: createAlunoDto.enderecoCidade,
+        nacionalidade: createAlunoDto.nacionalidade,
+        naturalidade: createAlunoDto.naturalidade,
+        possuiNecessidadesEspeciais:
+          createAlunoDto.possuiNecessidadesEspeciais || false,
+        descricaoNecessidadesEspeciais:
+          createAlunoDto.descricaoNecessidadesEspeciais,
+        possuiAlergias: createAlunoDto.possuiAlergias || false,
+        descricaoAlergias: createAlunoDto.descricaoAlergias,
+        autorizacaoUsoImagem: createAlunoDto.autorizacaoUsoImagem || false,
+        
+        // Dados do Responsável
         responsavelNome: createAlunoDto.responsavelNome,
-        responsavel_Data_Nascimento: parseOptionalDate(createAlunoDto.responsavel_Data_Nascimento),
+        responsavel_Data_Nascimento: parseOptionalDate(
+          createAlunoDto.responsavel_Data_Nascimento,
+        ),
         responsavel_sexo: createAlunoDto.responsavel_sexo || 'NAO_INFORMADO',
         responsavel_nacionalidade: createAlunoDto.responsavel_nacionalidade,
         responsavel_naturalidade: createAlunoDto.responsavel_naturalidade,
         responsavelCpf: createAlunoDto.responsavelCpf,
         responsavelRg: createAlunoDto.responsavelRg,
-        responsavel_rg_OrgaoEmissor: createAlunoDto.responsavel_rg_OrgaoEmissor,
+        responsavel_rg_OrgaoEmissor:
+          createAlunoDto.responsavel_rg_OrgaoEmissor,
         responsavelTelefone: createAlunoDto.responsavelTelefone,
         responsavelEmail: createAlunoDto.responsavelEmail,
         responsavelCep: createAlunoDto.responsavelCep,
@@ -133,10 +129,12 @@ export class AlunoService {
       };
 
       const novoAluno = manager.create(Aluno, alunoData);
-      
-      // 2c. Associar turmas (usando manager para a transação)
+
+      // 2c. Associar turmas
       if (createAlunoDto.turmasIds?.length) {
-        const turmas = await manager.findBy(Turma, { id_turma: In(createAlunoDto.turmasIds) });
+        const turmas = await manager.findBy(Turma, {
+          id_turma: In(createAlunoDto.turmasIds),
+        });
         novoAluno.turmas = turmas;
       }
 
@@ -145,50 +143,50 @@ export class AlunoService {
   }
 
   async findAll(): Promise<Aluno[]> {
-    // Carrega a relação 'usuario' para ter acesso a nome, cpf, etc.
     return await this.alunoRepository.find({ relations: ['usuario', 'turmas'] });
   }
 
   async findOne(id: string): Promise<Aluno> {
-    const aluno = await this.alunoRepository.findOne({ 
-      where: { id }, 
-      relations: ['usuario', 'turmas'] 
+    const aluno = await this.alunoRepository.findOne({
+      where: { id },
+      relations: ['usuario', 'turmas'],
     });
     if (!aluno) throw new NotFoundException('Aluno não encontrado');
     return aluno;
   }
 
   async update(id: string, dto: UpdateAlunoDto): Promise<Aluno> {
-    // Busca o aluno e o usuário relacionado
     const aluno = await this.findOne(id);
-    const usuario = aluno.usuario; // Acessa o objeto Usuario
+    const usuario = aluno.usuario;
 
     if (!usuario) throw new NotFoundException('Usuário base não encontrado.');
-    
+
     // Atualizar campos do USUARIO (tabela 'usuarios')
     if (dto.nome) usuario.nome = dto.nome;
-    if (dto.telefone) usuario.telefone = dto.telefone;
-    
-    if (dto.data_nascimento) {
-      usuario.data_nascimento = parseDate(dto.data_nascimento, 'Data de Nascimento');
-    }
     
     // Atualizar campos do ALUNO (tabela 'alunos')
-    // Exemplo: if (dto.serieAno) aluno.serieAno = dto.serieAno;
+    if (dto.serieAno) aluno.serieAno = dto.serieAno;
+    if (dto.telefone) aluno.telefone = dto.telefone;
+
+    if (dto.data_nascimento) {
+      aluno.data_nascimento = parseDate(
+        dto.data_nascimento,
+        'Data de Nascimento',
+      );
+    }
     
-    // Salva as alterações no usuário e no aluno
+    // Salva as alterações em ambas as tabelas
     await this.usuarioRepository.save(usuario);
     return await this.alunoRepository.save(aluno);
   }
 
   async remove(id: string): Promise<void> {
     const aluno = await this.findOne(id);
-    
-    // Deletar o registro de Aluno (tabela 'alunos')
-    await this.alunoRepository.remove(aluno); 
-    
-    // O onDelete: 'CASCADE' na entidade Aluno deve remover o Usuario, 
-    // mas salvamos o delete explícito para garantir em caso de falha de CASCADE
+
+    await this.alunoRepository.remove(aluno);
+
+    // O onDelete: 'CASCADE' na entidade Aluno deve remover o Usuario.
+    // Esta linha garante a remoção da linha base.
     await this.usuarioRepository.delete(id);
   }
 
@@ -199,7 +197,7 @@ export class AlunoService {
 
     const ultimaMatricula = await this.alunoRepository
       .createQueryBuilder('aluno')
-      .where("aluno.matricula_aluno LIKE :prefix", { prefix: `${ano}${mes}%` })
+      .where('aluno.matricula_aluno LIKE :prefix', { prefix: `${ano}${mes}%` })
       .orderBy('aluno.matricula_aluno', 'DESC')
       .getOne();
 
