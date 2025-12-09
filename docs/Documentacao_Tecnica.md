@@ -218,8 +218,8 @@ src/
 
 ---
 
-![Tela de Login](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2473-3694&t=dBPDOZeoCDCPtCHO-1)
-![Cadastro de Alunos](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-5836&t=dBPDOZeoCDCPtCHO-1)
+[![Tela de Login](https://i.postimg.cc/k43nf4tJ/Login-1.png)](https://postimg.cc/NyDq0Q4S)
+[![Cadastro de Alunos](https://i.postimg.cc/gJJKtzFP/TRANS.png)](https://postimg.cc/DW9s8KwC)
 ![Cadastro de Responsáveis](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-5955&t=dBPDOZeoCDCPtCHO-1)
 ![Cadastro de Disciplinas e Cadastro de Habilidades ](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-4986&t=dBPDOZeoCDCPtCHO-1)
 ![Criação de Atividades (AVA)](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2325-3907&t=dBPDOZeoCDCPtCHO-1)
