@@ -192,11 +192,11 @@ src/
 |----|------|----------------------|--------|
 | RF001 | Autenticação de Usuário | Tela de Login | Concluído |
 | RF002 | Perfis e Níveis de Acesso (RBAC) | Dashboard de cada perfil | Em andamento |
-| RF003 | Cadastro de Alunos | Cadastro → Alunos | Em andamento |
-| RF004 | Cadastro de Responsáveis | Cadastro → Responsáveis | Em andamento |
+| RF003 | Cadastro de Alunos | Cadastro → Alunos | Concluído |
+| RF004 | Cadastro de Responsáveis | Cadastro → Responsáveis | Concluído |
 | RF005 | Cadastro de Turmas | Cadastro → Turmas | Em andamento |
-| RF006 | Cadastro de Disciplinas | Cadastro → Disciplinas | Em andamento |
-| RF007 | Cadastro de Habilidades | Habilidades → Cadastro | Em andamento |
+| RF006 | Cadastro de Disciplinas | Cadastro → Disciplinas | Concluído |
+| RF007 | Cadastro de Habilidades | Habilidades → Cadastro | Concluído |
 | RF008 | Parâmetros Pedagógicos | Configurações → Pedagógico | Em andamento |
 | RF009 | Lançamento de Notas | Professor → Lançamento de Notas | Em andamento |
 | RF010 | Lançamento de Faltas | Professor → Chamada | Em andamento |
@@ -207,17 +207,30 @@ src/
 | RF015 | Emissão de Histórico Escolar | Secretaria → Histórico | Não iniciado |
 | RF016 | QR Code de Verificação | Página Pública → Validação QR | Não iniciado |
 | RF017 | Emissão de Declarações | Secretaria → Declarações | Não iniciado |
-| RF018 | Mural de Avisos | Tela → Avisos | Em andamento |
-| RF019 | Calendário Escolar | Tela → Calendário | Em andamento |
+| RF018 | Mural de Avisos | Tela → Avisos | Concluído |
+| RF019 | Calendário Escolar | Tela → Calendário | Concluído |
 | RF020 | Relatórios Gerais | Relatórios → Geral | Em andamento |
-| RF021 | Dashboards | Dashboards → Aluno / Professor / Coordenação | Em andamento |
-| RF022 | Solicitação de Documentos | Aluno/Responsável → Solicitações | Não iniciado |
+| RF021 | Dashboards | Dashboards → Aluno / Professor / Coordenação | Concluído |
+| RF022 | Solicitação de Documentos | Aluno/Responsável → Solicitações | Em andamento |
 | RF023 | Logs de Alterações | Administração → Auditoria | Não iniciado |
 | RF024 | IA Mínima para Comandos Simples | Barra de Busca / Caixa de Comandos | Não iniciado |
 
 
 ---
 
+![Tela de Login](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2473-3694&t=dBPDOZeoCDCPtCHO-1)
+![Cadastro de Alunos](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-5836&t=dBPDOZeoCDCPtCHO-1)
+![Cadastro de Responsáveis](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-5955&t=dBPDOZeoCDCPtCHO-1)
+![Cadastro de Disciplinas e Cadastro de Habilidades ](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-4986&t=dBPDOZeoCDCPtCHO-1)
+![Criação de Atividades (AVA)](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2325-3907&t=dBPDOZeoCDCPtCHO-1)
+![Entrega de Atividades](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2325-3770&t=dBPDOZeoCDCPtCHO-1)
+![Mural de Avisos](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-5471&t=dBPDOZeoCDCPtCHO-1)
+![Calendário Escolar](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2517-6288&t=dBPDOZeoCDCPtCHO-1)
+![Dashboard Aluno](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2325-4011&t=dBPDOZeoCDCPtCHO-1)
+![Dashboard Coordenação](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2452-3628&t=dBPDOZeoCDCPtCHO-1)
+![Dashboard Professor](https://www.figma.com/design/nIMPvBoC4eixlK5N0OvvwC/Colegio-360---Front?node-id=2325-3501&t=dBPDOZeoCDCPtCHO-1)
+
+---
 
 ## 8️⃣ Roadmap de Evolução
 O desenvolvimento do sistema será feito em fases, seguindo a filosofia de crescimento modular: MVP primeiro, depois expansões.
