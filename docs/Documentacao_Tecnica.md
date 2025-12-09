@@ -1,26 +1,28 @@
 # 📚 Documentação Técnica — Escola Sapiros
-**Versão:** 2.0  
-**Data:** Novembro/2025  
+**Versão:** 3.0  
+**Data:** Dezembro/2025  
 
 ---
 
 ## 📑 Sumário
 1. [Introdução](#1️⃣-introdução)  
-   1.1 [Convenções, Termos e Abreviações](#11-🔤-convenções-terminos-e-abreviações)  
+   1.1 [Convenções, Termos e Abreviações](#11-🔤-convenções-termos-e-abreviações)  
    1.2 [Identificação e Importância dos Requisitos](#12-📝-identificação-e-importância-dos-requisitos)  
 2. [Panorama Geral do Sistema](#2️⃣-panorama-geral-do-sistema)  
    2.1 [Problema Identificado](#21-❌-problema-identificado)  
    2.2 [Solução Proposta](#22-💡-solução-proposta)  
    2.3 [Personas](#23-👥-personas)  
+   2.4 [Ciclo Pedagógico Baseado em Habilidades](#24-ciclo-pedagogico-baseado-em-habilidades)  
 3. [Requisitos Funcionais (RF)](#3️⃣-requisitos-funcionais-rf)  
 4. [Requisitos Não Funcionais (RNF)](#4️⃣-requisitos-não-funcionais-rnf)  
 5. [Requisitos de Negócio (RN)](#5️⃣-requisitos-de-negócio-rn)  
 6. [Arquitetura Técnica](#6️⃣-arquitetura-técnica)  
    6.1 [Tecnologias](#61-tecnologias)  
    6.2 [Estrutura de Pastas](#62-estrutura-de-pastas)  
-7. [Roadmap de Evolução](#7️⃣-roadmap-de-evolução)  
-8. [Segurança e Privacidade](#8️⃣-segurança-e-privacidade)  
-9. [Conclusão](#9️⃣-conclusão)  
+7. [Rastreabilidade — RF × Telas (Figma)](#7️⃣-rastreabilidade--rf--telas-figma)  
+8. [Roadmap de Evolução](#8️⃣-roadmap-de-evolução)  
+9. [Segurança e Privacidade](#9️⃣-segurança-e-privacidade)  
+10. [Conclusão](#-conclusão)    
 
 ---
 
@@ -30,6 +32,7 @@ Este documento descreve os requisitos funcionais e não funcionais do sistema **
 ### 1.1 🔤 Convenções, Termos e Abreviações
 | Termo | Definição |
 |-------|-----------|
+| AVA | Ambiente Virtual de Aprendizagem |
 | Backup | Cópia reserva dos dados importantes |
 | CRUD | Criar, Ler, Atualizar, Deletar |
 | CSV | Importação por planilha |
@@ -67,8 +70,8 @@ Este documento descreve os requisitos funcionais e não funcionais do sistema **
 - 📢 Comunicação com responsáveis via mural de avisos  
 - 🔐 Gestão de perfis de acesso (RBAC)  
 - 📅 Calendário escolar com eventos e provas  
-- 🤖 Integração com IA escolar e MentorEduIA  
-- 📊 Relatórios analíticos de faltas, médias e evolução anual  
+- 🤖 Integração MentorEduIA  
+- 📊 Modelo pedagógico baseado em habilidades  
 
 ### 2.1 ❌ Problema Identificado
 Muitas escolas usam planilhas e processos manuais, causando erros, retrabalho e dificuldade de conformidade legal.
@@ -85,6 +88,15 @@ Centralizar todas as demandas em uma plataforma única, garantindo segurança, t
 | Responsável/Aluno | Consulta de boletins, históricos, avisos e calendário |
 | Mantenedora/Órgão de Controle | Exportação de dados e conformidade legal |
 
+### 2.4 📊 Ciclo Pedagógico Baseado em Habilidades
+1. Cadastro de habilidades  
+2. Associação às disciplinas  
+3. Criação de atividades (quiz, tarefas, simulados)  
+4. Associação das habilidades às questões  
+5. Entrega pelo aluno no AVA  
+6. Cálculo automático do desempenho por habilidade  
+7. Dashboards por aluno, turma e escola  
+
 ---
 
 ## 3️⃣ Requisitos Funcionais (RF)
@@ -96,21 +108,24 @@ Centralizar todas as demandas em uma plataforma única, garantindo segurança, t
 | RF004 | Cadastro de Responsáveis | Cadastro e vínculo com alunos | 🔴 Alta |
 | RF005 | Cadastro de Turmas | Criação de turmas com professores, disciplinas e horários | 🔴 Alta |
 | RF006 | Cadastro de Disciplinas | Criação de disciplinas com nome, área e série | 🔴 Alta |
-| RF007 | Parâmetros Pedagógicos | Configuração de etapas, notas, pesos, frequência | 🔴 Alta |
-| RF008 | Lançamento de Notas | Registro de notas por disciplina, etapa e aluno | 🔴 Alta |
-| RF009 | Lançamento de Faltas | Registro de presença/faltas por aula e aluno | 🔴 Alta |
-| RF010 | Consolidação de Período | Cálculo de médias finais e bloqueio de edição | 🔴 Alta |
-| RF011 | Emissão de Boletim PDF | Boletim escolar em PDF com QR Code | 🔴 Alta |
-| RF012 | Emissão de Histórico Escolar | Histórico completo com séries e disciplinas | 🔴 Alta |
-| RF013 | QR Code de Verificação | QR Code em cada documento oficial | 🔴 Alta |
-| RF014 | Emissão de Declarações | Declarações de matrícula, frequência e administrativas | 🟡 Média |
-| RF015 | Mural de Avisos | Publicação de avisos para alunos e responsáveis | 🟡 Média |
-| RF016 | Calendário Escolar | Exibição de calendário com eventos e provas | 🟡 Média |
-| RF017 | Relatórios Gerais | Relatórios de notas, presenças e desempenho | 🟡 Média |
-| RF018 | Dashboards | Painéis de indicadores por perfil | 🟡 Média |
-| RF019 | Solicitação de Documentos | Solicitação e gestão de documentos | 🟡 Média |
-| RF020 | Logs de Alterações | Registro de alterações críticas | 🔴 Alta |
-| RF021 | IA Mínima para Comandos Simples | Interpretação de comandos de usuários | 🟡 Média |
+| RF007 | Cadastro de Habilidades | Associar habilidades a disciplinas | 🔴 Alta |
+| RF008 | Parâmetros Pedagógicos | Configuração de etapas, notas, pesos, frequência | 🔴 Alta |
+| RF009 | Lançamento de Notas | Registro de notas por disciplina, etapa e aluno | 🔴 Alta |
+| RF010 | Lançamento de Faltas | Registro de presença/faltas por aula e aluno | 🔴 Alta |
+| RF011 | Criação de Atividades (AVA) | Quiz, exercícios, tarefas | 🔴 Alta |
+| RF012 | Entrega de Atividades | Alunos respondem no AVA | 🔴 Alta |
+| RF013 | Consolidação de Período | Cálculo de médias finais e bloqueio de edição | 🔴 Alta |
+| RF014 | Emissão de Boletim PDF | Boletim escolar em PDF com QR Code | 🔴 Alta |
+| RF015 | Emissão de Histórico Escolar | Histórico completo com séries e disciplinas | 🔴 Alta |
+| RF016 | QR Code de Verificação | QR Code em cada documento oficial | 🔴 Alta |
+| RF017 | Emissão de Declarações | Declarações de matrícula, frequência e administrativas | 🟡 Média |
+| RF018 | Mural de Avisos | Publicação de avisos para alunos e responsáveis | 🟡 Média |
+| RF019 | Calendário Escolar | Exibição de calendário com eventos e provas | 🟡 Média |
+| RF020 | Relatórios Gerais | Relatórios de notas, presenças e desempenho | 🟡 Média |
+| RF021 | Dashboards | Painéis de indicadores por perfil | 🟡 Média |
+| RF022 | Solicitação de Documentos | Solicitação e gestão de documentos | 🟡 Média |
+| RF023 | Logs de Alterações | Registro de alterações críticas | 🔴 Alta |
+| RF024 | IA Mínima para Comandos Simples | Interpretação de comandos de usuários | 🟡 Média |
 
 ---
 
@@ -129,6 +144,8 @@ Centralizar todas as demandas em uma plataforma única, garantindo segurança, t
 | RNF010 | Acesso contínuo | Disponibilidade ≥99% | 🔴 Alta |
 | RNF011 | Privacidade e Logs | RBAC rigoroso, registro de ações críticas | 🔴 Alta |
 | RNF012 | Testes e Indicadores | Cobertura de testes >80%, redução de erros >50% | 🟡 Média |
+| RNF013 | Performance de Dashboards | Indicadores <3s | 🟡 Média |
+| RNF014 | Cálculo de Habilidades | Otimização e cache | 🟡 Média |
 
 ---
 
@@ -136,7 +153,7 @@ Centralizar todas as demandas em uma plataforma única, garantindo segurança, t
 | ID | Nome | Definição |
 |----|------|-----------|
 | RN001 | Conformidade Legal | Atender LDB, SEDUC e INEP |
-| RN002 | Eficiência da Secretaria | Reduzir emissão de documentos para <5min |
+| RN002 | Acompanhamento Personalizado | Dados por habilidade |
 | RN003 | Regra de Aprovação | Aplicar regras de aprovação/reprovação automaticamente |
 | RN004 | Integridade e Imutabilidade | Garantir unicidade de IDs e imutabilidade de dados após consolidação |
 | RN005 | Transparência e Comunicação | Canal seguro e rastreável para avisos |
@@ -147,7 +164,7 @@ Centralizar todas as demandas em uma plataforma única, garantindo segurança, t
 
 ## 6️⃣ Arquitetura Técnica
 
-### 6.1 Tecnologias
+### 6.1 ⚙️ Tecnologias
 - ⚛️ React + Vite  
 - 📝 TypeScript  
 - 🗂 Zustand/Context  
@@ -155,20 +172,54 @@ Centralizar todas as demandas em uma plataforma única, garantindo segurança, t
 - 🔀 React Router  
 - 🎨 TailwindCSS  
 
-### 6.2 Estrutura de Pastas
+### 6.2 🗂️ Estrutura de Pastas
 ```text
 src/
-├─ api/
-├─ components/
-├─ pages/
-├─ store/
-├─ hooks/
-├─ utils/
-└─ styles/
+├─ assets/
+ ├─ components/
+ ├─ css/
+ ├─ imagens/
+ ├─ layouts/
+ ├─ pages/
+ └─ utils/
 ```
 
+---
 
-## 7️⃣ Roadmap de Evolução
+## 7️⃣ Rastreabilidade — RF × Telas (Figma)
+
+| ID | Nome | Tela Correspondente | Status |
+|----|------|----------------------|--------|
+| RF001 | Autenticação de Usuário | Tela de Login | Concluído |
+| RF002 | Perfis e Níveis de Acesso (RBAC) | Dashboard de cada perfil | Em andamento |
+| RF003 | Cadastro de Alunos | Cadastro → Alunos | Em andamento |
+| RF004 | Cadastro de Responsáveis | Cadastro → Responsáveis | Em andamento |
+| RF005 | Cadastro de Turmas | Cadastro → Turmas | Em andamento |
+| RF006 | Cadastro de Disciplinas | Cadastro → Disciplinas | Em andamento |
+| RF007 | Cadastro de Habilidades | Habilidades → Cadastro | Em andamento |
+| RF008 | Parâmetros Pedagógicos | Configurações → Pedagógico | Em andamento |
+| RF009 | Lançamento de Notas | Professor → Lançamento de Notas | Em andamento |
+| RF010 | Lançamento de Faltas | Professor → Chamada | Em andamento |
+| RF011 | Criação de Atividades (AVA) | Atividades → Criar Atividade | Concluído |
+| RF012 | Entrega de Atividades | Aluno → Atividade | Concluído |
+| RF013 | Consolidação de Período | Coordenação → Consolidação | Não iniciado |
+| RF014 | Emissão de Boletim PDF | Secretaria → Boletim | Não iniciado |
+| RF015 | Emissão de Histórico Escolar | Secretaria → Histórico | Não iniciado |
+| RF016 | QR Code de Verificação | Página Pública → Validação QR | Não iniciado |
+| RF017 | Emissão de Declarações | Secretaria → Declarações | Não iniciado |
+| RF018 | Mural de Avisos | Tela → Avisos | Em andamento |
+| RF019 | Calendário Escolar | Tela → Calendário | Em andamento |
+| RF020 | Relatórios Gerais | Relatórios → Geral | Em andamento |
+| RF021 | Dashboards | Dashboards → Aluno / Professor / Coordenação | Em andamento |
+| RF022 | Solicitação de Documentos | Aluno/Responsável → Solicitações | Não iniciado |
+| RF023 | Logs de Alterações | Administração → Auditoria | Não iniciado |
+| RF024 | IA Mínima para Comandos Simples | Barra de Busca / Caixa de Comandos | Não iniciado |
+
+
+---
+
+
+## 8️⃣ Roadmap de Evolução
 O desenvolvimento do sistema será feito em fases, seguindo a filosofia de crescimento modular: MVP primeiro, depois expansões.
 
 - **Fase 1** – Funcionalidades essenciais
@@ -176,17 +227,20 @@ O desenvolvimento do sistema será feito em fases, seguindo a filosofia de cresc
   - Notificações
   - Logs completos
 
-- **Fase 2** – IA avançada
-  - Integração com MentorEduIA
+- **Fase 2** – Habilidades e Indicadores
   - Geração de atividades e exercícios personalizados
+  - Dashboards com ênfase em desempenho
 
-- **Fase 3** – Expansão mobile
+- **Fase 3** – IA avançada
+  - Integração com MentorEduIA
+
+- **Fase 4** – Expansão mobile
   - Aplicativo mobile
   - Push notifications
 
 ---
 
-## 8️⃣ Segurança e Privacidade
+## 9️⃣ Segurança e Privacidade
 O sistema seguirá boas práticas de segurança e proteção de dados:
 
 - 🔐 **Tratamento mínimo de dados**: coleta apenas o necessário para operação do sistema  
@@ -199,14 +253,15 @@ O sistema seguirá boas práticas de segurança e proteção de dados:
 
 ---
 
-## 9️⃣ Conclusão
-A versão final da documentação **Escola Sapiros** integra:
+## 🔟 Conclusão
+A versão definitiva da documentação técnica da plataforma Escola Sapiros está de acordo com o documento oficial do stakeholder. Ela inclui:
 
-- 📄 Documento original completo  
-- 🛠 Acréscimos técnicos profissionais, incluindo IA mínima  
-- 🤖 Integração com IA escolar e MentorEduIA para tutoria personalizada  
-- 🏗 Arquitetura clara e detalhada  
-- 📈 Roadmap evolutivo, destacando fases de implementação e expansão  
-- 🔒 Segurança e privacidade alinhadas às melhores práticas  
+- 🎯 Modelo pedagógico baseado em habilidades  
+- 📊 Dashboards analíticos por perfil  
+- 🔄 Ciclo completo de criação e entrega de atividades  
+- 📑 Requisitos funcionais, não funcionais e de negócio  
+- 🔗 Rastreabilidade entre requisitos e telas  
+- 🗺️ Roadmap evolutivo  
+- 🔒 Mecanismos de segurança e privacidade 
 
 O documento serve como referência para desenvolvimento, implementação e manutenção do sistema, garantindo **conformidade legal, eficiência operacional e experiência positiva para todos os usuários**.
