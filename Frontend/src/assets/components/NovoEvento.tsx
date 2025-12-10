@@ -21,9 +21,16 @@ type FormEvento = {
 type NovoEventoProps = {
   onClose: () => void;
   onSave: (evento: FormEvento & { id: string }) => void;
+  onDelete: (id: string) => void;
+  evento?: FormEvento & { id: string };
 };
 
-export default function NovoEvento({ onClose, onSave }: NovoEventoProps) {
+export default function NovoEvento({
+  onClose,
+  onSave,
+  onDelete,
+  evento,
+}: NovoEventoProps) {
   const {
     register,
     handleSubmit,
@@ -31,10 +38,19 @@ export default function NovoEvento({ onClose, onSave }: NovoEventoProps) {
     clearErrors,
     formState: { errors },
   } = useForm<FormEvento>({
-    defaultValues: {
-      cor: "#3d7e8f",
-      categoria: "evento",
-    },
+    defaultValues: evento
+      ? {
+          titulo: evento.titulo,
+          descricao: evento.descricao,
+          inicio: new Date(evento.inicio).toISOString().slice(0, 16),
+          fim: new Date(evento.fim).toISOString().slice(0, 16),
+          cor: evento.cor ?? "#3d7e8f",
+          categoria: evento.categoria ?? "evento",
+        }
+      : {
+          cor: "#3d7e8f",
+          categoria: "evento",
+        },
   });
 
   const enviar = (data: FormEvento) => {
@@ -51,7 +67,7 @@ export default function NovoEvento({ onClose, onSave }: NovoEventoProps) {
 
     onSave({
       ...data,
-      id: crypto.randomUUID(),
+      id: evento ? evento.id : crypto.randomUUID(),
     });
 
     onClose();
@@ -66,8 +82,8 @@ export default function NovoEvento({ onClose, onSave }: NovoEventoProps) {
         className="bg-white p-6 rounded-xl w-[420px] shadow-xl border border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-2xl mb-4 font-bold text-[#3d7e8f]">
-          Criar Novo Evento
+        <h2 className="text-2xl mb-4 font-bold text-[#1D5D7F]">
+          {evento ? "Editar Evento" : "Criar Novo Evento"}
         </h2>
 
         <form onSubmit={handleSubmit(enviar)}>
@@ -131,10 +147,20 @@ export default function NovoEvento({ onClose, onSave }: NovoEventoProps) {
 
           <button
             type="submit"
-            className="bg-[#3d7e8f] text-white px-4 py-2 rounded w-full mt-2 hover:bg-[#356f7e]"
+            className="bg-[#1D5D7F] text-white px-4 py-2 rounded w-full mt-2 hover:bg-[#154a63]"
           >
-            Criar Evento
+            {evento ? "Salvar Alterações" : "Criar Evento"}
           </button>
+
+          {evento && (
+            <button
+              type="button"
+              onClick={() => onDelete(evento.id)}
+              className="mt-2 w-full py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Remover Evento
+            </button>
+          )}
 
           <button
             type="button"
