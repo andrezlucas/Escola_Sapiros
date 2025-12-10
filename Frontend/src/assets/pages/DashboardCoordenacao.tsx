@@ -33,10 +33,10 @@ function DashboardCoordenacao() {
         return <DocumentosPage />;
       case "matriculas":
         return <Matricula />;
-      case "perfil":
-        return <h2 className="text-3xl">Página de Perfil</h2>;
       case "calendario":
-        return <Calendario />;
+        return <Calendario/>
+      case "gerenciamento":
+        return ;
       default:
         return null;
     }
@@ -51,28 +51,32 @@ function DashboardCoordenacao() {
   );
   const MatriculaIcon = (
     <img
-      src={ImagenMatricula}
+      src={ImagenPerfil}
       alt="Matrículas"
       className="w-20 h-20 object-contain"
     />
   );
-  const PortalIcon = (
+  const CalendarioIcon = (
     <img
       src={ImagenPortal}
-      alt="Portal do Aluno"
+      alt="Calendário"
       className="w-20 h-20 object-contain"
     />
   );
   const MuralIcon = (
     <img src={ImagenMural} alt="Mural" className="w-20 h-20 object-contain" />
   );
-  const PerfilIcon = (
-    <img src={ImagenPerfil} alt="Perfil" className="w-20 h-20 object-contain" />
+  const RelatoriosIcon = (
+    <img
+      src={ImagenMatricula}
+      alt="Relatorios"
+      className="w-20 h-20 object-contain"
+    />
   );
-  const ConfigIcon = (
+  const GerenciamentoIcon = (
     <img
       src={ImagenConfig}
-      alt="Configurações"
+      alt="Gerenciamento"
       className="w-20 h-20 object-contain"
     />
   );
@@ -80,30 +84,31 @@ function DashboardCoordenacao() {
   return (
     <div className="flex h-screen">
       <SideBarMenu navigateTo={navigateTo} />
-      <div className="flex-1 flex flex-col ml-52 bg-[#3d7e8f] overflow-hidden">
+      <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
         <div className="h-16">
           <HeaderBar />
         </div>
 
-        <div className="flex-1 bg-[#E6EEF8] relative overflow-y-auto p-15 rounded-tl-[30px]">
+        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
           {currentView === "dashboard/coordenacao" ? (
             <div className="grid grid-cols-5 gap-8 h-full">
               <div className="col-span-3 flex flex-col">
                 <CardMenuBackground>
+                  <CardMenu title="Mural" icon={MuralIcon} />
+                  <CardMenu title="Calendário" icon={CalendarioIcon} 
+                  onClick={() => navigateTo("calendario")}/>
+                  <CardMenu title="Gerenciamento" icon={GerenciamentoIcon} />
                   <CardMenu
                     title="Documentos"
                     icon={DocumentosIcon}
                     onClick={() => navigateTo("documentos")}
                   />
-                  <CardMenu
-                    title="Matrículas Transferências"
+                  <CardMenu title="Relatórios" icon={RelatoriosIcon} />
+                  <CardMenu 
+                    title="Matrícula"
                     icon={MatriculaIcon}
                     onClick={() => navigateTo("matriculas")}
                   />
-                  <CardMenu title="Portal do Aluno" icon={PortalIcon} />
-                  <CardMenu title="Mural" icon={MuralIcon} />
-                  <CardMenu title="Perfil" icon={PerfilIcon} />
-                  <CardMenu title="Configurações" icon={ConfigIcon} />
                 </CardMenuBackground>
 
                 <h2 className="font-poppins font-normal text-[24px] leading-9 text-[#3D7E8F] mb-4">

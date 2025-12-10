@@ -296,14 +296,14 @@ function FormResponsavel({
           <button
             type="button"
             onClick={() => onBack(methods.getValues())}
-            className="w-40 h-12 sm:h-14 bg-[#3d7e8f] text-white text-lg sm:text-xl rounded-lg transition duration-200"
+            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg transition duration-200"
           >
             Voltar
           </button>
 
           <button
             type="submit"
-            className="w-40 h-12 sm:h-14 bg-[#3d7e8f] text-white text-lg sm:text-xl rounded-lg transition duration-200"
+            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg transition duration-200"
           >
             Avançar
           </button>

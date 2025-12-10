@@ -37,15 +37,15 @@ function Matricula() {
 
   return (
     <div className="w-full h-auto p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
-      <h1 className="text-4xl text-[#3d7e8f]">Matrícula online</h1>
+      <h1 className="text-4xl text-[#1D5D7F]">Matrícula online</h1>
 
       <div className="flex flex-row gap-4">
         <button
           className={`w-42 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center 
           ${
             etapa === 1
-              ? "bg-[#3d7e8f] text-white"
-              : "bg-white text-[#3d7e8f] border-2 border-[#3d7e8f]"
+              ? "bg-[#1D5D7F] text-white"
+              : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
           }`}
           onClick={() => setEtapa(1)}
         >
@@ -56,8 +56,8 @@ function Matricula() {
           className={`w-48 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center 
           ${
             etapa === 2
-              ? "bg-[#3d7e8f] text-white"
-              : "bg-white text-[#3d7e8f] border-2 border-[#3d7e8f]"
+              ? "bg-[#1D5D7F] text-white"
+              : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
           }`}
           onClick={() => setEtapa(2)}
         >
@@ -68,8 +68,8 @@ function Matricula() {
           className={`w-36 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center 
           ${
             etapa === 3
-              ? "bg-[#3d7e8f] text-white"
-              : "bg-white text-[#3d7e8f] border-2 border-[#3d7e8f]"
+              ? "bg-[#1D5D7F] text-white"
+              : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
           }`}
           onClick={() => setEtapa(3)}
         >
@@ -80,6 +80,7 @@ function Matricula() {
       <div className="flex flex-col gap-4">
         {etapa === 1 && (
           <FormAluno defaultValues={dadosCompleto.aluno} onNext={handleNext} />
+          
         )}
         {etapa === 2 && (
           <FormResponsavel

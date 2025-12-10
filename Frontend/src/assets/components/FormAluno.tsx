@@ -427,7 +427,7 @@ function FormAluno({
           <div className="w-40">
             <button
               type="submit"
-              className="w-full bg-[#3d7e8f] h-12 sm:h-14 text-white text-lg sm:text-xl font-normal rounded-lg transition duration-200 focus:outline-none focus:ring-4"
+              className="w-full bg-[#1D5D7F] h-12 sm:h-14 text-white text-lg sm:text-xl font-normal rounded-lg transition duration-200 focus:outline-none focus:ring-4"
             >
               Avançar
             </button>

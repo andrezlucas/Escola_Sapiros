@@ -82,6 +82,7 @@ function FormLogin() {
     if (ValidarCpf(valor) || ValidarEmail(valor)) {
       return true;
     }
+    if (valor.startsWith("25") || valor.startsWith("2025")) return true;
     return "Digite um CPF ou e-mail válido";
   };
   return (
@@ -96,9 +97,16 @@ function FormLogin() {
           validate: { validarIdentificador },
           onChange: (e) => {
             let value = e.target.value;
-            if (/[a-zA-Z@]/.test(value)) return;
-            const masked = MaskCPF(value);
-            setValue("identificador", masked);
+            if (/[a-zA-Z@]/.test(value)) {
+              setValue("identificador", value);
+              return;
+            }
+            if (value.startsWith("2025")) {
+              setValue("identificador", value);
+              return
+            }
+            const mask = MaskCPF(value);
+            setValue("identificador", mask);
           },
         })}
         error={errors?.identificador?.message as string}

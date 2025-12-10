@@ -14,7 +14,7 @@ const CardMenu: React.FC<CardMenuProps> = ({ title, icon, onClick }) => {
       </div>
 
       <div className="w-full flex justify-center items-center h-1/3">
-        <p className="text-lg font-semibold text-gray-700 leading-snug text-center">
+        <p className="text-lg font-semibold text-[#1D5D7F] leading-snug text-center">
           {title}
         </p>
       </div>
