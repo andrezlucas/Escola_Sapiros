@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';
+import { Documentacao } from '../../documentacao/entities/documentacao.entity';
 
 @Entity('alunos')
 export class Aluno {
@@ -19,6 +20,12 @@ export class Aluno {
   @OneToOne(() => Usuario, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'id' })
   usuario: Usuario;
+
+  @OneToOne(() => Documentacao, (documentacao) => documentacao.aluno, {
+    cascade: true,
+    eager: true,
+  })
+  documentacao?: Documentacao;
 
   @Column({ name: 'matricula_aluno', unique: true })
   matricula_aluno: string;
