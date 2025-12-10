@@ -16,9 +16,13 @@ export class Aluno {
   @PrimaryColumn('uuid')
   id: string;
 
-  @OneToOne(() => Usuario, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'id' })
+  @OneToOne(() => Usuario, { onDelete: 'CASCADE', eager: true })
+  @JoinColumn({ name: 'usuario_id' })
   usuario: Usuario;
+
+  @Column({ name: 'usuario_id', type: 'uuid', unique: true })
+  usuarioId: string;
+
 
   @Column({ name: 'matricula_aluno', unique: true })
   matricula_aluno: string;

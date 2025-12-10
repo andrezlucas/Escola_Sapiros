@@ -23,6 +23,6 @@ export class AuthController {
   @Post('nova-senha')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto.token, dto.novaSenha);
+    return this.authService.resetPassword(dto.token, dto.senha);
   }
 }
