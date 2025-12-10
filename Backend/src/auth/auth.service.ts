@@ -116,28 +116,26 @@ export class AuthService {
     return { message: 'Email de redefinição enviado' };
   }
 
-  async resetPassword(token: string, novaSenha: string) {
-    const resetToken = await this.tokenRepository.findOne({
-      where: { token },
-      relations: ['usuario'],
-    });
+  async resetPassword(token: string, senha: string) {
+  const resetToken = await this.tokenRepository.findOne({
+    where: { token },
+    relations: ['usuario'],
+  });
 
-    if (!resetToken) throw new BadRequestException('Token inválido');
-    if (new Date() > resetToken.expiraEm) throw new BadRequestException('Token expirado');
+  if (!resetToken) throw new BadRequestException('Token inválido');
+  if (new Date() > resetToken.expiraEm) throw new BadRequestException('Token expirado');
 
-    const salt = await bcrypt.genSalt();
-    resetToken.usuario.senha = await bcrypt.hash(novaSenha, salt);
+  const dataExpiracao = new Date();
+  dataExpiracao.setDate(dataExpiracao.getDate() + 180);
 
-    const dataExpiracao = new Date();
-    dataExpiracao.setDate(dataExpiracao.getDate() + 180);
-    resetToken.usuario.senhaExpiraEm = dataExpiracao;
+  // AQUI: manda a senha pura para o update()
+  await this.usuarioService.update(resetToken.usuario.id, {
+    senha: senha,
+    senhaExpiraEm: dataExpiracao,
+  });
 
-    await this.usuarioService.update(resetToken.usuario.id, {
-      senha: resetToken.usuario.senha,
-      senhaExpiraEm: dataExpiracao,
-    });
+  await this.tokenRepository.remove(resetToken);
+  return { message: 'Senha alterada com sucesso' };
+}
 
-    await this.tokenRepository.remove(resetToken);
-    return { message: 'Senha alterada com sucesso' };
-  }
 }

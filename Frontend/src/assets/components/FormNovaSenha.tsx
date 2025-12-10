@@ -3,6 +3,7 @@ import { Input } from "./Input";
 import { FaLock } from "react-icons/fa";
 import { Button } from "./Button";
 import { ToastContainer, toast } from "react-toastify/unstyled";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 function FormNovaSenha() {
   const {
@@ -11,10 +12,42 @@ function FormNovaSenha() {
     formState: { errors },
     watch,
   } = useForm();
-//Simulado o alert
-  const onSubmit = (data: any) => {
-    console.log("Senha redefinida com sucesso", data);
-    toast.success("Senha Alterada!");
+
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const token = searchParams.get("token");
+
+  const onSubmit = async (data: any) => {
+    if (!token) {
+      toast.error("Token inválido ou ausente!");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/auth/nova-senha", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: token,
+          senha: data.senha,
+        }),
+      });
+
+      if (!response.ok) {
+        const erro = await response.json();
+        toast.error(erro.message || "Erro ao redefinir senha");
+        return;
+      }
+
+      toast.success("Senha redefinida com sucesso!");
+      setTimeout(() => navigate("/"), 2000);
+
+    } catch (error) {
+      toast.error("Erro de conexão com o servidor");
+    }
   };
 
   const watchSenha = watch("senha");
