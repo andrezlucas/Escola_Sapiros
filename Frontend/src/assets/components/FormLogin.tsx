@@ -61,7 +61,7 @@ function FormLogin() {
           navigate("dashboard/coordenacao");
           break;
         case "aluno":
-          navigate("");
+          navigate("dashboard/aluno");
           break;
         case "professor":
           navigate("");

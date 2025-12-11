@@ -6,6 +6,7 @@ import RedefinirSenha from "./assets/pages/RedefinirSenha";
 import { Routes, Route } from "react-router-dom";
 import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
 import Calendario from "./assets/pages/Calendario";
+import DashboardAluno from "./assets/pages/DashboardAluno";
 function App() {
   return (
     <>
@@ -17,6 +18,7 @@ function App() {
           path="/dashboard/coordenacao"
           element={<DashboardCoordenacao />}
         />
+        <Route path="/dashboard/aluno" element={<DashboardAluno/>}/>
         <Route path="/matricula" element={<Matricula />} />
         <Route path="/senha-bloqueada" element={<SenhaBloqueada />} />
         <Route path="/calendario" element={<Calendario />} />

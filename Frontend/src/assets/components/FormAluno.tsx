@@ -1,3 +1,4 @@
+import React from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import FormTextoMatricula from "./FormTextoMatricula";
 import { Input } from "./Input";
@@ -17,14 +18,43 @@ import CidadeSelect from "./CidadeSelect";
 import NacionalidadeSelect from "./NacionalidadeSelect";
 import FormSelect from "./FormSelect";
 
-function FormAluno({
+type DadosAluno = {
+  nome: string;
+  data_nascimento: string;
+  sexo: string;
+  rg: string;
+  data_emissao: string;
+  orgao_emissor: string;
+  cpf: string;
+  celular: string;
+  email: string;
+  logradouro: string;
+  numero: string;
+  cep: string;
+  complemento?: string;
+  bairro: string;
+  estado: string;
+  cidade: string;
+  nacionalidade: string;
+  naturalidade: string;
+  serie: string;
+  turno: string;
+  escola_origem?: string;
+  necessidades_especiais?: string;
+  tem_alergia?: string;
+  quais_alergias?: string;
+  saida_sozinho?: string;
+  uso_imagem?: string;
+};
+
+export default function FormAluno({
   onNext,
   defaultValues,
 }: {
-  onNext: (data: any) => void;
-  defaultValues?: any;
+  onNext: (data: DadosAluno) => void;
+  defaultValues?: Partial<DadosAluno>;
 }) {
-  const methods = useForm({
+  const methods = useForm<DadosAluno>({
     defaultValues: {
       nome: "",
       data_nascimento: "",
@@ -64,9 +94,7 @@ function FormAluno({
     control,
   } = methods;
 
-  const onSubmit = (data: any) => {
-    console.log("Dados do aluno enviados:", data);
-
+  const onSubmit = (data: DadosAluno) => {
     onNext(data);
   };
 
@@ -74,274 +102,215 @@ function FormAluno({
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
         <CardTituloMatricula>Dados pessoais do(a) aluno(a)</CardTituloMatricula>
-        <div className="flex flex-col gap-4">
-          <FormRowMatricula>
-            <FormTextoMatricula title="Nome completo:" className="w-full">
-              <Input
-                placeholder=""
-                label=""
-                type="text"
-                {...register("nome", {
-                  required: "Nome completo é obrigatório",
-                  minLength: {
-                    value: 3,
-                    message: "O nome deve ter pelo menos 3 caracteres",
-                  },
-                  pattern: {
-                    value: /^[A-Za-zÀ-ÖØ-öø-ÿ ]+$/,
-                    message:
-                      "O nome não pode conter números ou caracteres inválidos",
-                  },
-                })}
-                error={errors?.nome?.message as string}
-              />
-            </FormTextoMatricula>
-            <FormTextoMatricula title="Data de nascimento:" className="w-1/2">
-              <Input
-                label={""}
-                type="date"
-                {...register("data_nascimento", {
-                  required: "A data de nascimento é obrigatória",
-                  validate: {
-                    dataValida: (value) =>
-                      isNaN(new Date(value).getTime()) ? "Data inválida" : true,
-                    naoFutura: (value) =>
-                      new Date(value) > new Date()
-                        ? "A data de nascimento não pode ser no futuro"
-                        : true,
-                    idadePermitida: (value) => {
-                      const hoje = new Date();
-                      const data = new Date(value);
-                      let idade = hoje.getFullYear() - data.getFullYear();
-                      const mes = hoje.getMonth() - data.getMonth();
-                      if (
-                        mes < 0 ||
-                        (mes === 0 && hoje.getDate() < data.getDate())
-                      )
-                        idade--;
-                      if (idade < 14)
-                        return "O aluno deve ter pelo menos 14 anos";
-                      if (idade > 19)
-                        return "O aluno deve ter no máximo 20 anos";
-                      return true;
-                    },
-                  },
-                })}
-                error={errors?.data_nascimento?.message as string}
-              />
-            </FormTextoMatricula>
-          </FormRowMatricula>
 
-          <FormRowMatricula>
-            <FormTextoMatricula title="Sexo:" className="w-1/2">
-              <FormSelect
-                name="sexo"
-                options={[
-                  { value: "masculino", label: "Masculino" },
-                  { value: "feminino", label: "Feminino" },
-                ]}
-              />
-            </FormTextoMatricula>
-            <FormTextoMatricula title="RG:" className="w-1/2">
-              <Input
-                label={""}
-                type="text"
-                {...register("rg", {
-                  required: "O RG é obrigatório",
-                  minLength: {
-                    value: 7,
-                    message: "O RG deve ter pelo menos 8 caracteres",
-                  },
-                  maxLength: {
-                    value: 14,
-                    message:
-                      "O RG deve ter no máximo 14 caracteres com pontuação",
-                  },
-                  pattern: {
-                    value: /^[0-9.-]+$/,
-                    message: "O RG deve conter apenas números, pontos e hífen",
-                  },
-                  onChange: (e) => setValue("rg", MaskRG(e.target.value)),
-                })}
-                error={errors?.rg?.message as string}
-              />
-            </FormTextoMatricula>
-          </FormRowMatricula>
+        <FormRowMatricula>
+          <FormTextoMatricula title="Nome completo:" className="w-full">
+            <Input
+              placeholder=""
+              label=""
+              type="text"
+              {...register("nome", {
+                required: "Nome completo é obrigatório",
+                minLength: {
+                  value: 3,
+                  message: "O nome deve ter pelo menos 3 caracteres",
+                },
+                pattern: {
+                  value: /^[A-Za-zÀ-ÖØ-öø-ÿ ]+$/,
+                  message: "O nome não pode conter números",
+                },
+              })}
+              error={errors?.nome?.message}
+            />
+          </FormTextoMatricula>
 
-          <FormRowMatricula>
-            <FormTextoMatricula title="Data de emissão:" className="w-1/3">
-              <Input
-                label={""}
-                type="date"
-                {...register("data_emissao", {
-                  required: "A data de emissão é obrigatória",
-                  validate: (value) => {
-                    const data = new Date(value);
-                    if (data > new Date())
-                      return "A data de emissão não pode ser no futuro";
-                    if (data < new Date("2000-01-01"))
-                      return "A data de emissão é inválida";
-                    return true;
-                  },
-                })}
-                error={errors?.data_emissao?.message as string}
-              />
-            </FormTextoMatricula>
+          <FormTextoMatricula title="Data de nascimento:" className="w-1/2">
+            <Input
+              label=""
+              type="date"
+              {...register("data_nascimento", {
+                required: "A data de nascimento é obrigatória",
+                validate: {
+                  formato: (v) =>
+                    !v || isNaN(new Date(String(v)).getTime())
+                      ? "Data inválida"
+                      : true,
+                },
+              })}
+              error={errors?.data_nascimento?.message}
+            />
+          </FormTextoMatricula>
+        </FormRowMatricula>
 
-            <FormTextoMatricula title="Órgão emissor:" className="w-1/3">
-              <Input
-                label={""}
-                {...register("orgao_emissor", {
-                  required: "Órgão emissor é obrigatório",
-                  minLength: { value: 2, message: "Mínimo de 2 caracteres" },
-                  maxLength: { value: 10, message: "Máximo de 10 caracteres" },
-                  pattern: {
-                    value: /^[A-Za-zÀ-ÖØ-öø-ÿ-]+$/,
-                    message: "Use apenas letras e hífen",
-                  },
-                })}
-                error={errors?.orgao_emissor?.message as string}
-              />
-            </FormTextoMatricula>
+        <FormRowMatricula>
+          <FormTextoMatricula title="Sexo:" className="w-1/2">
+            <FormSelect
+              name="sexo"
+              options={[
+                { value: "MASCULINO", label: "Masculino" },
+                { value: "FEMININO", label: "Feminino" },
+              ]}
+            />
+          </FormTextoMatricula>
 
-            <FormTextoMatricula title="CPF:" className="w-1/3">
-              <Input
-                label={""}
-                {...register("cpf", {
-                  required: "CPF é obrigatório",
-                  validate: {
-                    cpfValido: (value) => ValidarCpf(value) || "CPF inválido",
-                    tamanhoValido: (value) =>
-                      value.replace(/\D/g, "").length === 11 ||
-                      "CPF deve ter 11 dígitos",
-                  },
-                  onChange: (e) => (e.target.value = MaskCPF(e.target.value)),
-                })}
-                error={errors?.cpf?.message as string}
-              />
-            </FormTextoMatricula>
-          </FormRowMatricula>
+          <FormTextoMatricula title="RG:" className="w-1/2">
+            <Input
+              label=""
+              type="text"
+              {...register("rg", {
+                required: "O RG é obrigatório",
+                onChange: (e) => setValue("rg", MaskRG(e.target.value)),
+              })}
+              error={errors?.rg?.message}
+            />
+          </FormTextoMatricula>
+        </FormRowMatricula>
 
-          <FormRowMatricula>
-            <FormTextoMatricula title="Celular:" className="w-1/2">
-              <Input
-                label={""}
-                {...register("celular", {
-                  required: "O celular é obrigatório",
-                  validate: (value) => ValidarTelefone(value),
-                  onChange: (e) =>
-                    (e.target.value = MaskTelefone(e.target.value)),
-                })}
-                error={errors?.celular?.message as string}
-              />
-            </FormTextoMatricula>
+        <FormRowMatricula>
+          <FormTextoMatricula title="Data de emissão:" className="w-1/3">
+            <Input
+              label=""
+              type="date"
+              {...register("data_emissao", {
+                required: "A data de emissão é obrigatória",
+                validate: (v) =>
+                  !v || isNaN(new Date(String(v)).getTime())
+                    ? "Data inválida"
+                    : true,
+              })}
+              error={errors?.data_emissao?.message}
+            />
+          </FormTextoMatricula>
 
-            <FormTextoMatricula title="E-mail:" className="w-full">
-              <Input
-                label={""}
-                {...register("email", {
-                  required: "E-mail é obrigatório",
-                  validate: (value) => ValidarEmail(value) || "E-mail inválido",
-                })}
-                error={errors?.email?.message as string}
-              />
-            </FormTextoMatricula>
-          </FormRowMatricula>
-        </div>
+          <FormTextoMatricula title="Órgão emissor:" className="w-1/3">
+            <Input
+              label=""
+              {...register("orgao_emissor", {
+                required: "Órgão emissor é obrigatório",
+              })}
+              error={errors?.orgao_emissor?.message}
+            />
+          </FormTextoMatricula>
+
+          <FormTextoMatricula title="CPF:" className="w-1/3">
+            <Input
+              label=""
+              {...register("cpf", {
+                required: "CPF é obrigatório",
+                validate: (v) => ValidarCpf(v) || "CPF inválido",
+                onChange: (e) => (e.target.value = MaskCPF(e.target.value)),
+              })}
+              error={errors?.cpf?.message}
+            />
+          </FormTextoMatricula>
+        </FormRowMatricula>
+
+        <FormRowMatricula>
+          <FormTextoMatricula title="Celular:" className="w-1/2">
+            <Input
+              label=""
+              {...register("celular", {
+                required: "Celular é obrigatório",
+                onChange: (e) =>
+                  (e.target.value = MaskTelefone(e.target.value)),
+              })}
+              error={errors?.celular?.message}
+            />
+          </FormTextoMatricula>
+
+          <FormTextoMatricula title="E-mail:" className="w-full">
+            <Input
+              label=""
+              {...register("email", {
+                required: "E-mail é obrigatório",
+                validate: (v) => ValidarEmail(v) || "Email inválido",
+              })}
+              error={errors?.email?.message}
+            />
+          </FormTextoMatricula>
+
+          <FormTextoMatricula title="Nacionalidade:" className="w-1/2">
+            <NacionalidadeSelect />
+          </FormTextoMatricula>
+        </FormRowMatricula>
 
         <CardTituloMatricula>Endereço do(a) aluno(a)</CardTituloMatricula>
 
         <FormRowMatricula>
           <FormTextoMatricula title="Logradouro:" className="w-1/2">
-            <Input
-              label={""}
-              {...register("logradouro", {
-                required: "Logradouro é obrigatório",
-              })}
-              error={errors?.logradouro?.message as string}
-            />
+            <Input label="" {...register("logradouro")} />
           </FormTextoMatricula>
+
           <FormTextoMatricula title="Número:" className="w-1/2">
-            <Input
-              label={""}
-              {...register("numero", { required: "Número é obrigatório" })}
-              error={errors?.numero?.message as string}
-            />
+            <Input label="" {...register("numero")} />
           </FormTextoMatricula>
+
           <FormTextoMatricula title="CEP:" className="w-1/2">
             <Input
-              label={""}
-              type="text"
+              label=""
               {...register("cep", {
-                required: "CEP é obrigatório",
+                required: "CEP obrigatório",
                 onChange: async (e) => {
                   const value = maskCep(e.target.value);
                   e.target.value = value;
+
                   if (value.replace(/\D/g, "").length === 8) {
-                    const data = await BuscarCep(value);
-                    if (data) {
-                      setValue("logradouro", data.logradouro || "");
-                      setValue("bairro", data.bairro || "");
-                      setValue("cidade", data.cidade || "");
-                      setValue("estado", data.estado || "");
-                      if (data.complemento)
-                        setValue("complemento", data.complemento);
+                    const d = await BuscarCep(value);
+                    if (d) {
+                      setValue("logradouro", d.logradouro || "");
+                      setValue("bairro", d.bairro || "");
+                      setValue("cidade", d.cidade || "");
+                      setValue("estado", d.estado || "");
                     }
                   }
                 },
               })}
-              error={errors?.cep?.message as string}
+              error={errors?.cep?.message}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
 
         <FormRowMatricula>
           <FormTextoMatricula title="Complemento:" className="w-1/2">
-            <Input label={""} {...register("complemento")} />
+            <Input label="" {...register("complemento")} />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="Bairro:" className="w-1/2">
-            <Input
-              label={""}
-              {...register("bairro", {
-                required: "O bairro é obrigatório",
-                minLength: { value: 3, message: "Mínimo de 3 caracteres" },
-                pattern: {
-                  value: /^[A-Za-zÀ-ÖØ-öø-ÿ ]+$/,
-                  message: "Use apenas letras",
-                },
-              })}
-              error={errors?.bairro?.message as string}
-            />
+            <Input label="" {...register("bairro")} />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="Estado:" className="w-1/2">
             <EstadoSelect control={control} />
           </FormTextoMatricula>
         </FormRowMatricula>
+
         <FormRowMatricula>
           <FormTextoMatricula title="Cidade:" className="w-1/2">
             <CidadeSelect />
           </FormTextoMatricula>
-          <FormTextoMatricula title="Nacionalidade:" className="w-1/2">
-            <NacionalidadeSelect />
-          </FormTextoMatricula>
+
           <FormTextoMatricula title="Naturalidade:" className="w-1/2">
             <NaturalidadeSelect />
           </FormTextoMatricula>
         </FormRowMatricula>
+
+        {/* ------------------------------------------------------ */}
+        {/* ACADÊMICO */}
+        {/* ------------------------------------------------------ */}
         <CardTituloMatricula>Informações acadêmicas</CardTituloMatricula>
+
         <FormRowMatricula>
           <FormTextoMatricula title="Série/Ano:" className="w-1/2">
             <FormSelect
               name="serie"
               options={[
-                { value: "1ano", label: "1 ano do ensino médio" },
-                { value: "2ano", label: "2 ano do ensino médio" },
-                { value: "3ano", label: "3 ano do ensino médio" },
+                { value: "1ano", label: "1º ano" },
+                { value: "2ano", label: "2º ano" },
+                { value: "3ano", label: "3º ano" },
               ]}
             />
           </FormTextoMatricula>
+
           <FormTextoMatricula title="Turno:" className="w-1/2">
             <FormSelect
               name="turno"
@@ -351,78 +320,60 @@ function FormAluno({
               ]}
             />
           </FormTextoMatricula>
+
           <FormTextoMatricula title="Escola de Origem:" className="w-1/2">
-            <Input label={""} {...register("escola_origem")} />
+            <Input label="" {...register("escola_origem")} />
           </FormTextoMatricula>
         </FormRowMatricula>
 
+        {/* ------------------------------------------------------ */}
+        {/* COMPLEMENTARES */}
+        {/* ------------------------------------------------------ */}
         <CardTituloMatricula>Informações complementares</CardTituloMatricula>
+
         <FormRowMatricula>
-          <FormTextoMatricula
-            title="Possui necessidades especiais?"
-            className="w-1/2"
-          >
-            <Input
-              label={""}
-              {...register("necessidades_especiais", {
-                maxLength: { value: 100, message: "Máximo de 100 caracteres" },
-                pattern: {
-                  value: /^[A-Za-zÀ-ÖØ-öø-ÿ0-9 ,.-]*$/,
-                  message: "Use apenas letras, números e pontuação",
-                },
-              })}
-            />
+          <FormTextoMatricula title="Necessidades especiais:" className="w-1/2">
+            <Input label="" {...register("necessidades_especiais")} />
           </FormTextoMatricula>
+
           <FormTextoMatricula title="Possui alergias?" className="w-1/2">
             <FormSelect
               name="tem_alergia"
               options={[
                 { value: "sim", label: "Sim" },
-                { value: "não", label: "Não" },
+                { value: "nao", label: "Não" },
               ]}
             />
           </FormTextoMatricula>
-          <FormTextoMatricula title="Se sim, quais?" className="w-1/2">
-            <Input
-              label={""}
-              {...register("quais_alergias", {
-                maxLength: { value: 150, message: "Máximo de 150 caracteres" },
-                pattern: {
-                  value: /^[A-Za-zÀ-ÖØ-öø-ÿ0-9 ,.-]*$/,
-                  message: "Use apenas letras, números e pontuação",
-                },
-              })}
-            />
+
+          <FormTextoMatricula title="Quais alergias?" className="w-1/2">
+            <Input label="" {...register("quais_alergias")} />
           </FormTextoMatricula>
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula
-            title="Autorização para saída sozinho:"
-            className="w-1/2"
-          >
+          <FormTextoMatricula title="Saída sozinho:" className="w-1/2">
             <FormSelect
               name="saida_sozinho"
               options={[
                 { value: "sim", label: "Sim" },
-                { value: "não", label: "Não" },
+                { value: "nao", label: "Não" },
               ]}
             />
           </FormTextoMatricula>
-          <FormTextoMatricula
-            title="Autorização para uso de imagem:"
-            className="w-1/2"
-          >
+
+          <FormTextoMatricula title="Uso de imagem:" className="w-1/2">
             <FormSelect
               name="uso_imagem"
               options={[
                 { value: "sim", label: "Sim" },
-                { value: "não", label: "Não" },
+                { value: "nao", label: "Não" },
               ]}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
 
+        {/* BOTÃO */}
         <div className="w-full flex justify-center mt-10">
           <div className="w-40">
             <button
@@ -437,5 +388,3 @@ function FormAluno({
     </FormProvider>
   );
 }
-
-export default FormAluno;
