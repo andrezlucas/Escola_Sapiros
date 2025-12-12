@@ -232,6 +232,10 @@ export default function FormAluno({
           <FormTextoMatricula title="Nacionalidade:" className="w-1/2">
             <NacionalidadeSelect />
           </FormTextoMatricula>
+
+          <FormTextoMatricula title="Naturalidade:" className="w-1/2">
+            <NaturalidadeSelect />
+          </FormTextoMatricula>
         </FormRowMatricula>
 
         <CardTituloMatricula>Endereço do(a) aluno(a)</CardTituloMatricula>
@@ -285,18 +289,11 @@ export default function FormAluno({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Cidade:" className="w-1/2">
+          <FormTextoMatricula title="Cidade:" className="w-1/1">
             <CidadeSelect />
-          </FormTextoMatricula>
-
-          <FormTextoMatricula title="Naturalidade:" className="w-1/2">
-            <NaturalidadeSelect />
           </FormTextoMatricula>
         </FormRowMatricula>
 
-        {/* ------------------------------------------------------ */}
-        {/* ACADÊMICO */}
-        {/* ------------------------------------------------------ */}
         <CardTituloMatricula>Informações acadêmicas</CardTituloMatricula>
 
         <FormRowMatricula>
@@ -326,9 +323,6 @@ export default function FormAluno({
           </FormTextoMatricula>
         </FormRowMatricula>
 
-        {/* ------------------------------------------------------ */}
-        {/* COMPLEMENTARES */}
-        {/* ------------------------------------------------------ */}
         <CardTituloMatricula>Informações complementares</CardTituloMatricula>
 
         <FormRowMatricula>
@@ -373,7 +367,6 @@ export default function FormAluno({
           </FormTextoMatricula>
         </FormRowMatricula>
 
-        {/* BOTÃO */}
         <div className="w-full flex justify-center mt-10">
           <div className="w-40">
             <button

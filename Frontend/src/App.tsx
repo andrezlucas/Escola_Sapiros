@@ -7,6 +7,7 @@ import { Routes, Route } from "react-router-dom";
 import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
 import Calendario from "./assets/pages/Calendario";
 import DashboardAluno from "./assets/pages/DashboardAluno";
+import Gerenciamento from "./assets/pages/Gerenciamento";
 function App() {
   return (
     <>
@@ -22,6 +23,7 @@ function App() {
         <Route path="/matricula" element={<Matricula />} />
         <Route path="/senha-bloqueada" element={<SenhaBloqueada />} />
         <Route path="/calendario" element={<Calendario />} />
+        <Route path="/gerenciamento" element={<Gerenciamento/>}/>
       </Routes>
     </>
   );

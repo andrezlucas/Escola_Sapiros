@@ -14,6 +14,7 @@ import CardCalendario from "../components/CardCalendario";
 import Matricula from "./Matricula";
 import Calendario from "./Calendario";
 import { SideBarOptions } from "../components/SideBarOptions";
+import Gerenciamento from "./Gerenciamento";
 
 const DocumentosPage = () => (
   <div className="w-full h-full p-8 bg-white rounded-xl shadow-md flex items-center justify-center">
@@ -38,9 +39,10 @@ function DashboardCoordenacao() {
       case "matriculas":
         return <Matricula />;
       case "calendario":
-        return <Calendario/>
+        return <Calendario />;
       case "gerenciamento":
-        return ;
+        return <Gerenciamento />;
+
       default:
         return null;
     }
@@ -87,7 +89,11 @@ function DashboardCoordenacao() {
 
   return (
     <div className="flex h-screen">
-      <SideBarMenu navigateTo={navigateTo} menuItems={options.main} bottomMenuItems={options.bottom} />
+      <SideBarMenu
+        navigateTo={navigateTo}
+        menuItems={options.main}
+        bottomMenuItems={options.bottom}
+      />
       <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
         <div className="h-16">
           <HeaderBar />
@@ -99,16 +105,23 @@ function DashboardCoordenacao() {
               <div className="col-span-3 flex flex-col">
                 <CardMenuBackground>
                   <CardMenu title="Mural" icon={MuralIcon} />
-                  <CardMenu title="Calendário" icon={CalendarioIcon} 
-                  onClick={() => navigateTo("calendario")}/>
-                  <CardMenu title="Gerenciamento" icon={GerenciamentoIcon} />
+                  <CardMenu
+                    title="Calendário"
+                    icon={CalendarioIcon}
+                    onClick={() => navigateTo("calendario")}
+                  />
+                  <CardMenu
+                    title="Gerenciamento"
+                    icon={GerenciamentoIcon}
+                    onClick={() => navigateTo("gerenciamento")}
+                  />
                   <CardMenu
                     title="Documentos"
                     icon={DocumentosIcon}
                     onClick={() => navigateTo("documentos")}
                   />
                   <CardMenu title="Relatórios" icon={RelatoriosIcon} />
-                  <CardMenu 
+                  <CardMenu
                     title="Matrícula"
                     icon={MatriculaIcon}
                     onClick={() => navigateTo("matriculas")}

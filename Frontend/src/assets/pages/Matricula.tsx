@@ -87,23 +87,22 @@ function Matricula(): JSX.Element {
 
   const [enviando, setEnviando] = useState<boolean>(false);
 
-  function handleNext(data: any) {
-    if (etapa === 1) {
+  function handleNext(currentStep: number, data: any) {
+    if (currentStep === 1) {
       setDadosCompleto((prev) => ({ ...prev, aluno: data }));
-    }
-    if (etapa === 2) {
+      setEtapa(2);
+    } else if (currentStep === 2) {
       setDadosCompleto((prev) => ({ ...prev, responsavel: data }));
+      setEtapa(3);
     }
-    setEtapa((prev) => prev + 1);
   }
 
-  function handleBack(dataFromForm: any) {
-    if (etapa === 2) {
-      setDadosCompleto((prev) => ({ ...prev, aluno: dataFromForm }));
+  function handleBack(currentStep: number, data: any) {
+    if (currentStep === 2) {
+      setDadosCompleto((prev) => ({ ...prev, responsavel: data }));
       setEtapa(1);
-    }
-    if (etapa === 3) {
-      setDadosCompleto((prev) => ({ ...prev, responsavel: dataFromForm }));
+    } else if (currentStep === 3) {
+      setDadosCompleto((prev) => ({ ...prev, documentos: data }));
       setEtapa(2);
     }
   }
@@ -118,7 +117,6 @@ function Matricula(): JSX.Element {
       email: alunoRaw.email || undefined,
       cpf: onlyDigits(alunoRaw.cpf) || "",
       role: "aluno",
-
       serieAno: alunoRaw.serie || "",
       escolaOrigem: alunoRaw.escola_origem || undefined,
       telefone: onlyDigits(alunoRaw.celular) || undefined,
@@ -136,18 +134,14 @@ function Matricula(): JSX.Element {
       enderecoCidade: alunoRaw.cidade || "",
       nacionalidade: alunoRaw.nacionalidade || "",
       naturalidade: alunoRaw.naturalidade || "",
-
       possuiNecessidadesEspeciais: !!alunoRaw.necessidades_especiais,
       descricaoNecessidadesEspeciais:
         alunoRaw.necessidades_especiais || undefined,
-
       possuiAlergias:
         alunoRaw.tem_alergia?.toLowerCase() === "sim" ? true : false,
       descricaoAlergias: alunoRaw.quais_alergias || undefined,
-
       autorizacaoUsoImagem:
         alunoRaw.uso_imagem?.toLowerCase() === "sim" ? true : false,
-
       responsavelNome: responsavelRaw?.nome,
       responsavel_Data_Nascimento: responsavelRaw?.data_nascimento,
       responsavel_sexo: mapSexoFrontToDto(responsavelRaw?.sexo),
@@ -165,7 +159,6 @@ function Matricula(): JSX.Element {
       responsavelBairro: responsavelRaw?.bairro,
       responsavelCidade: responsavelRaw?.cidade,
       responsavelEstado: responsavelRaw?.estado,
-
       turmasIds: documentosRaw?.turmasIds || [],
     };
 
@@ -186,30 +179,27 @@ function Matricula(): JSX.Element {
     const documentos = dadosCompleto.documentos;
 
     if (!aluno?.nome) {
-      alert("Preencha os dados do aluno antes de enviar.");
+      toast.error("Preencha os dados do aluno antes de enviar.");
       setEtapa(1);
       return;
     }
     if (!responsavel?.nome) {
-      alert("Preencha os dados do responsável antes de enviar.");
+      toast.error("Preencha os dados do responsável antes de enviar.");
       setEtapa(2);
       return;
     }
 
     const payload = buildPayload(aluno, responsavel, documentos);
-    console.log("PAYLOAD ENVIADO:", payload);
-
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     if (!token) {
-      alert("Token não encontrado. Faça login novamente.");
+      toast.error("Token não encontrado. Faça login novamente.");
       return;
     }
 
     try {
       setEnviando(true);
-
       const res = await fetch("http://localhost:3000/alunos", {
         method: "POST",
         headers: {
@@ -219,19 +209,20 @@ function Matricula(): JSX.Element {
         body: JSON.stringify(payload),
       });
 
+      if (res.status === 409) {
+        toast.error("Já existe um aluno com este CPF ou email!");
+        return;
+      }
+
       if (res.ok) {
-        const data = await res.json();
-        console.log("Aluno criado:", data);
         toast.success("Matrícula finalizada com sucesso!");
         setDadosCompleto({ aluno: {}, responsavel: {}, documentos: {} });
         setEtapa(1);
       } else {
-        const text = await res.text();
-        console.error("Erro ao criar aluno:", res.status, text);
-        toast.error(`Você não tem permissão para criar aluno!`);
+        toast.error("Você não tem permissão para criar aluno!");
       }
     } catch (err) {
-      console.error("Erro de rede ao criar aluno:", err);
+      console.error("Erro de rede:", err);
       toast.error("Erro de rede ao criar aluno.");
     } finally {
       setEnviando(false);
@@ -241,6 +232,7 @@ function Matricula(): JSX.Element {
   return (
     <div className="w-full h-auto p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
       <h1 className="text-4xl text-[#1D5D7F]">Matrícula online</h1>
+
       <div className="flex flex-row gap-4">
         <button
           className={`w-42 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center ${
@@ -275,15 +267,19 @@ function Matricula(): JSX.Element {
           <span className="text-sm font-bold">Documentos</span>
         </button>
       </div>
+
       <div className="flex flex-col gap-4">
         {etapa === 1 && (
-          <FormAluno defaultValues={dadosCompleto.aluno} onNext={handleNext} />
+          <FormAluno
+            defaultValues={dadosCompleto.aluno}
+            onNext={(data) => handleNext(1, data)}
+          />
         )}
         {etapa === 2 && (
           <FormResponsavel
             defaultValues={dadosCompleto.responsavel}
-            onNext={handleNext}
-            onBack={handleBack}
+            onNext={(data) => handleNext(2, data)}
+            onBack={(data) => handleBack(2, data)}
           />
         )}
         {etapa === 3 && (
@@ -330,7 +326,8 @@ function Matricula(): JSX.Element {
           </div>
         )}
       </div>
-      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />{" "}
+
+      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
     </div>
   );
 }

@@ -215,6 +215,15 @@ export default function FormResponsavel({
               error={errors?.email?.message}
             />
           </FormTextoMatricula>
+          <FormRowMatricula>
+            <FormTextoMatricula title="Nacionalidade" className="w-1/2">
+              <NacionalidadeSelect />
+            </FormTextoMatricula>
+
+            <FormTextoMatricula title="Naturalidade" className="w-1/2">
+              <NaturalidadeSelect />
+            </FormTextoMatricula>
+          </FormRowMatricula>
         </FormRowMatricula>
 
         <CardTituloMatricula>Endereço do responsável</CardTituloMatricula>
@@ -289,16 +298,6 @@ export default function FormResponsavel({
 
           <FormTextoMatricula title="Cidade:" className="w-1/2">
             <CidadeSelect />
-          </FormTextoMatricula>
-        </FormRowMatricula>
-
-        <FormRowMatricula>
-          <FormTextoMatricula title="Naturalidade" className="w-1/2">
-            <NaturalidadeSelect />
-          </FormTextoMatricula>
-
-          <FormTextoMatricula title="Nacionalidade" className="w-1/2">
-            <NacionalidadeSelect />
           </FormTextoMatricula>
         </FormRowMatricula>
 
