@@ -8,6 +8,7 @@ import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
 import Calendario from "./assets/pages/Calendario";
 import DashboardAluno from "./assets/pages/DashboardAluno";
 import Gerenciamento from "./assets/pages/Gerenciamento";
+import EditarDocumento from "./assets/pages/EditarDocumento";
 function App() {
   return (
     <>
@@ -19,11 +20,15 @@ function App() {
           path="/dashboard/coordenacao"
           element={<DashboardCoordenacao />}
         />
-        <Route path="/dashboard/aluno" element={<DashboardAluno/>}/>
+        <Route path="/dashboard/aluno" element={<DashboardAluno />} />
         <Route path="/matricula" element={<Matricula />} />
         <Route path="/senha-bloqueada" element={<SenhaBloqueada />} />
         <Route path="/calendario" element={<Calendario />} />
-        <Route path="/gerenciamento" element={<Gerenciamento/>}/>
+        <Route path="/gerenciamento" element={<Gerenciamento />} />
+        <Route
+          path="/alunos/:id/documentos/editar"
+          element={<EditarDocumento/>}
+        />
       </Routes>
     </>
   );

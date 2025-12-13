@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaSearch } from "react-icons/fa";
+import { useForm, FormProvider } from "react-hook-form";
+import FormEditarDocumento, {
+  type FormDocumentoData,
+} from "../components/FormEditarDocumento";
 import Tabela from "../components/Tabela";
+import { toast } from "react-toastify";
 
 interface Aluno {
   id: string;
@@ -8,55 +13,58 @@ interface Aluno {
     nome: string;
     email: string;
     role: string;
-  };
+    isBlocked?: boolean;
+  } | null;
   status?: "Ativo" | "Inativo";
+  documentacaoId?: string;
 }
 
 function AlunoList() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
-
   const [page, setPage] = useState(1);
   const limit = 10;
-
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDocumentacaoId, setSelectedDocumentacaoId] = useState<
+    string | null
+  >(null);
+  const methods = useForm<FormDocumentoData>();
+
+  const token = localStorage.getItem("token");
 
   async function fetchAlunos() {
     try {
       setLoading(true);
-
-      const token = localStorage.getItem("token");
-
       const res = await fetch(
         `http://localhost:3000/alunos?page=${page}&limit=${limit}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       if (!res.ok) {
         console.error("Erro ao obter alunos:", res.status);
         return;
       }
-
       const data = await res.json();
-
       const lista = Array.isArray(data) ? data : data.data;
 
-      const normalizados = lista.map((a: any) => ({
+      const normalizados: Aluno[] = lista.map((a: any) => ({
         ...a,
-        status: "Ativo",
+
+        status: a.usuario
+          ? a.usuario.isBlocked
+            ? "Inativo"
+            : "Ativo"
+          : undefined,
+        documentacaoId: a.documentacao?.id,
       }));
 
       setAlunos(normalizados);
-
-      if (!Array.isArray(data) && data.pages) {
-        setTotalPaginas(data.pages);
-      }
+      if (!Array.isArray(data) && data.pages) setTotalPaginas(data.pages);
     } catch (err) {
       console.error("Erro ao buscar alunos:", err);
     } finally {
@@ -68,15 +76,106 @@ function AlunoList() {
     fetchAlunos();
   }, [page]);
 
+  const atualizarAluno = async (documentacaoId: string) => {
+    try {
+      const res = await fetch(
+        `http://localhost:3000/documentacao/${documentacaoId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Erro ao buscar documentação atualizada");
+
+      const docAtualizada = await res.json();
+      const alunoAtualizado: Aluno = docAtualizada.aluno;
+
+      setAlunos((prev) => {
+        const existe = prev.some((a) => a.id === alunoAtualizado.id);
+        if (existe) {
+          return prev.map((a) =>
+            a.id === alunoAtualizado.id
+              ? {
+                  ...a,
+                  usuario: alunoAtualizado.usuario,
+                  status: alunoAtualizado.usuario
+                    ? alunoAtualizado.usuario.isBlocked
+                      ? "Inativo"
+                      : "Ativo"
+                    : undefined,
+                  documentacaoId: docAtualizada.id,
+                }
+              : a
+          );
+        }
+        return [
+          ...prev,
+          {
+            ...alunoAtualizado,
+            status: alunoAtualizado.usuario
+              ? alunoAtualizado.usuario.isBlocked
+                ? "Inativo"
+                : "Ativo"
+              : undefined,
+            documentacaoId: docAtualizada.id,
+          },
+        ];
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao atualizar aluno.");
+    }
+  };
+
+  const handleEnviarDocumentos = async (data: FormDocumentoData) => {
+    if (!selectedDocumentacaoId) return;
+    try {
+      for (const [key, value] of Object.entries(data)) {
+        if (value && value.length > 0) {
+          const formData = new FormData();
+          formData.append("arquivo", value[0]);
+          formData.append("tipo", key);
+
+          const res = await fetch(
+            `http://localhost:3000/documentacao/${selectedDocumentacaoId}/upload`,
+            {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData,
+            }
+          );
+
+          if (!res.ok) throw new Error(`Erro ao enviar arquivo: ${key}`);
+        }
+      }
+
+      toast.success("Documentos enviados com sucesso!");
+      setIsModalOpen(false);
+
+      await atualizarAluno(selectedDocumentacaoId);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao enviar documentos.");
+    }
+  };
+
   const alunosFiltrados = alunos
-    .filter((a) => {
-      if (filter === "ativos") return a.status === "Ativo";
-      if (filter === "inativos") return a.status === "Inativo";
-      return true;
-    })
+    .filter((a) => a.usuario)
+    .filter((a) =>
+      filter === "ativos"
+        ? a.status === "Ativo"
+        : filter === "inativos"
+        ? a.status === "Inativo"
+        : true
+    )
     .filter((a) =>
       (a.usuario?.nome ?? "").toLowerCase().includes(search.toLowerCase())
     );
+
+  const abrirModal = (documentacaoId: string) => {
+    setSelectedDocumentacaoId(documentacaoId);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="p-4">
@@ -117,16 +216,21 @@ function AlunoList() {
         <Tabela
           dados={alunosFiltrados}
           colunas={[
-            { titulo: "Aluno", render: (a) => a.usuario?.nome },
-            { titulo: "Email", render: (a) => a.usuario?.email },
-            { titulo: "Tipo", render: (a) => a.usuario?.role },
-            { titulo: "Status", render: (a) => a.status },
+            { titulo: "Aluno", render: (a) => a.usuario?.nome ?? "-" },
+            { titulo: "Email", render: (a) => a.usuario?.email ?? "-" },
+            { titulo: "Tipo", render: (a) => a.usuario?.role ?? "-" },
+            { titulo: "Status", render: (a) => a.status ?? "-" },
           ]}
-          renderExtra={() => (
-            <button className="flex items-center gap-1 px-3 py-1 border border-[#1D5D7F] rounded-lg text-sm font-semibold hover:bg-[#1D5D7F] hover:text-white transition">
-              <FaEdit /> Editar
-            </button>
-          )}
+          renderExtra={(aluno) =>
+            aluno.documentacaoId ? (
+              <button
+                className="flex items-center gap-1 px-3 py-1 border border-[#1D5D7F] rounded-lg text-sm font-semibold hover:bg-[#1D5D7F] hover:text-white transition"
+                onClick={() => abrirModal(aluno.documentacaoId!)}
+              >
+                <FaEdit /> Editar
+              </button>
+            ) : null
+          }
         />
       )}
 
@@ -138,9 +242,7 @@ function AlunoList() {
         >
           {"<"}
         </button>
-
         <span>Página {page}</span>
-
         <button
           disabled={page === totalPaginas}
           onClick={() => setPage((p) => p + 1)}
@@ -149,6 +251,23 @@ function AlunoList() {
           {">"}
         </button>
       </div>
+
+      {isModalOpen && selectedDocumentacaoId && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-lg w-[90%] max-w-3xl">
+            <FormProvider {...methods}>
+              <FormEditarDocumento
+                onSubmit={handleEnviarDocumentos}
+                onBack={() => setIsModalOpen(false)}
+                onAlunoUpdated={() =>
+                  selectedDocumentacaoId &&
+                  atualizarAluno(selectedDocumentacaoId)
+                }
+              />
+            </FormProvider>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
