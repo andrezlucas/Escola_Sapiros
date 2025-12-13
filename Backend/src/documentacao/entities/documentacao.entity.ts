@@ -1,41 +1,30 @@
 import {
   Entity,
-  PrimaryColumn,
-  Column,
+  PrimaryGeneratedColumn,
   OneToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 import { Aluno } from '../../aluno/entities/aluno.entity';
+import { Documento } from './documento.entity';
 
 @Entity('documentacoes')
 export class Documentacao {
-  @PrimaryColumn('uuid')
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  cpf: string;
-
-  @Column({ nullable: true })
-  rgNumero?: string;
-
-  @Column({ nullable: true })
-  certidaoNumero?: string;
-
-  @Column({ nullable: true })
-  observacoes?: string;
-
-  @OneToOne(() => Aluno, (aluno) => aluno.documentacao, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'aluno_id' })
+  @OneToOne(() => Aluno, aluno => aluno.documentacao, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn()
   aluno: Aluno;
 
-  @Column({ name: 'aluno_id', type: 'uuid', unique: true })
-  alunoId: string;
+  @OneToMany(() => Documento, documento => documento.documentacao, {
+    cascade: true,
+  })
+  documentos: Documento[];
 
   @CreateDateColumn()
   criadoEm: Date;
-
-  @UpdateDateColumn()
-  atualizadoEm: Date;
 }

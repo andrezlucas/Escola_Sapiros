@@ -8,6 +8,7 @@ import { AlunoController } from './aluno.controller';
 import { AuthModule } from '../auth/auth.module';
 import { UsuarioModule } from '../usuario/usuario.module';
 import { MailModule } from '../mail/mail.module';
+import { DocumentacaoModule } from 'src/documentacao/documentacao.module';
 
 @Module({
   imports: [
@@ -15,6 +16,8 @@ import { MailModule } from '../mail/mail.module';
     forwardRef(() => AuthModule),
     forwardRef(() => UsuarioModule),
     forwardRef(() => MailModule),
+    forwardRef(() => Turma),
+    forwardRef(() => DocumentacaoModule),
   ],
   controllers: [AlunoController],
   providers: [AlunoService],

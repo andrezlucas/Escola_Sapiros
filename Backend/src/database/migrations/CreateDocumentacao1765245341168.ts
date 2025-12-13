@@ -7,16 +7,24 @@ export class CreateDocumentacao1765245341168 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE documentacoes (
         id CHAR(36) NOT NULL,
-        cpf VARCHAR(255) UNIQUE NOT NULL,
-        rgNumero VARCHAR(255),
-        certidaoNumero VARCHAR(255),
-        observacoes TEXT,
-        aluno_id CHAR(36) UNIQUE,
-        criadoEm TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        atualizadoEm TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        CONSTRAINT FK_Documentacao_Aluno FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
+        alunoId CHAR(36) UNIQUE,
+        criadoEm TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        atualizadoEm TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        
+        PRIMARY KEY (id)
       );
+    `);
+    
+    await queryRunner.query(`
+        ALTER TABLE documentacoes
+        ADD CONSTRAINT FK_Documentacao_Aluno 
+        FOREIGN KEY (alunoId) 
+        REFERENCES alunos(id) 
+        ON DELETE CASCADE;
+    `);
+
+    await queryRunner.query(`
+        CREATE UNIQUE INDEX IDX_Documentacao_alunoId ON documentacoes (alunoId);
     `);
   }
 

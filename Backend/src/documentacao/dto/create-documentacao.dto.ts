@@ -1,25 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { IsCpf } from '../../shared/validators/is-cpf.validator';
+import { IsEnum, IsUUID } from 'class-validator';
+import { TipoDocumento } from '../enums/tipo-documento.enum';
 
 export class CreateDocumentacaoDto {
-  @IsNotEmpty()
-  @IsString()
-  @IsCpf({ message: 'CPF inválido' })
-  cpf: string;
-
-  @IsOptional()
-  @IsString()
-  rgNumero?: string;
-
-  @IsOptional()
-  @IsString()
-  certidaoNumero?: string;
-
-  @IsOptional()
-  @IsString()
-  observacoes?: string;
-
-  @IsNotEmpty()
-  @IsString()
+  @IsUUID()
   alunoId: string;
+
+  @IsEnum(TipoDocumento)
+  tipo: TipoDocumento;
 }
