@@ -129,6 +129,9 @@ export class DocumentacaoService {
         TipoDocumento.COMPROVANTE_RESIDENCIA_ALUNO,
         TipoDocumento.FOTO_3X4,
         TipoDocumento.HISTORICO_ESCOLAR,
+        TipoDocumento.RG_RESPONSAVEL,
+        TipoDocumento.CPF_RESPONSAVEL,
+        TipoDocumento.COMPROVANTE_RESIDENCIA_RESP,
     ];
 
     const documentosEnviados = await this.documentoRepo.find({
