@@ -51,7 +51,7 @@ export class AuthService {
     // Validação da senha
     const senhaValida = await bcrypt.compare(dto.senha, usuario.senha);
     if (!senhaValida) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Senha incorreta');
     }
 
     // Verifica senha padrão
