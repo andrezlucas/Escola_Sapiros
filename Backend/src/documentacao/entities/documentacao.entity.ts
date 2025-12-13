@@ -5,6 +5,7 @@ import {
   OneToMany,
   JoinColumn,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Documento } from './documento.entity';
@@ -17,7 +18,7 @@ export class Documentacao {
   @OneToOne(() => Aluno, aluno => aluno.documentacao, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn()
+  @JoinColumn({ name: 'aluno_id' })
   aluno: Aluno;
 
   @OneToMany(() => Documento, documento => documento.documentacao, {
@@ -25,6 +26,9 @@ export class Documentacao {
   })
   documentos: Documento[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
+
+  @UpdateDateColumn({ name: 'atualizado_em' })
+  atualizadoEm: Date;
 }

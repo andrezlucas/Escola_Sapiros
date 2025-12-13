@@ -8,16 +8,16 @@ import { Professor } from '../../professor/entities/professor.entity';
 @Entity('turmas')
 export class Turma {
   @PrimaryGeneratedColumn('uuid')
-  id_turma: string;
+  id: string;
 
-  @Column()
-  nome_turma: string;
+  @Column({ name: 'nome_turma' })
+  nomeTurma: string;
 
   @Column({ name: 'ano_letivo' })
   anoLetivo: string;
 
   @Column()
-  periodo: string; // Manhã, Tarde, Noite
+  periodo: string; 
 
   @Column({ name: 'data_inicio', type: 'date' })
   dataInicio: Date;
@@ -31,22 +31,24 @@ export class Turma {
   @Column({ default: true })
   ativa: boolean;
 
-  // Relacionamentos
-// Turma.ts
-@ManyToMany(() => Aluno, aluno => aluno.turmas)
-@JoinTable({
-  name: 'turma_alunos',
-  joinColumn: { name: 'turma_id', referencedColumnName: 'id_turma' },
-  inverseJoinColumn: { name: 'aluno_id', referencedColumnName: 'id' },
-})
-alunos: Aluno[];
-
-
+  @ManyToMany(() => Aluno, aluno => aluno.turmas)
+  @JoinTable({
+    name: 'alunos_turmas',
+    joinColumn: {
+      name: 'turma_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'aluno_id',
+      referencedColumnName: 'id',
+    },
+  })
+  alunos: Aluno[];
 
   @ManyToMany(() => Disciplina, disciplina => disciplina.turmas)
   @JoinTable({
     name: 'turma_disciplinas',
-    joinColumn: { name: 'turma_id', referencedColumnName: 'id_turma' },
+    joinColumn: { name: 'turma_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'disciplina_id', referencedColumnName: 'id_disciplina' }
   })
   disciplinas: Disciplina[];
@@ -54,15 +56,13 @@ alunos: Aluno[];
   @OneToMany(() => Aviso, aviso => aviso.turma)
   avisos: Aviso[];
 
-  @ManyToOne(() => Professor, { nullable: true })
+  @ManyToOne(() => Professor, professor => professor.turmas, { nullable: true })
   @JoinColumn({ name: 'professor_id' })
   professor?: Professor;
 
-  // Preenche automático as tabelas com a criação e atualização do ultimo registro para maior controle.
+  @CreateDateColumn({ name: 'criado_em' })
+  criadoEm: Date;
 
-  @CreateDateColumn()
-  turmacriadoEm: Date;
-
-  @UpdateDateColumn()
-  turmaatualizadoEm: Date;
+  @UpdateDateColumn({ name: 'atualizado_em' })
+  atualizadoEm: Date;
 }

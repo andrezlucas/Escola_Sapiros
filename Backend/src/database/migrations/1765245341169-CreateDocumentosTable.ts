@@ -4,7 +4,6 @@ export class CreateDocumentosTable1765245341169 implements MigrationInterface {
   name = 'CreateDocumentosTable1765245341169';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Definição dos valores do ENUM para o tipo de documento
     const tipoDocumentoEnum = [
       'RG_ALUNO',
       'CPF_ALUNO',
@@ -19,7 +18,6 @@ export class CreateDocumentosTable1765245341169 implements MigrationInterface {
       .map((value) => `'${value}'`)
       .join(', ');
 
-    // Criação da Tabela Documentos
     await queryRunner.query(`
       CREATE TABLE documentos (
         id CHAR(36) NOT NULL,
@@ -28,19 +26,18 @@ export class CreateDocumentosTable1765245341169 implements MigrationInterface {
         
         tipo ENUM(${tipoDocumentoEnum}) NOT NULL,
         
-        nomeOriginal VARCHAR(255) NOT NULL,
-        nomeArquivo VARCHAR(255) NOT NULL,
+        nome_original VARCHAR(255) NOT NULL,
+        nome_arquivo VARCHAR(255) NOT NULL,
         caminho VARCHAR(255) NOT NULL,
-        mimeType VARCHAR(255) NOT NULL,
+        mime_type VARCHAR(255) NOT NULL,
         tamanho INT NOT NULL,
 
-        criadoEm TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         
         PRIMARY KEY (id)
       );
     `);
 
-    // Adição da Chave Estrangeira
     await queryRunner.query(`
         ALTER TABLE documentos
         ADD CONSTRAINT FK_Documento_Documentacao
@@ -49,13 +46,10 @@ export class CreateDocumentosTable1765245341169 implements MigrationInterface {
         ON DELETE CASCADE;
     `);
 
-    // Adição de Índice para otimização de busca por tipo e documentação
     await queryRunner.query(`
         CREATE INDEX IDX_Documentos_DocumentacaoId_Tipo ON documentos (documentacao_id, tipo);
     `);
 
-    // Adição da restrição de unicidade (opcional, mas recomendado para o fluxo de substituição)
-    // Isso garante que só haja um documento de cada 'tipo' por 'documentacao'.
     await queryRunner.query(`
         ALTER TABLE documentos
         ADD CONSTRAINT UQ_Documento_DocumentacaoId_Tipo UNIQUE (documentacao_id, tipo);

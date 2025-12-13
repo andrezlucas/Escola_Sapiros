@@ -1,20 +1,25 @@
-import { Module } from '@nestjs/common';
+
+
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DocumentacaoController } from './documentacao.controller';
-import { DocumentacaoService } from './documentacao.service';
-import { Documentacao } from './entities/documentacao.entity';
+
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Documento } from './entities/documento.entity';
+import { Usuario } from '../usuario/entities/usuario.entity'; 
 import { AlunoModule } from 'src/aluno/aluno.module';
+import { Documentacao } from './entities/documentacao.entity';
+import { DocumentacaoService } from './documentacao.service';
+import { DocumentacaoController } from './documentacao.controller';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Documentacao,
-      Aluno,
       Documento,
+      Aluno,
+      Usuario, 
     ]),
-    AlunoModule
+    forwardRef(() => AlunoModule) 
   ],
   controllers: [DocumentacaoController],
   providers: [DocumentacaoService],

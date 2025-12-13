@@ -31,16 +31,14 @@ export class AuthService {
 
     let usuario: Usuario | null = null;
 
-    // 1 — Tentar identificar como ALUNO (busca pela matrícula)
     const aluno = await this.alunoRepository.findOne({
-      where: { matricula_aluno: identificador },
+      where: {matriculaAluno : identificador },
       relations: ['usuario'],
     });
 
     if (aluno) {
       usuario = aluno.usuario;
     } else {
-      // 2 — Se não for aluno, tenta achar usuário por CPF ou e-mail
       usuario = await this.usuarioService.findByCpfOrEmail(identificador);
     }
 
@@ -48,13 +46,17 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    // Validação da senha
     const senhaValida = await bcrypt.compare(dto.senha, usuario.senha);
     if (!senhaValida) {
       throw new UnauthorizedException('Senha incorreta');
     }
+    
+    if (usuario.isBlocked) {
+      throw new UnauthorizedException(
+        'Conta temporariamente bloqueada. Complete o cadastro de documentos para liberar o acesso.',
+      );
+    }
 
-    // Verifica senha padrão
     const senhaPadrao = 'Sapiros@123';
     const isSenhaPadrao = await bcrypt.compare(senhaPadrao, usuario.senha);
 
@@ -70,12 +72,10 @@ export class AuthService {
       );
     }
 
-    // Valida expiração
     if (usuario.senhaExpiraEm && new Date() > new Date(usuario.senhaExpiraEm)) {
       throw new UnauthorizedException('A senha expirou. Redefina sua senha.');
     }
 
-    // TOKEN JWT
     const payload = {
       sub: usuario.id,
       role: usuario.role,
@@ -117,25 +117,23 @@ export class AuthService {
   }
 
   async resetPassword(token: string, senha: string) {
-  const resetToken = await this.tokenRepository.findOne({
-    where: { token },
-    relations: ['usuario'],
-  });
+    const resetToken = await this.tokenRepository.findOne({
+      where: { token },
+      relations: ['usuario'],
+    });
 
-  if (!resetToken) throw new BadRequestException('Token inválido');
-  if (new Date() > resetToken.expiraEm) throw new BadRequestException('Token expirado');
+    if (!resetToken) throw new BadRequestException('Token inválido');
+    if (new Date() > resetToken.expiraEm) throw new BadRequestException('Token expirado');
 
-  const dataExpiracao = new Date();
-  dataExpiracao.setDate(dataExpiracao.getDate() + 180);
+    const dataExpiracao = new Date();
+    dataExpiracao.setDate(dataExpiracao.getDate() + 180);
 
-  // AQUI: manda a senha pura para o update()
-  await this.usuarioService.update(resetToken.usuario.id, {
-    senha: senha,
-    senhaExpiraEm: dataExpiracao,
-  });
+    await this.usuarioService.update(resetToken.usuario.id, {
+      senha: senha,
+      senhaExpiraEm: dataExpiracao,
+    });
 
-  await this.tokenRepository.remove(resetToken);
-  return { message: 'Senha alterada com sucesso' };
-}
-
+    await this.tokenRepository.remove(resetToken);
+    return { message: 'Senha alterada com sucesso' };
+  }
 }

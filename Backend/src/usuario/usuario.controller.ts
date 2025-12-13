@@ -30,8 +30,8 @@ function formatarUsuario(u: Partial<Usuario>): UsuarioResponse {
         senha, 
         senhaExpiraEm, 
         senhaAtualizadaEm, 
-        UsuariocriadoEm, 
-        UsuarioatualizadoEm, 
+        criadoEm, 
+        atualizadoEm, 
         ...resto 
     } = u;
 
@@ -39,8 +39,8 @@ function formatarUsuario(u: Partial<Usuario>): UsuarioResponse {
         ...resto,
         senhaExpiraEm: formatarDataISO(senhaExpiraEm) as string,
         senhaAtualizadaEm: formatarDataISO(senhaAtualizadaEm) as string,
-        UsuariocriadoEm: formatarDataISO(UsuariocriadoEm) as string,
-        UsuarioatualizadoEm: formatarDataISO(UsuarioatualizadoEm) as string,
+        UsuariocriadoEm: formatarDataISO(criadoEm) as string,
+        UsuarioatualizadoEm: formatarDataISO(atualizadoEm) as string,
     } as UsuarioResponse;
 }
 

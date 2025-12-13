@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Aluno } from './entities/aluno.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import { Turma } from '../turma/entities/turma.entity';
+import { Documentacao } from '../documentacao/entities/documentacao.entity';
 import { AlunoService } from './aluno.service';
 import { AlunoController } from './aluno.controller';
 import { AuthModule } from '../auth/auth.module';
@@ -12,12 +13,18 @@ import { DocumentacaoModule } from 'src/documentacao/documentacao.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Aluno, Usuario, Turma]),
+    TypeOrmModule.forFeature([
+      Aluno,
+      Usuario,
+      Turma,
+      Documentacao,
+    ]),
+    
     forwardRef(() => AuthModule),
     forwardRef(() => UsuarioModule),
-    forwardRef(() => MailModule),
-    forwardRef(() => Turma),
     forwardRef(() => DocumentacaoModule),
+    
+    MailModule,
   ],
   controllers: [AlunoController],
   providers: [AlunoService],

@@ -32,7 +32,7 @@ export class NotaService {
 
   private async findAlunoByMatricula(matricula: string): Promise<Aluno> {
     const aluno = await this.alunoRepository.findOne({
-      where: { matricula_aluno: matricula },
+      where: { matriculaAluno: matricula },
     });
     if (!aluno) throw new NotFoundException(`Aluno com matrícula ${matricula} não encontrado`);
     return aluno;
@@ -61,7 +61,7 @@ export class NotaService {
       }
       if (!t.disciplinas || t.disciplinas.length === 0) {
         const turmaFull = await this.turmaRepository.findOne({
-          where: { id_turma: t.id_turma },
+          where: { id: t.id },
           relations: ['disciplinas'],
         });
         if (turmaFull && turmaFull.disciplinas.some(d => d.id_disciplina === disciplinaId)) {
@@ -87,7 +87,7 @@ export class NotaService {
 
     if (user.role === Role.ALUNO) {
       if (!nota.aluno) throw new NotFoundException('Nota sem aluno vinculado');
-      if (nota.aluno.matricula_aluno !== user.matricula_aluno) {
+      if (nota.aluno.matriculaAluno !== user.matriculaAluno) {
         throw new ForbiddenException('Aluno não autorizado a ver esta nota');
       }
       return;
@@ -216,7 +216,7 @@ export class NotaService {
    */
   async findOne(id: string, user: any): Promise<Nota> {
     const nota = await this.notaRepository.findOne({
-      where: { id_nota: id },
+      where: { id: id },
       relations: ['aluno', 'disciplina'],
     });
     if (!nota) throw new NotFoundException(`Nota com ID ${id} não encontrada`);
@@ -231,7 +231,7 @@ export class NotaService {
    */
   async update(id: string, updateNotaDto: UpdateNotaDto, user: any): Promise<Nota> {
     const nota = await this.notaRepository.findOne({
-      where: { id_nota: id },
+      where: { id: id },
       relations: ['aluno', 'disciplina'],
     });
     if (!nota) throw new NotFoundException(`Nota com ID ${id} não encontrada`);
@@ -244,7 +244,7 @@ export class NotaService {
     if (updateNotaDto.observacao !== undefined) nota.observacao = updateNotaDto.observacao;
 
     if (user.role === Role.COORDENACAO) {
-      if (updateNotaDto.alunoId !== undefined && updateNotaDto.alunoId !== nota.aluno.matricula_aluno) {
+      if (updateNotaDto.alunoId !== undefined && updateNotaDto.alunoId !== nota.aluno.matriculaAluno) {
         nota.aluno = await this.findAlunoByMatricula(updateNotaDto.alunoId);
       }
       if (updateNotaDto.disciplinaId !== undefined && updateNotaDto.disciplinaId !== nota.disciplina.id_disciplina) {
@@ -260,7 +260,7 @@ export class NotaService {
    */
   async remove(id: string, user: any): Promise<void> {
     const nota = await this.notaRepository.findOne({
-      where: { id_nota: id },
+      where: { id: id },
       relations: ['aluno', 'disciplina'],
     });
     if (!nota) throw new NotFoundException(`Nota com ID ${id} não encontrada`);

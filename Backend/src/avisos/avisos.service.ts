@@ -30,7 +30,7 @@ export class AvisosService {
   }
 
   private async findTurmaOrFail(id: string) {
-    const turma = await this.turmaRepository.findOne({ where: { id_turma: id } });
+    const turma = await this.turmaRepository.findOne({ where: { id: id } });
     if (!turma) throw new NotFoundException(`Turma com ID ${id} não encontrada`);
     return turma;
   }
@@ -91,7 +91,7 @@ export class AvisosService {
         const turmas = await this.turmaRepository.find({
           where: { professor: { usuario: { id: user.id } as any } as any },
         });
-        if (turmas.some(t => t.id_turma === aviso.turma?.id_turma)) return;
+        if (turmas.some(t => t.id === aviso.turma?.id)) return;
       }
       // aluno: idealmente checar vínculo aluno <-> turma; aqui permitimos leitura e recomendamos validar vínculo real
       if (user.role === Role.ALUNO) return;
