@@ -46,7 +46,7 @@ export class DisciplinaService {
       if (t.disciplinas && t.disciplinas.some(d => d.id_disciplina === disciplinaId)) return true;
       if (!t.disciplinas || t.disciplinas.length === 0) {
         const turmaFull = await this.turmaRepository.findOne({
-          where: { id_turma: t.id_turma },
+          where: { id: t.id },
           relations: ['disciplinas'],
         });
         if (turmaFull && turmaFull.disciplinas.some(d => d.id_disciplina === disciplinaId)) return true;
@@ -110,6 +110,7 @@ export class DisciplinaService {
 
       // coletar disciplinas das turmas do professor
       const turmas = await this.turmaRepository.find({
+        
         where: { professor: { id_professor: professor.id } as any },
         relations: ['disciplinas'],
       });

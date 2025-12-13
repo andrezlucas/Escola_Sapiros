@@ -13,7 +13,7 @@ export enum TipoAvaliacao {
 @Entity('notas')
 export class Nota {
   @PrimaryGeneratedColumn('uuid')
-  id_nota: string;
+  id: string; // Corrigido: id_nota -> id
 
   @Column('decimal', { precision: 5, scale: 2 })
   valor: number;
@@ -21,7 +21,8 @@ export class Nota {
   @Column({
     type: 'enum',
     enum: TipoAvaliacao,
-    default: TipoAvaliacao.PROVA
+    default: TipoAvaliacao.PROVA,
+    name: 'tipo_avaliacao' // Adicionado nome da coluna para snake_case
   })
   tipoAvaliacao: TipoAvaliacao;
 
@@ -32,19 +33,16 @@ export class Nota {
   observacao: string;
 
   @ManyToOne(() => Aluno, { nullable: false })
-  @JoinColumn({ name: 'aluno_id', referencedColumnName: 'matricula_aluno' })
+  @JoinColumn({ name: 'aluno_id' }) // Corrigido: referencedColumnName removido ou apontando para 'id' (padrão)
   aluno: Aluno;
 
   @ManyToOne(() => Disciplina, { nullable: false })
-  @JoinColumn({ name: 'disciplina_id', referencedColumnName: 'id_disciplina' })
+  @JoinColumn({ name: 'disciplina_id' }) // Corrigido: referencedColumnName removido ou apontando para 'id' (padrão)
   disciplina: Disciplina;
 
-  // Preenche automático as tabelas com a criação e atualização do ultimo registro para maior controle.
+  @CreateDateColumn({ name: 'criado_em' }) // Corrigido: notacriadoEm -> criadoEm
+  criadoEm: Date;
 
-  @CreateDateColumn()
-  notacriadoEm: Date;
-
-  @UpdateDateColumn()
-  notaatualizadoEm: Date;
+  @UpdateDateColumn({ name: 'atualizado_em' }) // Corrigido: notaatualizadoEm -> atualizadoEm
+  atualizadoEm: Date;
 }
-

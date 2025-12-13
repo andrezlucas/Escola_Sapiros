@@ -42,7 +42,7 @@ export class TurmaService {
     }
 
     const alunos = await this.alunoRepository.find({
-      where: { matricula_aluno: In(alunosIds) },
+      where: { matriculaAluno: In(alunosIds) },
     });
 
     if (alunos.length !== alunosIds.length) {
@@ -86,7 +86,7 @@ export class TurmaService {
     const { inicio, fim } = this.validateDates(createTurmaDto.dataInicio, createTurmaDto.dataFim);
 
     const turma = this.turmaRepository.create({
-      nome_turma: createTurmaDto.nome_turma,
+      nomeTurma: createTurmaDto.nomeTurma,
       anoLetivo: createTurmaDto.anoLetivo,
       periodo: createTurmaDto.periodo,
       dataInicio: inicio,
@@ -105,13 +105,13 @@ export class TurmaService {
   async findAll(): Promise<Turma[]> {
     return this.turmaRepository.find({
       relations: ['alunos', 'disciplinas', 'professor', 'avisos'],
-      order: { nome_turma: 'ASC' },
+      order: { nomeTurma: 'ASC' },
     });
   }
 
   async findOne(id: string): Promise<Turma> {
     const turma = await this.turmaRepository.findOne({
-      where: { id_turma: id },
+      where: { id: id },
       relations: ['alunos', 'disciplinas', 'professor', 'avisos'],
     });
 
@@ -134,7 +134,7 @@ export class TurmaService {
       turma.dataFim = fim;
     }
 
-    if (updateTurmaDto.nome_turma !== undefined) turma.nome_turma = updateTurmaDto.nome_turma;
+    if (updateTurmaDto.nomeTurma !== undefined) turma.nomeTurma = updateTurmaDto.nomeTurma  ;
     if (updateTurmaDto.anoLetivo !== undefined) turma.anoLetivo = updateTurmaDto.anoLetivo;
     if (updateTurmaDto.periodo !== undefined) turma.periodo = updateTurmaDto.periodo;
     if (updateTurmaDto.descricao !== undefined) turma.descricao = updateTurmaDto.descricao;
