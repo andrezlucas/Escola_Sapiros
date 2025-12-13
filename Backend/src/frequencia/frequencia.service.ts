@@ -32,7 +32,7 @@ export class FrequenciaService {
 
   private async findAlunoByMatricula(matricula: string): Promise<Aluno> {
     const aluno = await this.alunoRepository.findOne({
-      where: { matricula_aluno: matricula },
+      where: { matriculaAluno: matricula },
     });
     if (!aluno) throw new NotFoundException(`Aluno com matrícula ${matricula} não encontrado`);
     return aluno;
@@ -61,7 +61,7 @@ export class FrequenciaService {
       }
       if (!t.disciplinas || t.disciplinas.length === 0) {
         const turmaFull = await this.turmaRepository.findOne({
-          where: { id_turma: t.id_turma },
+          where: { id: t.id },
           relations: ['disciplinas'],
         });
         if (turmaFull && turmaFull.disciplinas.some(d => d.id_disciplina === disciplinaId)) {
@@ -94,7 +94,7 @@ export class FrequenciaService {
 
     if (user.role === Role.ALUNO) {
       if (!frequencia.aluno) throw new NotFoundException('Frequência sem aluno vinculado');
-      if (frequencia.aluno.matricula_aluno !== user.matricula_aluno) {
+      if (frequencia.aluno.matriculaAluno !== user.matriculaAluno ) {
         throw new ForbiddenException('Aluno não autorizado a ver esta frequência');
       }
       return;
@@ -255,7 +255,7 @@ export class FrequenciaService {
         'COUNT(f.id_frequencia) as total',
         'SUM(CASE WHEN f.presente = true THEN 1 ELSE 0 END) as presencas',
       ])
-      .where('f.aluno_id = :mat', { mat: aluno.matricula_aluno })
+      .where('f.aluno_id = :mat', { mat: aluno.matriculaAluno })
       .andWhere('f.disciplina_id = :did', { did: disciplina.id_disciplina });
 
     if (dataInicio) {
@@ -281,7 +281,7 @@ export class FrequenciaService {
    */
   async findOne(id: string, user: any): Promise<Frequencia> {
     const frequencia = await this.frequenciaRepository.findOne({
-      where: { id_frequencia: id },
+      where: { id: id },
       relations: ['aluno', 'disciplina'],
     });
     if (!frequencia) throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
@@ -295,7 +295,7 @@ export class FrequenciaService {
    */
   async update(id: string, updateFrequenciaDto: UpdateFrequenciaDto, user: any): Promise<Frequencia> {
     const frequencia = await this.frequenciaRepository.findOne({
-      where: { id_frequencia: id },
+      where: { id : id },
       relations: ['aluno', 'disciplina'],
     });
     if (!frequencia) throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
@@ -314,7 +314,7 @@ export class FrequenciaService {
 
     // trocar aluno/disciplina apenas para coordenação
     if (user?.role === Role.COORDENACAO) {
-      if (updateFrequenciaDto.alunoId !== undefined && updateFrequenciaDto.alunoId !== frequencia.aluno.matricula_aluno) {
+      if (updateFrequenciaDto.alunoId !== undefined && updateFrequenciaDto.alunoId !== frequencia.aluno.matriculaAluno) {
         frequencia.aluno = await this.findAlunoByMatricula(updateFrequenciaDto.alunoId);
       }
       if (updateFrequenciaDto.disciplinaId !== undefined && updateFrequenciaDto.disciplinaId !== frequencia.disciplina.id_disciplina) {
@@ -330,7 +330,7 @@ export class FrequenciaService {
    */
   async remove(id: string, user: any): Promise<void> {
     const frequencia = await this.frequenciaRepository.findOne({
-      where: { id_frequencia: id },
+      where: { id: id },
       relations: ['aluno', 'disciplina'],
     });
     if (!frequencia) throw new NotFoundException(`Frequência com ID ${id} não encontrada`);

@@ -36,15 +36,21 @@ export class Usuario {
   })
   senhaExpiraEm: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  // CORRIGIDO: Usando @UpdateDateColumn e nome da coluna correto (snake_case)
+  @UpdateDateColumn({ name: 'senha_atualizada_em' })
   senhaAtualizadaEm: Date;
 
   @Column({ type: 'enum', enum: Role })
   role: Role;
+  
+  // Coluna para controle de bloqueio de login (Pré-Matrícula)
+  @Column({ name: 'is_blocked', default: false })
+  isBlocked: boolean;
 
-  @CreateDateColumn()
-  UsuariocriadoEm: Date;
+  @CreateDateColumn({ name: 'criado_em' })
+  criadoEm: Date;
 
-  @UpdateDateColumn()
-  UsuarioatualizadoEm: Date;
+
+  @UpdateDateColumn({ name: 'atualizado_em' })
+  atualizadoEm: Date;
 }

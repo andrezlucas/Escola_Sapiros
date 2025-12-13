@@ -3,7 +3,7 @@ import {IsArray,IsBoolean,IsDateString,IsNotEmpty,IsOptional,IsString,IsUUID,} f
 export class CreateTurmaDto {
   @IsString()
   @IsNotEmpty({ message: 'Nome da turma é obrigatório' })
-  nome_turma: string;   
+  nomeTurma: string;   
 
   @IsString()
   @IsNotEmpty({ message: 'Ano letivo é obrigatório' })

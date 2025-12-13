@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  JoinColumn,
   CreateDateColumn,
 } from 'typeorm';
 import { Documentacao } from '../../documentacao/entities/documentacao.entity';
@@ -19,16 +20,16 @@ export class Documento {
   })
   tipo: TipoDocumento;
 
-  @Column()
+  @Column({ name: 'nome_original' })
   nomeOriginal: string;
 
-  @Column()
+  @Column({ name: 'nome_arquivo' })
   nomeArquivo: string;
 
   @Column()
   caminho: string;
 
-  @Column()
+  @Column({ name: 'mime_type' })
   mimeType: string;
 
   @Column()
@@ -36,9 +37,11 @@ export class Documento {
 
   @ManyToOne(() => Documentacao, d => d.documentos, {
     onDelete: 'CASCADE',
+    nullable: false,
   })
+  @JoinColumn({ name: 'documentacao_id' })
   documentacao: Documentacao;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
 }

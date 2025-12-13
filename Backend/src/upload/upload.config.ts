@@ -1,15 +1,23 @@
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import * as fs from 'fs'; 
+import * as path from 'path'; 
 
+
+const UPLOAD_DIR = path.resolve('./uploads');
 
 export const storageConfig = {
   storage: diskStorage({
     destination: (req, file, cb) => {
-      // Pasta onde os arquivos serão salvos
-      cb(null, './uploads');
+     
+      if (!fs.existsSync(UPLOAD_DIR)) {
+         fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      }
+      
+      cb(null, UPLOAD_DIR);     
     },
     filename: (req, file, cb) => {
-      // Gera um nome único para cada arquivo
+        
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
       const ext = extname(file.originalname);
       cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);

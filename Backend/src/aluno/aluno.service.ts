@@ -2,10 +2,10 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DeepPartial, In, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-
 import { Aluno } from './entities/aluno.entity';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { Turma } from '../turma/entities/turma.entity';
+import { Documentacao } from '../documentacao/entities/documentacao.entity';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
 
@@ -41,6 +41,9 @@ export class AlunoService {
 
     @InjectRepository(Turma)
     private turmaRepository: Repository<Turma>,
+
+    @InjectRepository(Documentacao)
+    private documentacaoRepository: Repository<Documentacao>,
     
     private dataSource: DataSource,
   ) {}
@@ -55,32 +58,29 @@ export class AlunoService {
     }
 
     return this.dataSource.transaction(async (manager) => {
-      // 2a. Preparar dados do USUÁRIO (Base - Apenas Login/Identificação)
       const userData: DeepPartial<Usuario> = {
         nome: createAlunoDto.nome,
         email: createAlunoDto.email,
         cpf: createAlunoDto.cpf,
         senha: await bcrypt.hash('Sapiros@123', 10),
         role: Role.ALUNO,
+        
+        isBlocked: true, 
       };
 
       const novoUsuario = manager.create(Usuario, userData);
       const usuarioSalvo = await manager.save(Usuario, novoUsuario);
 
-      // 2b. Preparar dados do ALUNO (Específico + Dados Pessoais/Cadastrais)
       const alunoData: DeepPartial<Aluno> = {
-        // Chaves do JTI Manual
         id: usuarioSalvo.id,
         usuario: usuarioSalvo,
 
-        // Dados Específicos do Aluno
-        matricula_aluno: await this.generateMatricula(),
+        matriculaAluno: await this.generateMatricula(),
         serieAno: createAlunoDto.serieAno,
         escolaOrigem: createAlunoDto.escolaOrigem,
 
-        // Dados Pessoais (Movidos de Usuario para Aluno)
         telefone: createAlunoDto.telefone,
-        data_nascimento: parseDate(
+        dataNascimento: parseDate(
           createAlunoDto.data_nascimento,
           'Data de Nascimento',
         ),
@@ -105,17 +105,16 @@ export class AlunoService {
         descricaoAlergias: createAlunoDto.descricaoAlergias,
         autorizacaoUsoImagem: createAlunoDto.autorizacaoUsoImagem || false,
         
-        // Dados do Responsável
         responsavelNome: createAlunoDto.responsavelNome,
-        responsavel_Data_Nascimento: parseOptionalDate(
+        responsavelDataNascimento: parseOptionalDate(
           createAlunoDto.responsavel_Data_Nascimento,
         ),
-        responsavel_sexo: createAlunoDto.responsavel_sexo || 'NAO_INFORMADO',
-        responsavel_nacionalidade: createAlunoDto.responsavel_nacionalidade,
-        responsavel_naturalidade: createAlunoDto.responsavel_naturalidade,
+        responsavelSexo: createAlunoDto.responsavel_sexo || 'NAO_INFORMADO',
+        responsavelNacionalidade: createAlunoDto.responsavel_nacionalidade,
+        responsavelNaturalidade: createAlunoDto.responsavel_naturalidade,
         responsavelCpf: createAlunoDto.responsavelCpf,
         responsavelRg: createAlunoDto.responsavelRg,
-        responsavel_rg_OrgaoEmissor:
+        responsavelRgOrgaoEmissor:
           createAlunoDto.responsavel_rg_OrgaoEmissor,
         responsavelTelefone: createAlunoDto.responsavelTelefone,
         responsavelEmail: createAlunoDto.responsavelEmail,
@@ -130,26 +129,35 @@ export class AlunoService {
 
       const novoAluno = manager.create(Aluno, alunoData);
 
-      // 2c. Associar turmas
       if (createAlunoDto.turmasIds?.length) {
         const turmas = await manager.findBy(Turma, {
-          id_turma: In(createAlunoDto.turmasIds),
+          id: In(createAlunoDto.turmasIds),
         });
         novoAluno.turmas = turmas;
       }
 
-      return await manager.save(Aluno, novoAluno);
+      const alunoSalvo = await manager.save(Aluno, novoAluno);
+      
+      const novaDocumentacao = manager.create(Documentacao, {
+        aluno: alunoSalvo,
+      });
+      const documentacaoSalva = await manager.save(Documentacao, novaDocumentacao);
+
+      //  CORREÇÃO AQUI: Anexa a documentação salva ao objeto alunoSalvo antes de retornar
+      alunoSalvo.documentacao = documentacaoSalva;
+
+      return alunoSalvo;
     });
   }
 
   async findAll(): Promise<Aluno[]> {
-    return await this.alunoRepository.find({ relations: ['usuario', 'turmas'] });
+    return await this.alunoRepository.find({ relations: ['usuario', 'turmas', 'documentacao'] });
   }
 
   async findOne(id: string): Promise<Aluno> {
     const aluno = await this.alunoRepository.findOne({
       where: { id },
-      relations: ['usuario', 'turmas'],
+      relations: ['usuario', 'turmas', 'documentacao'],
     });
     if (!aluno) throw new NotFoundException('Aluno não encontrado');
     return aluno;
@@ -161,21 +169,18 @@ export class AlunoService {
 
     if (!usuario) throw new NotFoundException('Usuário base não encontrado.');
 
-    // Atualizar campos do USUARIO (tabela 'usuarios')
     if (dto.nome) usuario.nome = dto.nome;
     
-    // Atualizar campos do ALUNO (tabela 'alunos')
     if (dto.serieAno) aluno.serieAno = dto.serieAno;
     if (dto.telefone) aluno.telefone = dto.telefone;
 
     if (dto.data_nascimento) {
-      aluno.data_nascimento = parseDate(
+      aluno.dataNascimento = parseDate(
         dto.data_nascimento,
         'Data de Nascimento',
       );
     }
     
-    // Salva as alterações em ambas as tabelas
     await this.usuarioRepository.save(usuario);
     return await this.alunoRepository.save(aluno);
   }
@@ -185,8 +190,6 @@ export class AlunoService {
 
     await this.alunoRepository.remove(aluno);
 
-    // O onDelete: 'CASCADE' na entidade Aluno deve remover o Usuario.
-    // Esta linha garante a remoção da linha base.
     await this.usuarioRepository.delete(id);
   }
 
@@ -203,7 +206,7 @@ export class AlunoService {
 
     let sequencia = 1;
     if (ultimaMatricula) {
-      const ultimaSeq = parseInt(ultimaMatricula.matricula_aluno.slice(6, 9));
+      const ultimaSeq = parseInt(ultimaMatricula.matriculaAluno.slice(6, 9));
       sequencia = ultimaSeq + 1;
     }
 

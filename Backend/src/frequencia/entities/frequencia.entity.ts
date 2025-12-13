@@ -5,7 +5,7 @@ import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 @Entity('frequencias')
 export class Frequencia {
   @PrimaryGeneratedColumn('uuid')
-  id_frequencia: string;
+  id: string; // Corrigido: id_frequencia -> id
 
   @Column({ type: 'date' })
   data: Date;
@@ -17,18 +17,16 @@ export class Frequencia {
   observacao: string;
 
   @ManyToOne(() => Aluno, { nullable: false })
-  @JoinColumn({ name: 'aluno_id', referencedColumnName: 'matricula_aluno' })
+  @JoinColumn({ name: 'aluno_id' }) // Corrigido: referencedColumnName removido ou apontando para 'id' (padrão)
   aluno: Aluno;
 
   @ManyToOne(() => Disciplina, { nullable: false })
-  @JoinColumn({ name: 'id_disciplina', referencedColumnName: 'id_disciplina' })
+  @JoinColumn({ name: 'disciplina_id' }) // Corrigido: id_disciplina -> disciplina_id (para consistência) e referencedColumnName removido
   disciplina: Disciplina;
 
-  // Preenche automático as tabelas com a criação e atualização do ultimo registro para maior controle.
+  @CreateDateColumn({ name: 'criado_em' }) // Corrigido: frequenciacriadoEm -> criadoEm
+  criadoEm: Date;
 
-  @CreateDateColumn()
-  frequenciacriadoEm: Date;
-
-  @UpdateDateColumn()
-  frequenciaatualizadoEm: Date;
+  @UpdateDateColumn({ name: 'atualizado_em' }) // Corrigido: frequenciaatualizadoEm -> atualizadoEm
+  atualizadoEm: Date;
 }
