@@ -14,35 +14,27 @@ import CardCalendario from "../components/CardCalendario";
 import Matricula from "./Matricula";
 import Calendario from "./Calendario";
 import { SideBarOptions } from "../components/SideBarOptions";
-import Gerenciamento from "./Gerenciamento";
 
-const DocumentosPage = () => (
-  <div className="w-full h-full p-8 bg-white rounded-xl shadow-md flex items-center justify-center">
-    <h1 className="text-4xl text-[#3d7e8f]">Página de Documentos Teste</h1>
-  </div>
-);
 
-function DashboardCoordenacao() {
-  const [currentView, setCurrentView] = useState("dashboard/coordenacao");
+
+function DashboardAluno() {
+  const [currentView, setCurrentView] = useState("dashboard/aluno");
 
   const navigateTo = (viewName: string) => {
     setCurrentView(viewName);
   };
 
-  const role = "coordenacao";
+  const role = "aluno";
   const options = SideBarOptions[role];
 
   const renderContent = () => {
     switch (currentView) {
       case "documentos":
-        return <DocumentosPage />;
+        return ;
       case "matriculas":
         return <Matricula />;
       case "calendario":
         return <Calendario />;
-      case "gerenciamento":
-        return <Gerenciamento />;
-
       default:
         return null;
     }
@@ -75,7 +67,7 @@ function DashboardCoordenacao() {
   const RelatoriosIcon = (
     <img
       src={ImagenMatricula}
-      alt="Relatorios"
+      alt="Relatórios"
       className="w-20 h-20 object-contain"
     />
   );
@@ -100,7 +92,7 @@ function DashboardCoordenacao() {
         </div>
 
         <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
-          {currentView === "dashboard/coordenacao" ? (
+          {currentView === "dashboard/aluno" ? (
             <div className="grid grid-cols-5 gap-8 h-full">
               <div className="col-span-3 flex flex-col">
                 <CardMenuBackground>
@@ -110,11 +102,7 @@ function DashboardCoordenacao() {
                     icon={CalendarioIcon}
                     onClick={() => navigateTo("calendario")}
                   />
-                  <CardMenu
-                    title="Gerenciamento"
-                    icon={GerenciamentoIcon}
-                    onClick={() => navigateTo("gerenciamento")}
-                  />
+                  <CardMenu title="Gerenciamento" icon={GerenciamentoIcon} />
                   <CardMenu
                     title="Documentos"
                     icon={DocumentosIcon}
@@ -129,7 +117,7 @@ function DashboardCoordenacao() {
                 </CardMenuBackground>
 
                 <h2 className="font-poppins font-normal text-[24px] leading-9 text-[#3D7E8F] mb-4">
-                  Gráfico de desempenho
+                  DASHBOARD ALUNO
                 </h2>
 
                 <div className="flex-1">
@@ -152,4 +140,4 @@ function DashboardCoordenacao() {
   );
 }
 
-export default DashboardCoordenacao;
+export default DashboardAluno;

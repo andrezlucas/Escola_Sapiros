@@ -1,51 +1,244 @@
-import { useState } from "react";
+import React, { useState, type JSX } from "react";
 import FormAluno from "../components/FormAluno";
 import FormResponsavel from "../components/FormResponsavel";
+import { toast, ToastContainer } from "react-toastify";
 
-function Matricula() {
-  const [etapa, setEtapa] = useState(1);
+type DadosAluno = {
+  nome?: string;
+  email?: string;
+  cpf?: string;
+  serie?: string;
+  escola_origem?: string;
+  celular?: string;
+  data_nascimento?: string;
+  sexo?: string;
+  rg?: string;
+  data_emissao?: string;
+  orgao_emissor?: string;
+  logradouro?: string;
+  numero?: string;
+  cep?: string;
+  complemento?: string;
+  bairro?: string;
+  estado?: string;
+  cidade?: string;
+  nacionalidade?: string;
+  naturalidade?: string;
+  necessidades_especiais?: string;
+  tem_alergia?: string;
+  quais_alergias?: string;
+  saida_sozinho?: string;
+  uso_imagem?: string;
+};
 
-  const [dadosCompleto, setDadosCompleto] = useState({
+type DadosResponsavel = {
+  nome?: string;
+  email?: string;
+  cpf?: string;
+  celular?: string;
+  data_nascimento?: string;
+  sexo?: string;
+  nacionalidade?: string;
+  naturalidade?: string;
+  rg?: string;
+  orgao_emissor?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+};
+
+type DadosDocumentos = {
+  turmasIds?: string[];
+};
+
+type DadosCompleto = {
+  aluno: DadosAluno;
+  responsavel: DadosResponsavel;
+  documentos: DadosDocumentos;
+};
+
+function onlyDigits(value?: string) {
+  if (!value) return "";
+  return value.replace(/\D/g, "");
+}
+
+function mapSexoFrontToDto(
+  value?: string
+): "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO" {
+  if (!value) return "NAO_INFORMADO";
+  const v = value.toLowerCase();
+  if (v.includes("masc")) return "MASCULINO";
+  if (v.includes("fem")) return "FEMININO";
+  return "OUTRO";
+}
+
+function Matricula(): JSX.Element {
+  const [etapa, setEtapa] = useState<number>(1);
+
+  const [dadosCompleto, setDadosCompleto] = useState<DadosCompleto>({
     aluno: {},
     responsavel: {},
     documentos: {},
   });
 
-  function handleNext(data: any) {
-    if (etapa === 1) {
+  const [enviando, setEnviando] = useState<boolean>(false);
+
+  function handleNext(currentStep: number, data: any) {
+    if (currentStep === 1) {
       setDadosCompleto((prev) => ({ ...prev, aluno: data }));
-    }
-
-    if (etapa === 2) {
+      setEtapa(2);
+    } else if (currentStep === 2) {
       setDadosCompleto((prev) => ({ ...prev, responsavel: data }));
+      setEtapa(3);
     }
-
-    setEtapa((prev) => prev + 1);
   }
 
-  function handleBack(dataFromForm: any) {
-    if (etapa === 2) {
-      setDadosCompleto((prev) => ({ ...prev, aluno: dataFromForm }));
+  function handleBack(currentStep: number, data: any) {
+    if (currentStep === 2) {
+      setDadosCompleto((prev) => ({ ...prev, responsavel: data }));
       setEtapa(1);
+    } else if (currentStep === 3) {
+      setDadosCompleto((prev) => ({ ...prev, documentos: data }));
+      setEtapa(2);
+    }
+  }
+
+  function buildPayload(
+    alunoRaw: DadosAluno,
+    responsavelRaw: DadosResponsavel,
+    documentosRaw: DadosDocumentos
+  ) {
+    const payload: any = {
+      nome: alunoRaw.nome || "",
+      email: alunoRaw.email || undefined,
+      cpf: onlyDigits(alunoRaw.cpf) || "",
+      role: "aluno",
+      serieAno: alunoRaw.serie || "",
+      escolaOrigem: alunoRaw.escola_origem || undefined,
+      telefone: onlyDigits(alunoRaw.celular) || undefined,
+      data_nascimento: alunoRaw.data_nascimento || undefined,
+      sexo: mapSexoFrontToDto(alunoRaw.sexo),
+      rgNumero: onlyDigits(alunoRaw.rg) || alunoRaw.rg || "",
+      rgDataEmissao: alunoRaw.data_emissao || undefined,
+      rgOrgaoEmissor: alunoRaw.orgao_emissor || undefined,
+      enderecoLogradouro: alunoRaw.logradouro || "",
+      enderecoNumero: alunoRaw.numero || "",
+      enderecoCep: onlyDigits(alunoRaw.cep) || "",
+      enderecoComplemento: alunoRaw.complemento || undefined,
+      enderecoBairro: alunoRaw.bairro || "",
+      enderecoEstado: alunoRaw.estado || "",
+      enderecoCidade: alunoRaw.cidade || "",
+      nacionalidade: alunoRaw.nacionalidade || "",
+      naturalidade: alunoRaw.naturalidade || "",
+      possuiNecessidadesEspeciais: !!alunoRaw.necessidades_especiais,
+      descricaoNecessidadesEspeciais:
+        alunoRaw.necessidades_especiais || undefined,
+      possuiAlergias:
+        alunoRaw.tem_alergia?.toLowerCase() === "sim" ? true : false,
+      descricaoAlergias: alunoRaw.quais_alergias || undefined,
+      autorizacaoUsoImagem:
+        alunoRaw.uso_imagem?.toLowerCase() === "sim" ? true : false,
+      responsavelNome: responsavelRaw?.nome,
+      responsavel_Data_Nascimento: responsavelRaw?.data_nascimento,
+      responsavel_sexo: mapSexoFrontToDto(responsavelRaw?.sexo),
+      responsavel_nacionalidade: responsavelRaw?.nacionalidade,
+      responsavel_naturalidade: responsavelRaw?.naturalidade,
+      responsavelCpf: onlyDigits(responsavelRaw?.cpf),
+      responsavelRg: onlyDigits(responsavelRaw?.rg) || responsavelRaw?.rg,
+      responsavel_rg_OrgaoEmissor: responsavelRaw?.orgao_emissor,
+      responsavelTelefone: onlyDigits(responsavelRaw?.celular),
+      responsavelEmail: responsavelRaw?.email,
+      responsavelCep: onlyDigits(responsavelRaw?.cep),
+      responsavelLogradouro: responsavelRaw?.logradouro,
+      responsavelNumero: responsavelRaw?.numero,
+      responsavelComplemento: responsavelRaw?.complemento,
+      responsavelBairro: responsavelRaw?.bairro,
+      responsavelCidade: responsavelRaw?.cidade,
+      responsavelEstado: responsavelRaw?.estado,
+      turmasIds: documentosRaw?.turmasIds || [],
+    };
+
+    Object.keys(payload).forEach((k) => {
+      if (payload[k] === undefined || payload[k] === null) {
+        delete payload[k];
+      }
+    });
+
+    payload.role = "aluno";
+
+    return payload;
+  }
+
+  async function handleFinalSubmit() {
+    const aluno = dadosCompleto.aluno;
+    const responsavel = dadosCompleto.responsavel;
+    const documentos = dadosCompleto.documentos;
+
+    if (!aluno?.nome) {
+      toast.error("Preencha os dados do aluno antes de enviar.");
+      setEtapa(1);
+      return;
+    }
+    if (!responsavel?.nome) {
+      toast.error("Preencha os dados do responsável antes de enviar.");
+      setEtapa(2);
+      return;
     }
 
-    if (etapa === 3) {
-      setDadosCompleto((prev) => ({ ...prev, responsavel: dataFromForm }));
-      setEtapa(2);
+    const payload = buildPayload(aluno, responsavel, documentos);
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    if (!token) {
+      toast.error("Token não encontrado. Faça login novamente.");
+      return;
+    }
+
+    try {
+      setEnviando(true);
+      const res = await fetch("http://localhost:3000/alunos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 409) {
+        toast.error("Já existe um aluno com este CPF ou email!");
+        return;
+      }
+
+      if (res.ok) {
+        toast.success("Matrícula finalizada com sucesso!");
+        setDadosCompleto({ aluno: {}, responsavel: {}, documentos: {} });
+        setEtapa(1);
+      } else {
+        toast.error("Você não tem permissão para criar aluno!");
+      }
+    } catch (err) {
+      console.error("Erro de rede:", err);
+      toast.error("Erro de rede ao criar aluno.");
+    } finally {
+      setEnviando(false);
     }
   }
 
   return (
     <div className="w-full h-auto p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
-      <h1 className="text-4xl text-[#3d7e8f]">Matrícula online</h1>
+      <h1 className="text-4xl text-[#1D5D7F]">Matrícula online</h1>
 
       <div className="flex flex-row gap-4">
         <button
-          className={`w-42 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center 
-          ${
+          className={`w-42 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center ${
             etapa === 1
-              ? "bg-[#3d7e8f] text-white"
-              : "bg-white text-[#3d7e8f] border-2 border-[#3d7e8f]"
+              ? "bg-[#1D5D7F] text-white"
+              : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
           }`}
           onClick={() => setEtapa(1)}
         >
@@ -53,11 +246,10 @@ function Matricula() {
         </button>
 
         <button
-          className={`w-48 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center 
-          ${
+          className={`w-48 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center ${
             etapa === 2
-              ? "bg-[#3d7e8f] text-white"
-              : "bg-white text-[#3d7e8f] border-2 border-[#3d7e8f]"
+              ? "bg-[#1D5D7F] text-white"
+              : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
           }`}
           onClick={() => setEtapa(2)}
         >
@@ -65,11 +257,10 @@ function Matricula() {
         </button>
 
         <button
-          className={`w-36 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center 
-          ${
+          className={`w-36 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center ${
             etapa === 3
-              ? "bg-[#3d7e8f] text-white"
-              : "bg-white text-[#3d7e8f] border-2 border-[#3d7e8f]"
+              ? "bg-[#1D5D7F] text-white"
+              : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
           }`}
           onClick={() => setEtapa(3)}
         >
@@ -79,17 +270,64 @@ function Matricula() {
 
       <div className="flex flex-col gap-4">
         {etapa === 1 && (
-          <FormAluno defaultValues={dadosCompleto.aluno} onNext={handleNext} />
+          <FormAluno
+            defaultValues={dadosCompleto.aluno}
+            onNext={(data) => handleNext(1, data)}
+          />
         )}
         {etapa === 2 && (
           <FormResponsavel
             defaultValues={dadosCompleto.responsavel}
-            onNext={handleNext}
-            onBack={handleBack}
+            onNext={(data) => handleNext(2, data)}
+            onBack={(data) => handleBack(2, data)}
           />
         )}
-        {etapa === 3 && <div>Formulário de documentos aqui</div>}
+        {etapa === 3 && (
+          <div className="flex flex-col gap-6">
+            <div>
+              <h2 className="text-2xl font-semibold">Revisar dados</h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Verifique os dados antes de finalizar.
+              </p>
+            </div>
+
+            <div className="p-4 border rounded">
+              <h3 className="font-bold">Aluno</h3>
+              <p>Nome: {dadosCompleto.aluno?.nome}</p>
+              <p>CPF: {dadosCompleto.aluno?.cpf}</p>
+              <p>Data nascimento: {dadosCompleto.aluno?.data_nascimento}</p>
+              <p>Série/Ano: {dadosCompleto.aluno?.serie}</p>
+            </div>
+
+            <div className="p-4 border rounded">
+              <h3 className="font-bold">Responsável</h3>
+              <p>Nome: {dadosCompleto.responsavel?.nome}</p>
+              <p>CPF: {dadosCompleto.responsavel?.cpf}</p>
+              <p>Telefone: {dadosCompleto.responsavel?.celular}</p>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setEtapa(2)}
+                className="w-40 h-12 sm:h-14 bg-white text-[#1D5D7F] border-2 border-[#1D5D7F] rounded-lg"
+              >
+                Voltar
+              </button>
+
+              <button
+                onClick={handleFinalSubmit}
+                disabled={enviando}
+                className="w-48 h-12 sm:h-14 bg-[#1D5D7F] text-white rounded-lg"
+              >
+                {enviando ? "Enviando..." : "Finalizar matrícula"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import React from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import FormTextoMatricula from "./FormTextoMatricula";
 import { Input } from "./Input";
@@ -17,16 +18,37 @@ import FormSelect from "./FormSelect";
 import NaturalidadeSelect from "./NaturalidadeSelect";
 import NacionalidadeSelect from "./NacionalidadeSelect";
 
-function FormResponsavel({
+type DadosResponsavel = {
+  nome: string;
+  data_nascimento: string;
+  sexo: string;
+  rg: string;
+  data_emissao: string;
+  orgao_emissor: string;
+  cpf: string;
+  celular: string;
+  email: string;
+  logradouro: string;
+  numero: string;
+  cep: string;
+  complemento?: string;
+  bairro: string;
+  estado: string;
+  cidade: string;
+  nacionalidade: string;
+  naturalidade: string;
+};
+
+export default function FormResponsavel({
   onNext,
   onBack,
   defaultValues,
 }: {
-  onNext: (data: any) => void;
-  onBack: (data: any) => void;
-  defaultValues?: any;
+  onNext: (data: DadosResponsavel) => void;
+  onBack: (data: DadosResponsavel) => void;
+  defaultValues?: Partial<DadosResponsavel>;
 }) {
-  const methods = useForm({
+  const methods = useForm<DadosResponsavel>({
     defaultValues: {
       nome: "",
       data_nascimento: "",
@@ -58,7 +80,7 @@ function FormResponsavel({
     formState: { errors },
   } = methods;
 
-  const onSubmit = (data: any) => onNext(data);
+  const onSubmit = (data: DadosResponsavel) => onNext(data);
 
   return (
     <FormProvider {...methods}>
@@ -68,7 +90,7 @@ function FormResponsavel({
         <FormRowMatricula>
           <FormTextoMatricula title="Nome completo:" className="w-full">
             <Input
-              label={""}
+              label=""
               type="text"
               {...register("nome", {
                 required: "Nome completo é obrigatório",
@@ -78,28 +100,30 @@ function FormResponsavel({
                 },
                 pattern: {
                   value: /^[A-Za-zÀ-ÖØ-öø-ÿ ]+$/,
-                  message: "O nome deve conter apenas letras e espaços",
+                  message: "O nome deve conter apenas letras",
                 },
               })}
-              error={errors?.nome?.message as string}
+              error={errors?.nome?.message}
             />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="Data de nascimento:" className="w-1/2">
             <Input
-              label={""}
+              label=""
               type="date"
               {...register("data_nascimento", {
-                required: "A data de nascimento é obrigatória",
+                required: "Data obrigatória",
                 validate: {
-                  dataValida: (value) =>
-                    !isNaN(new Date(value).getTime()) || "Data inválida",
-                  naoFutura: (value) =>
-                    new Date(value) <= new Date() ||
-                    "A data não pode ser futura",
+                  formato: (v) =>
+                    !v || isNaN(new Date(String(v)).getTime())
+                      ? "Data inválida"
+                      : true,
+                  naoFutura: (v) =>
+                    new Date(v) <= new Date() ||
+                    "A data não pode ser no futuro",
                 },
               })}
-              error={errors?.data_nascimento?.message as string}
+              error={errors?.data_nascimento?.message}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
@@ -117,21 +141,13 @@ function FormResponsavel({
 
           <FormTextoMatricula title="RG:" className="w-1/2">
             <Input
-              label={""}
+              label=""
               type="text"
               {...register("rg", {
                 required: "RG é obrigatório",
-                minLength: {
-                  value: 7,
-                  message: "Digite pelo menos 7 caracteres",
-                },
-                pattern: {
-                  value: /^[0-9.-]+$/,
-                  message: "Use apenas números, ponto e hífen",
-                },
                 onChange: (e) => setValue("rg", MaskRG(e.target.value)),
               })}
-              error={errors?.rg?.message as string}
+              error={errors?.rg?.message}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
@@ -139,46 +155,38 @@ function FormResponsavel({
         <FormRowMatricula>
           <FormTextoMatricula title="Data de emissão:" className="w-1/3">
             <Input
-              label={""}
+              label=""
               type="date"
               {...register("data_emissao", {
                 required: "Obrigatório",
-                validate: (value) => {
-                  const d = new Date(value);
-                  if (d > new Date()) return "Não pode ser futura";
-                  return true;
-                },
+                validate: (v) =>
+                  !v || isNaN(new Date(String(v)).getTime())
+                    ? "Data inválida"
+                    : new Date(v) <= new Date() || "Não pode ser futura",
               })}
-              error={errors?.data_emissao?.message as string}
+              error={errors?.data_emissao?.message}
             />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="Órgão emissor:" className="w-1/3">
             <Input
-              label={""}
+              label=""
               {...register("orgao_emissor", {
                 required: "Obrigatório",
-                minLength: { value: 2, message: "Mínimo 2 caracteres" },
-                pattern: {
-                  value: /^[A-Za-zÀ-ÖØ-öø-ÿ-]+$/,
-                  message: "Apenas letras e hífen",
-                },
               })}
-              error={errors?.orgao_emissor?.message as string}
+              error={errors?.orgao_emissor?.message}
             />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="CPF:" className="w-1/3">
             <Input
-              label={""}
+              label=""
               {...register("cpf", {
                 required: "CPF é obrigatório",
-                validate: {
-                  cpfValido: (v) => ValidarCpf(v) || "CPF inválido",
-                },
+                validate: (v) => ValidarCpf(v) || "CPF inválido",
                 onChange: (e) => (e.target.value = MaskCPF(e.target.value)),
               })}
-              error={errors?.cpf?.message as string}
+              error={errors?.cpf?.message}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
@@ -186,27 +194,36 @@ function FormResponsavel({
         <FormRowMatricula>
           <FormTextoMatricula title="Celular:" className="w-1/2">
             <Input
-              label={""}
+              label=""
               {...register("celular", {
-                required: "Celular é obrigatório",
+                required: "Celular obrigatório",
                 validate: (v) => ValidarTelefone(v) || "Telefone inválido",
                 onChange: (e) =>
                   (e.target.value = MaskTelefone(e.target.value)),
               })}
-              error={errors?.celular?.message as string}
+              error={errors?.celular?.message}
             />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="E-mail:" className="w-full">
             <Input
-              label={""}
+              label=""
               {...register("email", {
                 required: "E-mail obrigatório",
                 validate: (v) => ValidarEmail(v) || "E-mail inválido",
               })}
-              error={errors?.email?.message as string}
+              error={errors?.email?.message}
             />
           </FormTextoMatricula>
+          <FormRowMatricula>
+            <FormTextoMatricula title="Nacionalidade" className="w-1/2">
+              <NacionalidadeSelect />
+            </FormTextoMatricula>
+
+            <FormTextoMatricula title="Naturalidade" className="w-1/2">
+              <NaturalidadeSelect />
+            </FormTextoMatricula>
+          </FormRowMatricula>
         </FormRowMatricula>
 
         <CardTituloMatricula>Endereço do responsável</CardTituloMatricula>
@@ -214,23 +231,27 @@ function FormResponsavel({
         <FormRowMatricula>
           <FormTextoMatricula title="Logradouro:" className="w-1/2">
             <Input
-              label={""}
-              {...register("logradouro", { required: "Obrigatório" })}
-              error={errors?.logradouro?.message as string}
+              label=""
+              {...register("logradouro", {
+                required: "Obrigatório",
+              })}
+              error={errors?.logradouro?.message}
             />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="Número:" className="w-1/2">
             <Input
-              label={""}
-              {...register("numero", { required: "Obrigatório" })}
-              error={errors?.numero?.message as string}
+              label=""
+              {...register("numero", {
+                required: "Obrigatório",
+              })}
+              error={errors?.numero?.message}
             />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="CEP:" className="w-1/2">
             <Input
-              label={""}
+              label=""
               type="text"
               {...register("cep", {
                 required: "CEP obrigatório",
@@ -251,44 +272,32 @@ function FormResponsavel({
                   }
                 },
               })}
-              error={errors?.cep?.message as string}
+              error={errors?.cep?.message}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
 
         <FormRowMatricula>
           <FormTextoMatricula title="Complemento:" className="w-1/2">
-            <Input label={""} {...register("complemento")} />
+            <Input label="" {...register("complemento")} />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="Bairro:" className="w-1/2">
             <Input
-              label={""}
+              label=""
               {...register("bairro", {
                 required: "Obrigatório",
-                minLength: { value: 3, message: "Mínimo 3 caracteres" },
-                pattern: {
-                  value: /^[A-Za-zÀ-ÖØ-öø-ÿ ]+$/,
-                  message: "Digite apenas letras",
-                },
               })}
-              error={errors?.bairro?.message as string}
+              error={errors?.bairro?.message}
             />
           </FormTextoMatricula>
 
           <FormTextoMatricula title="Estado:" className="w-1/2">
             <EstadoSelect control={control} />
           </FormTextoMatricula>
+
           <FormTextoMatricula title="Cidade:" className="w-1/2">
             <CidadeSelect />
-          </FormTextoMatricula>
-        </FormRowMatricula>
-        <FormRowMatricula>
-          <FormTextoMatricula title="Naturalidade" className="w-1/2">
-            <NaturalidadeSelect />
-          </FormTextoMatricula>
-          <FormTextoMatricula title="Nacionalidade" className="w-1/2">
-            <NacionalidadeSelect />
           </FormTextoMatricula>
         </FormRowMatricula>
 
@@ -296,14 +305,14 @@ function FormResponsavel({
           <button
             type="button"
             onClick={() => onBack(methods.getValues())}
-            className="w-40 h-12 sm:h-14 bg-[#3d7e8f] text-white text-lg sm:text-xl rounded-lg transition duration-200"
+            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg"
           >
             Voltar
           </button>
 
           <button
             type="submit"
-            className="w-40 h-12 sm:h-14 bg-[#3d7e8f] text-white text-lg sm:text-xl rounded-lg transition duration-200"
+            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg"
           >
             Avançar
           </button>
@@ -312,5 +321,3 @@ function FormResponsavel({
     </FormProvider>
   );
 }
-
-export default FormResponsavel;
