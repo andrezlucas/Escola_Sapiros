@@ -166,7 +166,17 @@ export class Aluno {
   responsavelEstado?: string;
 
   @ManyToMany(() => Turma, (turma) => turma.alunos)
-  @JoinTable({ name: 'alunos_turmas' })
+  @JoinTable({
+    name: 'alunos_turmas',
+    joinColumn: {
+      name: 'aluno_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'turma_id',
+      referencedColumnName: 'id',
+    },
+  })
   turmas?: Turma[];
 
   @CreateDateColumn({ name: 'criado_em' })

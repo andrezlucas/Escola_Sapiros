@@ -91,6 +91,14 @@ export default function CalendarioPage() {
     setEventoSelecionado(null);
   }
 
+  const LetraMaiuscula = (texto?: string | null) => {
+    if (!texto) return "";
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  };
+
+  const nome = localStorage.getItem("nome");
+  const role = localStorage.getItem("role");
+
   return (
     <div>
       <div className="p-2">
@@ -103,11 +111,11 @@ export default function CalendarioPage() {
                 className="w-10 h-10 rounded-full"
               />
               <div>
-                <p className="font-semibold">Felipe de Melo</p>
-                <p className="text-sm text-gray-500">email@gmail.com</p>
+                <p className="font-semibold">{nome}</p>
+                <p className="text-sm text-gray-500">{LetraMaiuscula(role)}</p>
               </div>
               <div className="ml-160">
-                <span className="px-3 py-2text-sm ">Secretaria</span>
+                <span className="px-3 py-2text-sm ">{LetraMaiuscula(role)}</span>
               </div>
             </div>
 
