@@ -32,36 +32,36 @@ export class TurmaController {
 
   @Roles('coordenacao', 'professores')
   @Get(':id')
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<Turma> {
+  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Turma> {
     return this.turmaService.findOne(id);
   }
 
   @Roles('coordenacao')
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async create(
-    @Body() dto: CreateTurmaDto,
-  ): Promise<Turma> {
+  async create(@Body() dto: CreateTurmaDto): Promise<Turma> {
     return this.turmaService.create(dto);
   }
 
   @Roles('coordenacao')
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateTurmaDto,
-  ): Promise<Turma> {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTurmaDto): Promise<Turma> {
     return this.turmaService.update(id, dto);
   }
 
   @Roles('coordenacao')
-  @Delete(':id')
-  async remove(
+  @Patch(':id/ativa')
+  async toggleAtiva(
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<void> {
+    @Body('ativa') ativa: boolean,
+  ): Promise<Turma> {
+    return this.turmaService.toggleAtiva(id, ativa);
+  }
+
+  @Roles('coordenacao')
+  @Delete(':id')
+  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.turmaService.remove(id);
   }
 
@@ -94,9 +94,7 @@ export class TurmaController {
 
   @Roles('coordenacao')
   @Delete(':turmaId/professor')
-  async removerProfessor(
-    @Param('turmaId', ParseUUIDPipe) turmaId: string,
-  ): Promise<Turma> {
+  async removerProfessor(@Param('turmaId', ParseUUIDPipe) turmaId: string): Promise<Turma> {
     return this.turmaService.removerProfessor(turmaId);
   }
 }

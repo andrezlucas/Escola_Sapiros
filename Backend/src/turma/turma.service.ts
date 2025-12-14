@@ -31,9 +31,7 @@ export class TurmaService {
   private async loadAlunos(alunosIds?: string[]): Promise<Aluno[]> {
     if (!alunosIds || alunosIds.length === 0) return [];
 
-    const alunos = await this.alunoRepository.find({
-      where: { id: In(alunosIds) },
-    });
+    const alunos = await this.alunoRepository.find({ where: { id: In(alunosIds) } });
 
     if (alunos.length !== alunosIds.length)
       throw new NotFoundException('Um ou mais alunos não foram encontrados');
@@ -41,9 +39,7 @@ export class TurmaService {
     return alunos;
   }
 
-  private async loadDisciplinas(
-    disciplinasIds?: string[],
-  ): Promise<Disciplina[]> {
+  private async loadDisciplinas(disciplinasIds?: string[]): Promise<Disciplina[]> {
     if (!disciplinasIds || disciplinasIds.length === 0) return [];
 
     const disciplinas = await this.disciplinaRepository.find({
@@ -59,10 +55,7 @@ export class TurmaService {
   private async loadProfessor(professorId?: string): Promise<Professor | undefined> {
     if (!professorId) return undefined;
 
-    const professor = await this.professorRepository.findOne({
-      where: { id: professorId },
-    });
-
+    const professor = await this.professorRepository.findOne({ where: { id: professorId } });
     if (!professor) throw new NotFoundException('Professor não encontrado');
     return professor;
   }
@@ -138,6 +131,10 @@ export class TurmaService {
   async update(id: string, dto: UpdateTurmaDto): Promise<Turma> {
     const turma = await this.findOne(id);
 
+    if (!turma.ativa && dto.ativa === undefined) {
+      throw new BadRequestException('Turma inativa não pode ser alterada');
+    }
+
     const professorId = dto.professorId ?? turma.professor?.id;
     const turno = dto.turno ?? turma.turno;
     const ano_letivo = dto.anoLetivo ?? turma.ano_letivo;
@@ -177,11 +174,15 @@ export class TurmaService {
 
   async addAluno(turmaId: string, alunoId: string): Promise<Turma> {
     const turma = await this.findOne(turmaId);
-    const aluno = await this.alunoRepository.findOne({ where: { id: alunoId } });
 
+    if (!turma.ativa) throw new BadRequestException('Não é possível adicionar aluno em turma inativa');
+
+    const aluno = await this.alunoRepository.findOne({ where: { id: alunoId } });
     if (!aluno) throw new NotFoundException('Aluno não encontrado');
+
     if (turma.alunos.some(a => a.id === aluno.id))
       throw new BadRequestException('Aluno já está matriculado na turma');
+
     if (turma.capacidade_maxima && turma.alunos.length + 1 > turma.capacidade_maxima)
       throw new BadRequestException('Capacidade máxima da turma atingida');
 
@@ -191,12 +192,18 @@ export class TurmaService {
 
   async removeAluno(turmaId: string, alunoId: string): Promise<Turma> {
     const turma = await this.findOne(turmaId);
+
+    if (!turma.ativa) throw new BadRequestException('Não é possível remover aluno de turma inativa');
+
     turma.alunos = turma.alunos.filter(a => a.id !== alunoId);
     return this.turmaRepository.save(turma);
   }
 
   async definirProfessor(turmaId: string, professorId: string): Promise<Turma> {
     const turma = await this.findOne(turmaId);
+
+    if (!turma.ativa) throw new BadRequestException('Não é possível definir professor em turma inativa');
+
     await this.validarConflitoProfessor(professorId, turma.turno, turma.ano_letivo, turma.id);
     turma.professor = await this.loadProfessor(professorId);
     return this.turmaRepository.save(turma);
@@ -204,7 +211,16 @@ export class TurmaService {
 
   async removerProfessor(turmaId: string): Promise<Turma> {
     const turma = await this.findOne(turmaId);
+
+    if (!turma.ativa) throw new BadRequestException('Não é possível remover professor de turma inativa');
+
     turma.professor = undefined;
+    return this.turmaRepository.save(turma);
+  }
+
+  async toggleAtiva(id: string, ativa: boolean): Promise<Turma> {
+    const turma = await this.findOne(id);
+    turma.ativa = ativa;
     return this.turmaRepository.save(turma);
   }
 

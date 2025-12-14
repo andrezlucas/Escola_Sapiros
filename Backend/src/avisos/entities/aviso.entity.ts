@@ -42,9 +42,10 @@ export class Aviso {
 
   // Preenche automático as tabelas com a criação e atualização do ultimo registro para maior controle.
 
-  @CreateDateColumn()
-  avisocriadoEm: Date;
+ @Column({ name: 'criado_em' })
+avisocriadoEm: Date;
 
-  @UpdateDateColumn()
-  avisoatualizadoEm: Date;
+@Column({ name: 'atualizado_em' })
+avisoatualizadoEm: Date;
+
 }
