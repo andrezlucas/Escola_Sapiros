@@ -24,6 +24,7 @@ export class Disciplina {
 
   @OneToMany(() => Nota, nota => nota.disciplina)
   notas: Nota[];
+  
 
   @ManyToMany(() => Turma, turma => turma.disciplinas)
   turmas: Turma[];

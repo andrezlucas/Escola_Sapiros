@@ -7,13 +7,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Disciplina } from './entities/disciplina.entity';
+import { Habilidade } from './entities/habilidade.entity';
 import { CreateDisciplinaDto } from './dto/create-disciplina.dto';
 import { UpdateDisciplinaDto } from './dto/update-disciplina.dto';
+import { CreateHabilidadeDto } from './dto/create-habilidade.dto';
+import { UpdateHabilidadeDto } from './dto/update-habilidade.dto';
 import { Turma } from '../turma/entities/turma.entity';
 import { Professor } from '../professor/entities/professor.entity';
 import { Role } from '../usuario/entities/usuario.entity';
-import { Habilidade } from './entities/habilidade.entity';
-import { CreateHabilidadeDto } from './dto/create-habilidade.dto';
 import { Usuario } from '../usuario/entities/usuario.entity';
 
 @Injectable()
@@ -225,6 +226,46 @@ export class DisciplinaService {
     });
 
     return this.habilidadeRepository.save(habilidade);
+  }
+    private async findHabilidadeOrFail(id: string): Promise<Habilidade> {
+    const habilidade = await this.habilidadeRepository.findOne({
+      where: { id },
+      relations: ['disciplina'],
+    });
+
+    if (!habilidade) {
+      throw new NotFoundException(`Habilidade com ID ${id} não encontrada`);
+    }
+
+    return habilidade;
+  }
+
+  async updateHabilidade(
+    habilidadeId: string,
+    updateHabilidadeDto: UpdateHabilidadeDto,
+    user: any,
+  ): Promise<Habilidade> {
+    this.assertCanManage(user);
+
+    const habilidade = await this.findHabilidadeOrFail(habilidadeId);
+
+    if (updateHabilidadeDto.nome !== undefined) {
+      habilidade.nome = updateHabilidadeDto.nome;
+    }
+
+    if (updateHabilidadeDto.descricao !== undefined) {
+      habilidade.descricao = updateHabilidadeDto.descricao;
+    }
+
+    return this.habilidadeRepository.save(habilidade);
+  }
+
+  async removeHabilidade(habilidadeId: string, user: any): Promise<void> {
+    this.assertCanManage(user);
+
+    const habilidade = await this.findHabilidadeOrFail(habilidadeId);
+
+    await this.habilidadeRepository.remove(habilidade);
   }
 }
 

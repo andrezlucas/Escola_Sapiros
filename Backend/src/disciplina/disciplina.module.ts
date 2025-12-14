@@ -10,6 +10,7 @@ import { Turma } from '../turma/entities/turma.entity';
 import { Professor } from '../professor/entities/professor.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -18,6 +19,7 @@ import { Usuario } from '../usuario/entities/usuario.entity';
       Turma,
       Professor,
       Usuario,
+      Habilidade, 
     ]),
   ],
   controllers: [DisciplinaController],
