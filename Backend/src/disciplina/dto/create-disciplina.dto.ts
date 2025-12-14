@@ -1,24 +1,25 @@
-import {IsArray,IsInt,IsNotEmpty,IsOptional,IsPositive,IsString,IsUUID,} from 'class-validator';
+import { IsArray, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
 
 export class CreateDisciplinaDto {
-  @IsString({ message: 'Código deve ser texto' })
+  @IsString()
   @IsNotEmpty({ message: 'Código é obrigatório' })
-  codigo: string;
+  codigo_disciplina: string;
 
-  @IsString({ message: 'Nome da disciplina deve ser texto' })
+  @IsString()
   @IsNotEmpty({ message: 'Nome da disciplina é obrigatório' })
   nome_disciplina: string;
 
-  @IsString({ message: 'Descrição deve ser texto' })
-  @IsOptional()
-  descricao_turma?: string;
-
-  @IsInt({ message: 'Carga horária deve ser um número inteiro' })
-  @IsPositive({ message: 'Carga horária deve ser positiva' })
+  @IsInt()
+  @IsPositive()
   cargaHoraria: number;
 
   @IsOptional()
   @IsArray({ message: 'turmasIds deve ser uma lista de UUIDs' })
   @IsUUID('4', { each: true, message: 'Cada turmaId deve ser um UUID válido' })
   turmasIds?: string[];
+
+  @IsOptional()
+  @IsArray({ message: 'professoresIds deve ser uma lista de UUIDs' })
+  @IsUUID('4', { each: true, message: 'Cada professorId deve ser um UUID válido' })
+  professoresIds?: string[];
 }

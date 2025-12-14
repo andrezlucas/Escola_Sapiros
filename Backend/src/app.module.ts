@@ -13,6 +13,7 @@ import { NotaModule } from './nota/nota.module';
 import { FrequenciaModule } from './frequencia/frequencia.module';
 import { AvisosModule } from './avisos/avisos.module';
 import { MailModule } from './mail/mail.module';
+import { HabilidadesModule } from './habilidades/habilidades.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { MailModule } from './mail/mail.module';
     FrequenciaModule,
     AvisosModule,
     MailModule,
+    HabilidadesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

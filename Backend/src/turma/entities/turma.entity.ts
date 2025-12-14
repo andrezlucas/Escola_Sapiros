@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable, ManyToOne, JoinColumn,} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable, ManyToOne, JoinColumn, } from 'typeorm';
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Aviso } from '../../avisos/entities/aviso.entity';
@@ -9,27 +9,6 @@ import { Professor } from '../../professor/entities/professor.entity';
 export class Turma {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @Column({ name: 'nome_turma' })
-  nomeTurma: string;
-
-  @Column({ name: 'ano_letivo' })
-  anoLetivo: string;
-
-  @Column()
-  periodo: string; 
-
-  @Column({ name: 'data_inicio', type: 'date' })
-  dataInicio: Date;
-
-  @Column({ name: 'data_fim', type: 'date' })
-  dataFim: Date;
-
-  @Column('text', { nullable: true })
-  descricao: string;
-
-  @Column({ default: true })
-  ativa: boolean;
 
   @ManyToMany(() => Aluno, aluno => aluno.turmas)
   alunos: Aluno[];
@@ -49,9 +28,25 @@ export class Turma {
   @JoinColumn({ name: 'professor_id' })
   professor?: Professor;
 
-  @CreateDateColumn({ name: 'criado_em' })
-  criadoEm: Date;
+  @Column({ name: 'nome_turma' })
+  nome_turma: string;
 
-  @UpdateDateColumn({ name: 'atualizado_em' })
-  atualizadoEm: Date;
+  @Column({name: 'capacidade_maxima'})
+  capacidade_maxima: number
+
+  @Column({ name: 'ano_letivo' })
+  anoLetivo: string;
+
+  @Column()
+  turno: string;
+
+  @Column({ default: true })
+  ativa: boolean;
+
+
+  @CreateDateColumn({ name: 'turma_criado_em' })
+  turmacriadoEm: Date;
+
+  @UpdateDateColumn({ name: 'turma_atualizado_em' })
+  turmaatualizadoEm: Date;
 }

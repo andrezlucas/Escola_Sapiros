@@ -1,24 +1,8 @@
-import {
-  Column,
-  ManyToMany,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Entity,
-  PrimaryColumn,
-  OneToOne,
-  JoinColumn,
-  JoinTable,
-} from 'typeorm';
+import { Column, ManyToMany, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, JoinTable } from 'typeorm';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Documentacao } from '../../documentacao/entities/documentacao.entity';
-
-enum Sexo {
-  MASCULINO = 'MASCULINO',
-  FEMININO = 'FEMININO',
-  OUTRO = 'OUTRO',
-  NAO_INFORMADO = 'NAO_INFORMADO',
-}
+import { Sexo } from '../../usuario/entities/usuario.entity';
 
 @Entity('alunos')
 export class Aluno {
@@ -35,58 +19,27 @@ export class Aluno {
   })
   documentacao?: Documentacao;
 
+  @ManyToMany(() => Turma, (turma) => turma.alunos)
+  @JoinTable({ name: 'alunos_turmas' })
+  turmas?: Turma[];
+
   @Column({ name: 'matricula_aluno', unique: true })
   matriculaAluno: string;
 
   @Column({ name: 'serie_ano' })
   serieAno: string;
 
-  @Column({ name: 'escola_origem', nullable: true })
-  escolaOrigem?: string;
-
-  @Column({ unique: true, nullable: true })
-  telefone: string;
-
-  @Column({ name: 'data_nascimento', type: 'date' })
-  dataNascimento: Date;
-
-  @Column({
-    type: 'enum',
-    enum: ['MASCULINO', 'FEMININO', 'OUTRO', 'NAO_INFORMADO'],
-    default: 'NAO_INFORMADO',
-    name: 'sexo',
-  })
-  sexo: string;
+  @Column({ name: 'escola_origem' })
+  escolaOrigem: string;
 
   @Column({ name: 'rg_numero' })
   rgNumero: string;
 
-  @Column({ name: 'rg_data_emissao', type: 'date', nullable: true })
-  rgDataEmissao?: Date;
+  @Column({ name: 'rg_data_emissao', type: 'date' })
+  rgDataEmissao: Date;
 
-  @Column({ name: 'rg_orgao_emissor', nullable: true })
-  rgOrgaoEmissor?: string;
-
-  @Column({ name: 'endereco_logradouro' })
-  enderecoLogradouro: string;
-
-  @Column({ name: 'endereco_numero' })
-  enderecoNumero: string;
-
-  @Column({ name: 'endereco_cep' })
-  enderecoCep: string;
-
-  @Column({ name: 'endereco_complemento', nullable: true })
-  enderecoComplemento?: string;
-
-  @Column({ name: 'endereco_bairro' })
-  enderecoBairro: string;
-
-  @Column({ name: 'endereco_estado', length: 2 })
-  enderecoEstado: string;
-
-  @Column({ name: 'endereco_cidade' })
-  enderecoCidade: string;
+  @Column({ name: 'rg_orgao_emissor' })
+  rgOrgaoEmissor: string;
 
   @Column()
   nacionalidade: string;
@@ -106,69 +59,70 @@ export class Aluno {
   @Column({ name: 'descricao_alergias', nullable: true })
   descricaoAlergias?: string;
 
+  @Column({ name: 'autorizacao_saida_sozinho', default: false })
+  autorizacaoSaidaSozinho: boolean;
+
   @Column({ name: 'autorizacao_uso_imagem', default: false })
   autorizacaoUsoImagem: boolean;
 
-  @Column({ name: 'responsavel_nome', nullable: true })
-  responsavelNome?: string;
+  // Dados do Responsável
+  @Column({ name: 'responsavel_nome' })
+  responsavelNome: string;
 
-  @Column({ name: 'responsavel_data_nascimento', type: 'date', nullable: true })
-  responsavelDataNascimento?: Date;
+  @Column({ name: 'responsavel_data_nascimento', type: 'date' })
+  responsavelDataNascimento: Date;
 
   @Column({
-    type: 'enum',
-    enum: ['MASCULINO', 'FEMININO', 'OUTRO', 'NAO_INFORMADO'],
-    default: 'NAO_INFORMADO',
-    name: 'responsavel_sexo',
-  })
-  responsavelSexo?: string;
+  name: 'responsavel_sexo',
+  type: 'enum',
+  enum: Sexo,
+  default: Sexo.NAO_INFORMADO
+})
+responsavel_sexo: Sexo;
 
-  @Column({ name: 'responsavel_nacionalidade', nullable: true })
-  responsavelNacionalidade?: string;
+  @Column({ name: 'responsavel_nacionalidade' })
+  responsavelNacionalidade: string;
 
-  @Column({ name: 'responsavel_naturalidade', nullable: true })
-  responsavelNaturalidade?: string;
+  @Column({ name: 'responsavel_naturalidade' })
+  responsavelNaturalidade: string;
 
-  @Column({ name: 'responsavel_cpf', nullable: true })
-  responsavelCpf?: string;
+  @Column({ name: 'responsavel_cpf' })
+  responsavelCpf: string;
 
-  @Column({ name: 'responsavel_rg', nullable: true })
-  responsavelRg?: string;
+  @Column({ name: 'responsavel_rg' })
+  responsavelRg: string;
 
-  @Column({ name: 'responsavel_rg_orgao_emissor', nullable: true })
-  responsavelRgOrgaoEmissor?: string;
+  @Column({ name: 'responsavel_rg_orgao_emissor' })
+  responsavelRgOrgaoEmissor: string;
 
-  @Column({ name: 'responsavel_telefone', nullable: true })
-  responsavelTelefone?: string;
+  @Column({ name: 'responsavel_telefone' })
+  responsavelTelefone: string;
 
-  @Column({ name: 'responsavel_email', nullable: true })
-  responsavelEmail?: string;
+  @Column({ name: 'responsavel_email' })
+  responsavelEmail: string;
 
-  @Column({ name: 'responsavel_cep', nullable: true })
-  responsavelCep?: string;
+  @Column({ name: 'responsavel_cep' })
+  responsavelCep: string;
 
-  @Column({ name: 'responsavel_logradouro', nullable: true })
-  responsavelLogradouro?: string;
+  @Column({ name: 'responsavel_logradouro' })
+  responsavelLogradouro: string;
 
-  @Column({ name: 'responsavel_numero', nullable: true })
-  responsavelNumero?: string;
+  @Column({ name: 'responsavel_numero' })
+  responsavelNumero: string;
 
   @Column({ name: 'responsavel_complemento', nullable: true })
   responsavelComplemento?: string;
 
-  @Column({ name: 'responsavel_bairro', nullable: true })
-  responsavelBairro?: string;
+  @Column({ name: 'responsavel_bairro' })
+  responsavelBairro: string;
 
-  @Column({ name: 'responsavel_cidade', nullable: true })
-  responsavelCidade?: string;
+  @Column({ name: 'responsavel_cidade' })
+  responsavelCidade: string;
 
-  @Column({ name: 'responsavel_estado', length: 2, nullable: true })
-  responsavelEstado?: string;
+  @Column({ name: 'responsavel_estado', length: 2 })
+  responsavelEstado: string;
 
-  @ManyToMany(() => Turma, (turma) => turma.alunos)
-  @JoinTable({ name: 'alunos_turmas' })
-  turmas?: Turma[];
-
+  
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
 

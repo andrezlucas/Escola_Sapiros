@@ -1,79 +1,28 @@
-import {
-  IsString,
-  IsOptional,
-  Length,
-  IsDateString,
-  IsEmail,
-  IsEnum,
-  IsBoolean,
-  IsArray,
-  IsNumberString,
-  IsNotEmpty,
-} from 'class-validator';
-import { CreateUsuarioDto, Sexo } from '../../usuario/dto/create-usuario.dto';
+import { IsString, IsOptional, Length, IsDateString, IsEmail, IsEnum, IsBoolean, IsNumberString, IsNotEmpty } from 'class-validator';
+import { CreateUsuarioDto } from '../../usuario/dto/create-usuario.dto';
+import { Sexo } from '../../usuario/entities/usuario.entity';
 
 export class CreateAlunoDto extends CreateUsuarioDto {
+
+  @IsNotEmpty()
   @IsString()
   serieAno: string;
 
-  @IsOptional()
-  @IsString()
-  escolaOrigem?: string;
-
-  // Dados Pessoais do Aluno (Removidos de Usuario DTO e adicionados aqui)
-  @IsOptional()
-  @IsNumberString()
-  @Length(10, 15)
-  telefone?: string;
-
   @IsNotEmpty()
-  @IsDateString()
-  data_nascimento: string;
-
-  @IsEnum(Sexo)
-  sexo: Sexo;
+  @IsString()
+  escolaOrigem: string;
 
   @IsNotEmpty()
   @IsString()
   rgNumero: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsDateString()
-  rgDataEmissao?: string;
-
-  @IsOptional()
-  @IsString()
-  rgOrgaoEmissor?: string;
+  rgDataEmissao: string;
 
   @IsNotEmpty()
   @IsString()
-  enderecoLogradouro: string;
-
-  @IsNotEmpty()
-  @IsString()
-  enderecoNumero: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @Length(8, 8)
-  enderecoCep: string;
-
-  @IsOptional()
-  @IsString()
-  enderecoComplemento?: string;
-
-  @IsNotEmpty()
-  @IsString()
-  enderecoBairro: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @Length(2, 2)
-  enderecoEstado: string;
-
-  @IsNotEmpty()
-  @IsString()
-  enderecoCidade: string;
+  rgOrgaoEmissor: string;
 
   @IsNotEmpty()
   @IsString()
@@ -98,84 +47,82 @@ export class CreateAlunoDto extends CreateUsuarioDto {
   @IsOptional()
   @IsString()
   descricaoAlergias?: string;
+  
+  @IsOptional()
+  @IsBoolean()
+  autorizacaoSaidaSozinho?: boolean;
 
   @IsOptional()
   @IsBoolean()
   autorizacaoUsoImagem?: boolean;
-  // Fim dos Dados Pessoais
 
   // Dados do Responsável
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelNome?: string;
+  responsavelNome: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsDateString()
-  responsavel_Data_Nascimento?: Date;
+  responsavel_Data_Nascimento: Date;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsEnum(Sexo)
-  responsavel_sexo?: Sexo;
+  responsavel_sexo: Sexo;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavel_nacionalidade?: string;
+  responsavel_nacionalidade: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavel_naturalidade?: string;
+  responsavel_naturalidade: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelCpf?: string;
+  responsavelCpf: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelRg?: string;
+  responsavelRg: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavel_rg_OrgaoEmissor?: string;
+  responsavel_rg_OrgaoEmissor: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelTelefone?: string;
+  responsavelTelefone: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsEmail()
-  responsavelEmail?: string;
+  responsavelEmail: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelCep?: string;
+  responsavelCep: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelLogradouro?: string;
+  responsavelLogradouro: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelNumero?: string;
+  responsavelNumero: string;
 
   @IsOptional()
   @IsString()
   responsavelComplemento?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  responsavelBairro?: string;
+  responsavelBairro: string;
 
-  @IsOptional()
-  @IsString()
-  responsavelCidade?: string;
-
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   @Length(2, 2)
-  responsavelEstado?: string;
-  // Fim dos Dados do Responsável
+  responsavelEstado: string;
 
-  @IsOptional()
-  @IsArray()
-  turmasIds?: string[];
+  @IsNotEmpty()
+  @IsString()
+  responsavelCidade: string;
 }

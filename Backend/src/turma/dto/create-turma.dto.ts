@@ -1,45 +1,41 @@
-import {IsArray,IsBoolean,IsDateString,IsNotEmpty,IsOptional,IsString,IsUUID,} from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsOptional, IsArray, IsUUID, IsNotEmpty,IsPositive, Matches, IsIn, Length} from 'class-validator';
 
 export class CreateTurmaDto {
   @IsString()
-  @IsNotEmpty({ message: 'Nome da turma é obrigatório' })
-  nomeTurma: string;   
+  @IsNotEmpty({ message: 'O nome da turma é obrigatório' })
+  nome_turma: string;
+
+  @IsNumber()
+  @IsPositive()
+  @Length(1, 30,)
+  capacidade_maxima: number;
 
   @IsString()
-  @IsNotEmpty({ message: 'Ano letivo é obrigatório' })
+  @IsNotEmpty({ message: 'O ano letivo é obrigatório' })
+  @Matches(/^\d{4}$/, { message: 'Ano letivo deve estar no formato YYYY' })
   anoLetivo: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Período é obrigatório' })
-  periodo: string; // Manhã, Tarde, Noite
-
-  @IsDateString({}, { message: 'Data de início deve estar em formato ISO válido' })
-  @IsNotEmpty({ message: 'Data de início é obrigatória' })
-  dataInicio: string;
-
-  @IsDateString({}, { message: 'Data de fim deve estar em formato ISO válido' })
-  @IsNotEmpty({ message: 'Data de fim é obrigatória' })
-  dataFim: string;
-
-  @IsString()
-  @IsOptional()
-  descricao?: string;
+  @IsIn(['MANHÃ', 'TARDE', 'NOITE'], { 
+    message: 'O turno deve ser MANHÃ, TARDE ou NOITE' 
+  })
+  turno: string;
 
   @IsBoolean()
   @IsOptional()
-  ativa?: boolean = true;
+  ativa: boolean = true;
 
-  @IsUUID('4', { message: 'professorId deve ser um UUID válido' })
-  @IsOptional()
-  professorId?: string;
-
-  @IsOptional()
   @IsArray()
-  @IsString({ each: true, message: 'Cada alunoId deve ser uma string' })
+  @IsOptional()
+  @IsUUID('4', { each: true, message: 'Cada ID de aluno deve ser um UUID válido' })
   alunosIds?: string[];
 
-  @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true, message: 'Cada disciplinaId deve ser um UUID válido' })
+  @IsOptional()
+  @IsUUID('4', { each: true, message: 'Cada ID de disciplina deve ser um UUID válido' })
   disciplinasIds?: string[];
+
+  @IsUUID('4', { message: 'O ID do professor deve ser um UUID válido' })
+  @IsOptional()
+  professorId?: string;
 }
