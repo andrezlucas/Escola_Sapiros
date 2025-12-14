@@ -8,6 +8,7 @@ import { DisciplinaController } from './disciplina.controller';
 import { Turma } from '../turma/entities/turma.entity';
 import { Professor } from '../professor/entities/professor.entity'; // ✅ IMPORTAR
 import { Usuario } from '../usuario/entities/usuario.entity';
+import { Habilidade } from './entities/habilidade.entity';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { Usuario } from '../usuario/entities/usuario.entity';
       Turma,
       Professor,   
       Usuario,
+      Habilidade, 
     ]),
   ],
   controllers: [DisciplinaController],

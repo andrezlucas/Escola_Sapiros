@@ -3,6 +3,7 @@ import { Frequencia } from '../../frequencia/entities/frequencia.entity';
 import { Nota } from '../../nota/entities/nota.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Professor } from '../../professor/entities/professor.entity';
+import { Habilidade } from './habilidade.entity';
 
 @Entity('disciplinas')
 export class Disciplina {
@@ -14,6 +15,9 @@ export class Disciplina {
 
   @OneToMany(() => Nota, nota => nota.disciplina)
   notas: Nota[];
+  
+  @OneToMany(() => Habilidade, habilidade => habilidade.disciplina, { cascade: true })
+  habilidades: Habilidade[];
 
   @ManyToMany(() => Turma, turma => turma.disciplinas)
   turmas: Turma[];

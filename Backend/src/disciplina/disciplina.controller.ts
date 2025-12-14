@@ -8,6 +8,9 @@ import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { Role, Usuario } from '../usuario/entities/usuario.entity';
 import { Disciplina } from './entities/disciplina.entity';
+import { Habilidade } from './entities/habilidade.entity';
+import { CreateHabilidadeDto } from './dto/create-habilidade.dto';
+import { UpdateHabilidadeDto } from './dto/update-habilidade.dto';
 
 type AuthRequest = Request & { user?: Usuario | any };
 
@@ -64,5 +67,50 @@ export class DisciplinaController {
     @Req() req: AuthRequest,
   ): Promise<void> {
     return await this.disciplinaService.remove(id, req.user);
+  }
+
+  // ===== HABILIDADES =====
+  // Criar habilidade: apenas coordenação
+  @Roles(Role.COORDENACAO)
+  @Post(':id/habilidades')
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  async createHabilidade(
+    @Param('id', ParseUUIDPipe) disciplinaId: string,
+    @Body() dto: CreateHabilidadeDto,
+    @Req() req: AuthRequest,
+  ): Promise<Habilidade> {
+    return await this.disciplinaService.createHabilidade(disciplinaId, dto, req.user);
+  }
+
+  // Listar habilidades: coordenação, professor (se ministra), aluno
+  @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
+  @Get(':id/habilidades')
+  async findHabilidades(
+    @Param('id', ParseUUIDPipe) disciplinaId: string,
+    @Req() req: AuthRequest,
+  ): Promise<Habilidade[]> {
+    return await this.disciplinaService.findHabilidades(disciplinaId, req.user);
+  }
+
+  // Atualizar habilidade: apenas coordenação
+  @Roles(Role.COORDENACAO)
+  @Patch(':id/habilidades/:habilidadeId')
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  async updateHabilidade(
+    @Param('habilidadeId', ParseUUIDPipe) habilidadeId: string,
+    @Body() dto: UpdateHabilidadeDto,
+    @Req() req: AuthRequest,
+  ): Promise<Habilidade> {
+    return await this.disciplinaService.updateHabilidade(habilidadeId, dto, req.user);
+  }
+
+  // Remover habilidade: apenas coordenação
+  @Roles(Role.COORDENACAO)
+  @Delete(':id/habilidades/:habilidadeId')
+  async removeHabilidade(
+    @Param('habilidadeId', ParseUUIDPipe) habilidadeId: string,
+    @Req() req: AuthRequest,
+  ): Promise<void> {
+    return await this.disciplinaService.removeHabilidade(habilidadeId, req.user);
   }
 }
