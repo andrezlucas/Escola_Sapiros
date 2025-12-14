@@ -1,6 +1,6 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsNumberString, IsString, Length, IsDateString, } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsNumberString, IsString, Length, IsDateString,} from 'class-validator';
 import { Role, Sexo } from '../entities/usuario.entity';
-
+import { IsCpf } from '../../shared/validators/is-cpf.validator'; 
 
 export class CreateUsuarioDto {
   @IsNotEmpty()
@@ -16,8 +16,8 @@ export class CreateUsuarioDto {
   data_nascimento: string;
 
   @IsNotEmpty()
-  @IsNumberString()
-  @Length(11, 11, { message: 'CPF deve ter 11 dígitos numéricos' })
+  @IsString()
+  @IsCpf({ message: 'O CPF informado é inválido. Verifique os dígitos.' })
   cpf: string;
 
   @IsEnum(Sexo)

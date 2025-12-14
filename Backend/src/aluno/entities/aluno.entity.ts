@@ -122,7 +122,6 @@ responsavel_sexo: Sexo;
   @Column({ name: 'responsavel_estado', length: 2 })
   responsavelEstado: string;
 
-  
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
 
