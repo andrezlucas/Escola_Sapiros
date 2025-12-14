@@ -11,6 +11,9 @@ export type FormDocumentoData = {
   COMPROVANTE_RESIDENCIA_ALUNO?: FileList;
   FOTO_3X4?: FileList;
   HISTORICO_ESCOLAR?: FileList;
+  RG_RESPONSAVEL?: FileList;
+  CPF_RESPONSAVEL?: FileList;
+  COMPROVANTE_RESIDENCIA_RESP?: FileList;
 };
 type Props = {
   onNext: (data: FormDocumentoData) => void;
@@ -146,18 +149,18 @@ function FormDocumento({ onNext, onBack }: Props) {
       </FormRowMatricula>
 
       <CardTituloMatricula>Documentos do Responsável</CardTituloMatricula>
-      {/*
+    
       <FormRowMatricula>
         <FormTextoMatricula title="RG do Responsável">
           <Input
             label={""}
             type="file"
             accept="application/pdf,image/jpeg,image/png"
-            {...register("rg_responsavel", { validate: validarArquivo })}
+            {...register("RG_RESPONSAVEL", { validate: validarArquivo })}
           />
-          {errors.rg_responsavel && (
+          {errors.RG_RESPONSAVEL && (
             <span className="text-sm text-red-500">
-              {errors.rg_responsavel.message}
+              {errors.RG_RESPONSAVEL.message}
             </span>
           )}
         </FormTextoMatricula>
@@ -167,11 +170,11 @@ function FormDocumento({ onNext, onBack }: Props) {
             label={""}
             type="file"
             accept="application/pdf,image/jpeg,image/png"
-            {...register("cpf_responsavel", { validate: validarArquivo })}
+            {...register("CPF_RESPONSAVEL", { validate: validarArquivo })}
           />
-          {errors.cpf_responsavel && (
+          {errors.CPF_RESPONSAVEL && (
             <span className="text-sm text-red-500">
-              {errors.cpf_responsavel.message}
+              {errors.CPF_RESPONSAVEL.message}
             </span>
           )}
         </FormTextoMatricula>
@@ -181,18 +184,17 @@ function FormDocumento({ onNext, onBack }: Props) {
             label={""}
             type="file"
             accept="application/pdf,image/jpeg,image/png"
-            {...register("comprovante_residencia_responsavel", {
+            {...register("COMPROVANTE_RESIDENCIA_RESP", {
               validate: validarArquivo,
             })}
           />
-          {errors.comprovante_residencia_responsavel && (
+          {errors.COMPROVANTE_RESIDENCIA_RESP && (
             <span className="text-sm text-red-500">
-              {errors.comprovante_residencia_responsavel.message}
+              {errors.COMPROVANTE_RESIDENCIA_RESP.message}
             </span>
           )}
         </FormTextoMatricula>
       </FormRowMatricula>
-      */}
       <div className="w-full flex justify-center gap-6 mt-10">
         <div className="w-full flex justify-center gap-6 mt-10">
           <button

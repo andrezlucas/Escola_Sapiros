@@ -1,4 +1,17 @@
-import { IsString, IsNumber, IsBoolean, IsOptional, IsArray, IsUUID, IsNotEmpty,IsPositive, Matches, IsIn, Length} from 'class-validator';
+import { 
+  IsString, 
+  IsNumber, 
+  IsBoolean, 
+  IsOptional, 
+  IsArray, 
+  IsUUID, 
+  IsNotEmpty, 
+  IsPositive, 
+  Matches, 
+  IsIn, 
+  Min, 
+  Max 
+} from 'class-validator';
 
 export class CreateTurmaDto {
   @IsString()
@@ -7,7 +20,8 @@ export class CreateTurmaDto {
 
   @IsNumber()
   @IsPositive()
-  @Length(1, 30,)
+  @Min(1, { message: 'capacidade_maxima deve ser no mínimo 1' })
+  @Max(30, { message: 'capacidade_maxima deve ser no máximo 30' })
   capacidade_maxima: number;
 
   @IsString()
@@ -16,9 +30,7 @@ export class CreateTurmaDto {
   anoLetivo: string;
 
   @IsString()
-  @IsIn(['MANHÃ', 'TARDE', 'NOITE'], { 
-    message: 'O turno deve ser MANHÃ, TARDE ou NOITE' 
-  })
+  @IsIn(['MANHÃ', 'TARDE', 'NOITE'], { message: 'O turno deve ser MANHÃ, TARDE ou NOITE' })
   turno: string;
 
   @IsBoolean()

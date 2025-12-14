@@ -19,9 +19,9 @@ export class Aluno {
   })
   documentacao?: Documentacao;
 
-  @ManyToMany(() => Turma, (turma) => turma.alunos)
-  @JoinTable({ name: 'alunos_turmas' })
+ @ManyToMany(() => Turma, (turma) => turma.alunos)
   turmas?: Turma[];
+
 
   @Column({ name: 'matricula_aluno', unique: true })
   matriculaAluno: string;

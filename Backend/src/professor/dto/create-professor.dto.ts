@@ -1,25 +1,31 @@
-import { IsString, IsDateString, IsOptional, Length,} from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsOptional,
+  Length,
+  IsNotEmpty,
+} from 'class-validator';
+
 import { CreateUsuarioDto } from '../../usuario/dto/create-usuario.dto';
 
 export class CreateProfessorDto extends CreateUsuarioDto {
-  // Campos herdados de CreateUsuarioDto: nome, cpf, email, sexo, role (implicitamente)
-  
+ 
+  @IsNotEmpty()
   @IsString()
-  @Length(1, 100,)
+  @Length(1, 100)
   cursoGraduacao: string;
 
+
+  @IsNotEmpty()
   @IsString()
-  @Length(1, 100,)
+  @Length(1, 100)
   instituicao: string;
 
+  @IsNotEmpty()
   @IsDateString()
   dataInicioGraduacao: string;
 
-  @IsDateString()
   @IsOptional()
+  @IsDateString()
   dataConclusaoGraduacao?: string;
-
-  
-
-
 }

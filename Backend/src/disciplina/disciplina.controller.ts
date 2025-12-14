@@ -8,6 +8,8 @@ import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { Role, Usuario } from '../usuario/entities/usuario.entity';
 import { Disciplina } from './entities/disciplina.entity';
+import { CreateHabilidadeDto } from './dto/create-habilidade.dto';
+
 
 type AuthRequest = Request & { user?: Usuario | any };
 
@@ -65,4 +67,14 @@ export class DisciplinaController {
   ): Promise<void> {
     return await this.disciplinaService.remove(id, req.user);
   }
+  @Roles(Role.PROFESSOR)
+@Post(':id/habilidades')
+async addHabilidade(
+  @Param('id', ParseUUIDPipe) id: string,
+  @Body() dto: CreateHabilidadeDto,
+  @Req() req: AuthRequest,
+) {
+  return this.disciplinaService.addHabilidade(id, dto, req.user);
+}
+
 }

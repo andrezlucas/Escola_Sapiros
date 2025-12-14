@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable, ManyToOne, JoinColumn, } from 'typeorm';
+import { 
+  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, 
+  OneToMany, ManyToMany, JoinTable, ManyToOne, JoinColumn 
+} from 'typeorm';
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Aviso } from '../../avisos/entities/aviso.entity';
 import { Professor } from '../../professor/entities/professor.entity';
-
 
 @Entity('turmas')
 export class Turma {
@@ -13,14 +15,8 @@ export class Turma {
   @ManyToMany(() => Aluno, aluno => aluno.turmas)
   @JoinTable({
     name: 'alunos_turmas',
-    joinColumn: {
-      name: 'turma_id',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'aluno_id',
-      referencedColumnName: 'id',
-    },
+    joinColumn: { name: 'turma_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'aluno_id', referencedColumnName: 'id' },
   })
   alunos: Aluno[];
 
@@ -28,7 +24,7 @@ export class Turma {
   @JoinTable({
     name: 'turma_disciplinas',
     joinColumn: { name: 'turma_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'disciplina_id', referencedColumnName: 'id_disciplina' }
+    inverseJoinColumn: { name: 'disciplina_id', referencedColumnName: 'id_disciplina' },
   })
   disciplinas: Disciplina[];
 
@@ -42,22 +38,29 @@ export class Turma {
   @Column({ name: 'nome_turma' })
   nome_turma: string;
 
-  @Column({name: 'capacidade_maxima'})
-  capacidade_maxima: number
+  @Column({ name: 'capacidade_maxima' })
+  capacidade_maxima: number;
 
   @Column({ name: 'ano_letivo' })
-  anoLetivo: string;
+  ano_letivo: string;
 
-  @Column()
+  @Column({ name: 'turno' })
   turno: string;
+
+  // Define data_inicio com valor padrão CURRENT_DATE
+  @Column({ type: 'date', name: 'data_inicio', default: () => 'CURRENT_DATE' })
+  data_inicio: Date;
+
+  // data_fim opcional
+  @Column({ type: 'date', name: 'data_fim', nullable: true })
+  data_fim?: Date;
 
   @Column({ default: true })
   ativa: boolean;
 
+  @CreateDateColumn({ name: 'criado_em' })
+  criado_em: Date;
 
-  @CreateDateColumn({ name: 'turma_criado_em' })
-  turmacriadoEm: Date;
-
-  @UpdateDateColumn({ name: 'turma_atualizado_em' })
-  turmaatualizadoEm: Date;
+  @UpdateDateColumn({ name: 'atualizado_em' })
+  atualizado_em: Date;
 }

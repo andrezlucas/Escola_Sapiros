@@ -12,17 +12,11 @@ function FormRedefinirSenha() {
   } = useForm();
 
   const onSubmit = (data: any) => {
-    console.log("Dados enviados" , data);
-    if(data.email == "teste@gmail.com"){
-      toast.info(<Link to={"/nova-senha"} className="underline">Abrir página de redefinição</Link>, { autoClose: 5000 });
-    }
-    else{
-      toast.error("Email não encontrado!")
-    }
+    console.log("Dados enviados", data);
   };
 
   const hasErros = !!errors.email;
-  
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 w-full">
       <Input
@@ -40,7 +34,7 @@ function FormRedefinirSenha() {
       <Button type="submit" disabled={hasErros}>
         <p>Enviar link de redefinição</p>
       </Button>
-      <ToastContainer position="bottom-center" autoClose={3000} theme="dark"/>
+      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
     </form>
   );
 }

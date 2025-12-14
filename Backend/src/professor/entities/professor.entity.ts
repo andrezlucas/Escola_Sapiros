@@ -1,22 +1,37 @@
-import { Column, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, OneToMany, ManyToMany } from 'typeorm';
-import { Turma } from '../../turma/entities/turma.entity';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  OneToOne,
+  OneToMany,
+  ManyToMany,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
 import { Usuario } from '../../usuario/entities/usuario.entity';
+import { Turma } from '../../turma/entities/turma.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 
 @Entity('professores')
 export class Professor {
+
   @PrimaryColumn('uuid')
   id: string;
 
-  
-  @OneToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @OneToOne(() => Usuario, {
+    cascade: false,
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'id' })
   usuario: Usuario;
 
-  @ManyToMany(() => Disciplina, disciplina => disciplina.professores)
+  @ManyToMany(() => Disciplina, (disciplina) => disciplina.professores)
   disciplinas: Disciplina[];
 
-  @OneToMany(() => Turma, turma => turma.professor)
+  @OneToMany(() => Turma, (turma) => turma.professor)
   turmas: Turma[];
 
 
@@ -29,13 +44,16 @@ export class Professor {
   @Column({ name: 'data_inicio_graduacao', type: 'date' })
   dataInicioGraduacao: Date;
 
-  @Column({ name: 'data_conclusao_graduacao', type: 'date', nullable: true })
-  dataConclusaoGraduacao?: Date;  // Pode ser nulo se ainda estiver cursando
+  @Column({
+    name: 'data_conclusao_graduacao',
+    type: 'date',
+    nullable: true,
+  })
+  dataConclusaoGraduacao?: Date;
 
+  @CreateDateColumn({ name: 'criado_em' })
+  criadoEm: Date;
 
-  @CreateDateColumn()
-  ProfessorcriadoEm: Date;
-
-  @UpdateDateColumn()
-  ProfessoratualizadoEm: Date;
+  @UpdateDateColumn({ name: 'atualizado_em' })
+  atualizadoEm: Date;
 }

@@ -1,8 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { Frequencia } from '../../frequencia/entities/frequencia.entity';
 import { Nota } from '../../nota/entities/nota.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Professor } from '../../professor/entities/professor.entity';
+import { Habilidade } from '../../disciplina/entities/habilidade.entity';
 
 @Entity('disciplinas')
 export class Disciplina {
@@ -22,9 +32,14 @@ export class Disciplina {
   @JoinTable({
     name: 'professores_disciplinas',
     joinColumn: { name: 'disciplina_id', referencedColumnName: 'id_disciplina' },
-    inverseJoinColumn: { name: 'professor_id' }
+    inverseJoinColumn: { name: 'professor_id' },
   })
   professores: Professor[];
+
+  @OneToMany(() => Habilidade, habilidade => habilidade.disciplina, {
+    cascade: true,
+  })
+  habilidades: Habilidade[];
 
   @Column({ unique: true, length: 20 })
   codigo_disciplina: string;

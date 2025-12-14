@@ -11,6 +11,9 @@ export type FormDocumentoData = {
   COMPROVANTE_RESIDENCIA_ALUNO?: FileList;
   FOTO_3X4?: FileList;
   HISTORICO_ESCOLAR?: FileList;
+  RG_RESPONSAVEL?: FileList;
+  CPF_RESPONSAVEL?: FileList;
+  COMPROVANTE_RESIDENCIA_RESP?: FileList;
 };
 
 type Props = {
@@ -47,7 +50,7 @@ function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
   const submitForm = async (data: FormDocumentoData) => {
     await onSubmit(data);
     if (onAlunoUpdated) {
-      await onAlunoUpdated(); 
+      await onAlunoUpdated();
     }
   };
 
@@ -58,9 +61,11 @@ function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
       <FormRowMatricula>
         <FormTextoMatricula title="Registro Geral (RG)">
           <Input
-            label={""} type="file"
+            label={""}
+            type="file"
             accept="application/pdf,image/jpeg,image/png"
-            {...register("RG_ALUNO", { validate: validarArquivo })}          />
+            {...register("RG_ALUNO", { validate: validarArquivo })}
+          />
           {errors.RG_ALUNO && (
             <span className="text-sm text-red-500">
               {errors.RG_ALUNO.message}
@@ -70,9 +75,11 @@ function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
 
         <FormTextoMatricula title="CPF">
           <Input
-            label={""} type="file"
+            label={""}
+            type="file"
             accept="application/pdf,image/jpeg,image/png"
-            {...register("CPF_ALUNO", { validate: validarArquivo })}          />
+            {...register("CPF_ALUNO", { validate: validarArquivo })}
+          />
           {errors.CPF_ALUNO && (
             <span className="text-sm text-red-500">
               {errors.CPF_ALUNO.message}
@@ -82,9 +89,11 @@ function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
 
         <FormTextoMatricula title="Certidão de Nascimento">
           <Input
-            label={""} type="file"
+            label={""}
+            type="file"
             accept="application/pdf,image/jpeg,image/png"
-            {...register("CERTIDAO_NASCIMENTO", { validate: validarArquivo })}          />
+            {...register("CERTIDAO_NASCIMENTO", { validate: validarArquivo })}
+          />
           {errors.CERTIDAO_NASCIMENTO && (
             <span className="text-sm text-red-500">
               {errors.CERTIDAO_NASCIMENTO.message}
@@ -93,41 +102,92 @@ function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
         </FormTextoMatricula>
       </FormRowMatricula>
 
+      <FormTextoMatricula title="Comprovante de Residência">
+        <Input
+          label={""}
+          type="file"
+          accept="application/pdf,image/jpeg,image/png"
+          {...register("COMPROVANTE_RESIDENCIA_ALUNO", {
+            validate: validarArquivo,
+          })}
+        />
+        {errors.COMPROVANTE_RESIDENCIA_ALUNO && (
+          <span className="text-sm text-red-500">
+            {errors.COMPROVANTE_RESIDENCIA_ALUNO.message}
+          </span>
+        )}
+      </FormTextoMatricula>
+
+      <FormTextoMatricula title="Foto 3x4">
+        <Input
+          label={""}
+          type="file"
+          accept="image/jpeg,image/png"
+          {...register("FOTO_3X4", { validate: validarArquivo })}
+        />
+        {errors.FOTO_3X4 && (
+          <span className="text-sm text-red-500">
+            {errors.FOTO_3X4.message}
+          </span>
+        )}
+      </FormTextoMatricula>
+
+      <FormTextoMatricula title="Histórico Escolar">
+        <Input
+          label={""}
+          type="file"
+          accept="application/pdf,image/jpeg,image/png"
+          {...register("HISTORICO_ESCOLAR", { validate: validarArquivo })}
+        />
+        {errors.HISTORICO_ESCOLAR && (
+          <span className="text-sm text-red-500">
+            {errors.HISTORICO_ESCOLAR.message}
+          </span>
+        )}
+      </FormTextoMatricula>
+      <CardTituloMatricula>Documentos do Responsável</CardTituloMatricula>
+
       <FormRowMatricula>
+        <FormTextoMatricula title="RG do Responsável">
+          <Input
+            label={""}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png"
+            {...register("RG_RESPONSAVEL", { validate: validarArquivo })}
+          />
+          {errors.RG_RESPONSAVEL && (
+            <span className="text-sm text-red-500">
+              {errors.RG_RESPONSAVEL.message}
+            </span>
+          )}
+        </FormTextoMatricula>
+
+        <FormTextoMatricula title="CPF do Responsável">
+          <Input
+            label={""}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png"
+            {...register("CPF_RESPONSAVEL", { validate: validarArquivo })}
+          />
+          {errors.CPF_RESPONSAVEL && (
+            <span className="text-sm text-red-500">
+              {errors.CPF_RESPONSAVEL.message}
+            </span>
+          )}
+        </FormTextoMatricula>
+
         <FormTextoMatricula title="Comprovante de Residência">
           <Input
-            label={""} type="file"
+            label={""}
+            type="file"
             accept="application/pdf,image/jpeg,image/png"
-            {...register("COMPROVANTE_RESIDENCIA_ALUNO", {
+            {...register("COMPROVANTE_RESIDENCIA_RESP", {
               validate: validarArquivo,
-            })}          />
-          {errors.COMPROVANTE_RESIDENCIA_ALUNO && (
+            })}
+          />
+          {errors.COMPROVANTE_RESIDENCIA_RESP && (
             <span className="text-sm text-red-500">
-              {errors.COMPROVANTE_RESIDENCIA_ALUNO.message}
-            </span>
-          )}
-        </FormTextoMatricula>
-
-        <FormTextoMatricula title="Foto 3x4">
-          <Input
-            label={""} type="file"
-            accept="image/jpeg,image/png"
-            {...register("FOTO_3X4", { validate: validarArquivo })}          />
-          {errors.FOTO_3X4 && (
-            <span className="text-sm text-red-500">
-              {errors.FOTO_3X4.message}
-            </span>
-          )}
-        </FormTextoMatricula>
-
-        <FormTextoMatricula title="Histórico Escolar">
-          <Input
-            label={""} type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            {...register("HISTORICO_ESCOLAR", { validate: validarArquivo })}          />
-          {errors.HISTORICO_ESCOLAR && (
-            <span className="text-sm text-red-500">
-              {errors.HISTORICO_ESCOLAR.message}
+              {errors.COMPROVANTE_RESIDENCIA_RESP.message}
             </span>
           )}
         </FormTextoMatricula>
