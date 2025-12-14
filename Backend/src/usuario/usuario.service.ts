@@ -88,4 +88,12 @@ export class UsuarioService {
       where: [{ cpf: identifier }, { email: identifier }],
     });
   }
+
+
+  async setBlocked(id: string, isBlocked: boolean): Promise<Usuario> {
+    const usuario = await this.findOne(id);
+    usuario.isBlocked = isBlocked;
+    return this.usuarioRepository.save(usuario);
+}
+
 }

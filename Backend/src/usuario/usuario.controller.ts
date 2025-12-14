@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { SenhaExpiradaGuard } from 'src/auth/senha-expirada/senha-expirada.guard';
+import { UpdateUsuarioBlockDto } from './dto/UpdateUsuarioBlockDto';
 
 
 type UsuarioResponse = Omit<Usuario, 'senha' | 'senhaExpiraEm' | 'senhaAtualizadaEm' | 'UsuariocriadoEm' | 'UsuarioatualizadoEm'> & {
@@ -97,5 +98,15 @@ export class UsuarioController {
     async remove(@Param('id', ParseUUIDPipe) id: string): Promise<{ message: string }> {
         await this.usuarioService.remove(id);
         return { message: 'Usuário removido com sucesso' };
+    }
+    //bloqueia acesso do usuario
+    @Roles(Role.COORDENACAO)
+    @Patch(':id/block')
+    async setBlocked(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: UpdateUsuarioBlockDto
+    ): Promise<UsuarioResponse> {
+        const usuario = await this.usuarioService.setBlocked(id, dto.isBlocked);
+        return formatarUsuario(usuario);
     }
 }
