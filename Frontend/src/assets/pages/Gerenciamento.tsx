@@ -1,7 +1,6 @@
 import { useState } from "react";
 import AlunoList from "../components/AlunoList";
 
-
 function Gerenciamento() {
   const [etapa, setEtapa] = useState<String>("");
   return (
@@ -50,9 +49,7 @@ function Gerenciamento() {
         </button>
       </div>
       <div className="flex flex-col gap-4">
-        {etapa === "aluno" && (
-            <AlunoList/>
-        )}
+        {etapa === "aluno" && <AlunoList />}
       </div>
     </div>
   );
