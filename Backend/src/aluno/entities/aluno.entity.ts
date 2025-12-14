@@ -8,6 +8,7 @@ import {
   OneToOne,
   JoinColumn,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';

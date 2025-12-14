@@ -32,6 +32,17 @@ export class Turma {
   ativa: boolean;
 
   @ManyToMany(() => Aluno, aluno => aluno.turmas)
+  @JoinTable({
+    name: 'alunos_turmas',
+    joinColumn: {
+      name: 'turma_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'aluno_id',
+      referencedColumnName: 'id',
+    },
+  })
   alunos: Aluno[];
 
   @ManyToMany(() => Disciplina, disciplina => disciplina.turmas)
