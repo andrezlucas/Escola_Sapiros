@@ -1,13 +1,16 @@
-import {Body, Controller, Delete, Get, Param, ParseUUIDPipe,Patch, Post, Req, UseGuards, UsePipes,ValidationPipe,} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import type { Request } from 'express';
 import { DisciplinaService } from './disciplina.service';
 import { CreateDisciplinaDto } from './dto/create-disciplina.dto';
 import { UpdateDisciplinaDto } from './dto/update-disciplina.dto';
+import { CreateHabilidadeDto } from './dto/create-habilidade.dto';
+import { UpdateHabilidadeDto } from './dto/update-habilidade.dto';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { Role, Usuario } from '../usuario/entities/usuario.entity';
 import { Disciplina } from './entities/disciplina.entity';
+import { Habilidade } from './entities/habilidade.entity';
 
 type AuthRequest = Request & { user?: Usuario | any };
 
@@ -16,7 +19,7 @@ type AuthRequest = Request & { user?: Usuario | any };
 export class DisciplinaController {
   constructor(private readonly disciplinaService: DisciplinaService) {}
 
-  // Criar disciplina: apenas coordenação
+  // --- Disciplina ---
   @Roles(Role.COORDENACAO)
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
@@ -24,27 +27,24 @@ export class DisciplinaController {
     @Body() createDisciplinaDto: CreateDisciplinaDto,
     @Req() req: AuthRequest,
   ): Promise<Disciplina> {
-    return await this.disciplinaService.create(createDisciplinaDto, req.user);
+    return this.disciplinaService.create(createDisciplinaDto, req.user);
   }
 
-  // Listar disciplinas: coordenação, professores e alunos
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   @Get()
   async findAll(@Req() req: AuthRequest): Promise<Disciplina[]> {
-    return await this.disciplinaService.findAll(req.user);
+    return this.disciplinaService.findAll(req.user);
   }
 
-  // Buscar por id: coordenação, professores e alunos
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   @Get(':id')
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthRequest,
   ): Promise<Disciplina> {
-    return await this.disciplinaService.findOne(id, req.user);
+    return this.disciplinaService.findOne(id, req.user);
   }
 
-  // Atualizar disciplina: apenas coordenação
   @Roles(Role.COORDENACAO)
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
@@ -53,16 +53,45 @@ export class DisciplinaController {
     @Body() updateDisciplinaDto: UpdateDisciplinaDto,
     @Req() req: AuthRequest,
   ): Promise<Disciplina> {
-    return await this.disciplinaService.update(id, updateDisciplinaDto, req.user);
+    return this.disciplinaService.update(id, updateDisciplinaDto, req.user);
   }
 
-  // Remover disciplina: apenas coordenação
   @Roles(Role.COORDENACAO)
   @Delete(':id')
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthRequest,
   ): Promise<void> {
-    return await this.disciplinaService.remove(id, req.user);
+    return this.disciplinaService.remove(id, req.user);
+  }
+
+  // --- Habilidade ---
+  @Roles(Role.COORDENACAO)
+  @Post(':id/habilidades')
+  async addHabilidade(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateHabilidadeDto,
+    @Req() req: AuthRequest,
+  ): Promise<Habilidade> {
+    return this.disciplinaService.addHabilidade(id, dto, req.user);
+  }
+
+  @Roles(Role.COORDENACAO)
+  @Patch('habilidades/:id')
+  async updateHabilidade(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateHabilidadeDto,
+    @Req() req: AuthRequest,
+  ): Promise<Habilidade> {
+    return this.disciplinaService.updateHabilidade(id, dto, req.user);
+  }
+
+  @Roles(Role.COORDENACAO)
+  @Delete('habilidades/:id')
+  async removeHabilidade(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthRequest,
+  ): Promise<void> {
+    return this.disciplinaService.removeHabilidade(id, req.user);
   }
 }

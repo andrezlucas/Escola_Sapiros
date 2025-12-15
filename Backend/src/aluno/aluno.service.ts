@@ -1,31 +1,32 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial, In, DataSource } from 'typeorm';
+import { Repository, DeepPartial, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+
 import { Aluno } from './entities/aluno.entity';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
-import { Turma } from '../turma/entities/turma.entity';
 import { Documentacao } from '../documentacao/entities/documentacao.entity';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
 
 const parseDate = (value: string | Date, fieldName: string): Date => {
-  if (value instanceof Date) {
-    return value;
-  }
-  
+  if (value instanceof Date) return value;
+
   const d = new Date(value);
-  
   if (isNaN(d.getTime())) {
-    throw new ConflictException(`${fieldName} inválida: "${value}"`);
+    throw new ConflictException(`${fieldName} inválida`);
   }
-  
   return d;
 };
 
 const parseOptionalDate = (value?: string | Date): Date | undefined => {
   if (!value) return undefined;
   if (value instanceof Date) return value;
+
   const d = new Date(value);
   return isNaN(d.getTime()) ? undefined : d;
 };
@@ -34,116 +35,96 @@ const parseOptionalDate = (value?: string | Date): Date | undefined => {
 export class AlunoService {
   constructor(
     @InjectRepository(Aluno)
-    private alunoRepository: Repository<Aluno>,
-    
-    @InjectRepository(Usuario)
-    private usuarioRepository: Repository<Usuario>,
+    private readonly alunoRepository: Repository<Aluno>,
 
-    @InjectRepository(Turma)
-    private turmaRepository: Repository<Turma>,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
 
     @InjectRepository(Documentacao)
-    private documentacaoRepository: Repository<Documentacao>,
-    
-    private dataSource: DataSource,
+    private readonly documentacaoRepository: Repository<Documentacao>,
+
+    private readonly dataSource: DataSource,
   ) {}
 
-  async create(createAlunoDto: CreateAlunoDto): Promise<Aluno> {
-    if (
-      await this.usuarioRepository.findOne({
-        where: [{ cpf: createAlunoDto.cpf }, { email: createAlunoDto.email }],
-      })
-    ) {
+  async create(dto: CreateAlunoDto): Promise<Aluno> {
+    const usuarioExistente = await this.usuarioRepository.findOne({
+      where: [{ cpf: dto.cpf }, { email: dto.email }],
+    });
+
+    if (usuarioExistente) {
       throw new ConflictException('CPF ou Email já cadastrado');
     }
 
     return this.dataSource.transaction(async (manager) => {
-      const userData: DeepPartial<Usuario> = {
-        nome: createAlunoDto.nome,
-        email: createAlunoDto.email,
-        cpf: createAlunoDto.cpf,
+      const usuarioData: DeepPartial<Usuario> = {
+        nome: dto.nome,
+        email: dto.email,
+        cpf: dto.cpf,
         senha: await bcrypt.hash('Sapiros@123', 10),
         role: Role.ALUNO,
-        
-        isBlocked: true, 
+        isBlocked: true,
       };
 
-      const novoUsuario = manager.create(Usuario, userData);
-      const usuarioSalvo = await manager.save(Usuario, novoUsuario);
+      const usuario = manager.create(Usuario, usuarioData);
+      const usuarioSalvo = await manager.save(Usuario, usuario);
 
       const alunoData: DeepPartial<Aluno> = {
         id: usuarioSalvo.id,
         usuario: usuarioSalvo,
 
         matriculaAluno: await this.generateMatricula(),
-        serieAno: createAlunoDto.serieAno,
-        escolaOrigem: createAlunoDto.escolaOrigem,
+        serieAno: dto.serieAno,
+        escolaOrigem: dto.escolaOrigem,
 
-        telefone: createAlunoDto.telefone,
-        dataNascimento: parseDate(
-          createAlunoDto.data_nascimento,
-          'Data de Nascimento',
-        ),
-        sexo: createAlunoDto.sexo,
-        rgNumero: createAlunoDto.rgNumero,
-        rgDataEmissao: parseOptionalDate(createAlunoDto.rgDataEmissao),
-        rgOrgaoEmissor: createAlunoDto.rgOrgaoEmissor,
-        enderecoLogradouro: createAlunoDto.enderecoLogradouro,
-        enderecoNumero: createAlunoDto.enderecoNumero,
-        enderecoCep: createAlunoDto.enderecoCep,
-        enderecoComplemento: createAlunoDto.enderecoComplemento,
-        enderecoBairro: createAlunoDto.enderecoBairro,
-        enderecoEstado: createAlunoDto.enderecoEstado,
-        enderecoCidade: createAlunoDto.enderecoCidade,
-        nacionalidade: createAlunoDto.nacionalidade,
-        naturalidade: createAlunoDto.naturalidade,
-        possuiNecessidadesEspeciais:
-          createAlunoDto.possuiNecessidadesEspeciais || false,
-        descricaoNecessidadesEspeciais:
-          createAlunoDto.descricaoNecessidadesEspeciais,
-        possuiAlergias: createAlunoDto.possuiAlergias || false,
-        descricaoAlergias: createAlunoDto.descricaoAlergias,
-        autorizacaoUsoImagem: createAlunoDto.autorizacaoUsoImagem || false,
-        
-        responsavelNome: createAlunoDto.responsavelNome,
+        rgNumero: dto.rgNumero,
+        rgDataEmissao: parseDate(dto.rgDataEmissao, 'RG data emissão'),
+        rgOrgaoEmissor: dto.rgOrgaoEmissor,
+
+        nacionalidade: dto.nacionalidade,
+        naturalidade: dto.naturalidade,
+
+        possuiNecessidadesEspeciais: dto.possuiNecessidadesEspeciais ?? false,
+        descricaoNecessidadesEspeciais: dto.descricaoNecessidadesEspeciais,
+
+        possuiAlergias: dto.possuiAlergias ?? false,
+        descricaoAlergias: dto.descricaoAlergias,
+
+        autorizacaoSaidaSozinho: dto.autorizacaoSaidaSozinho ?? false,
+        autorizacaoUsoImagem: dto.autorizacaoUsoImagem ?? false,
+
+        responsavelNome: dto.responsavelNome,
         responsavelDataNascimento: parseOptionalDate(
-          createAlunoDto.responsavel_Data_Nascimento,
+          dto.responsavel_Data_Nascimento,
         ),
-        responsavelSexo: createAlunoDto.responsavel_sexo || 'NAO_INFORMADO',
-        responsavelNacionalidade: createAlunoDto.responsavel_nacionalidade,
-        responsavelNaturalidade: createAlunoDto.responsavel_naturalidade,
-        responsavelCpf: createAlunoDto.responsavelCpf,
-        responsavelRg: createAlunoDto.responsavelRg,
-        responsavelRgOrgaoEmissor:
-          createAlunoDto.responsavel_rg_OrgaoEmissor,
-        responsavelTelefone: createAlunoDto.responsavelTelefone,
-        responsavelEmail: createAlunoDto.responsavelEmail,
-        responsavelCep: createAlunoDto.responsavelCep,
-        responsavelLogradouro: createAlunoDto.responsavelLogradouro,
-        responsavelNumero: createAlunoDto.responsavelNumero,
-        responsavelComplemento: createAlunoDto.responsavelComplemento,
-        responsavelBairro: createAlunoDto.responsavelBairro,
-        responsavelCidade: createAlunoDto.responsavelCidade,
-        responsavelEstado: createAlunoDto.responsavelEstado,
+        responsavel_sexo: dto.responsavel_sexo,
+        responsavelNacionalidade: dto.responsavel_nacionalidade,
+        responsavelNaturalidade: dto.responsavel_naturalidade,
+        responsavelCpf: dto.responsavelCpf,
+        responsavelRg: dto.responsavelRg,
+        responsavelRgOrgaoEmissor: dto.responsavel_rg_OrgaoEmissor,
+        responsavelTelefone: dto.responsavelTelefone,
+        responsavelEmail: dto.responsavelEmail,
+        responsavelCep: dto.responsavelCep,
+        responsavelLogradouro: dto.responsavelLogradouro,
+        responsavelNumero: dto.responsavelNumero,
+        responsavelComplemento: dto.responsavelComplemento,
+        responsavelBairro: dto.responsavelBairro,
+        responsavelCidade: dto.responsavelCidade,
+        responsavelEstado: dto.responsavelEstado,
       };
 
-      const novoAluno = manager.create(Aluno, alunoData);
+      const aluno = manager.create(Aluno, alunoData);
+      const alunoSalvo = await manager.save(Aluno, aluno);
 
-      if (createAlunoDto.turmasIds?.length) {
-        const turmas = await manager.findBy(Turma, {
-          id: In(createAlunoDto.turmasIds),
-        });
-        novoAluno.turmas = turmas;
-      }
-
-      const alunoSalvo = await manager.save(Aluno, novoAluno);
-      
-      const novaDocumentacao = manager.create(Documentacao, {
+      const documentacao = manager.create(Documentacao, {
         aluno: alunoSalvo,
       });
-      const documentacaoSalva = await manager.save(Documentacao, novaDocumentacao);
 
-      //  CORREÇÃO AQUI: Anexa a documentação salva ao objeto alunoSalvo antes de retornar
+      const documentacaoSalva = await manager.save(
+        Documentacao,
+        documentacao,
+      );
+
       alunoSalvo.documentacao = documentacaoSalva;
 
       return alunoSalvo;
@@ -151,15 +132,21 @@ export class AlunoService {
   }
 
   async findAll(): Promise<Aluno[]> {
-    return await this.alunoRepository.find({ relations: ['usuario', 'turmas', 'documentacao'] });
+    return this.alunoRepository.find({
+      relations: ['usuario', 'documentacao', 'turmas'],
+    });
   }
 
   async findOne(id: string): Promise<Aluno> {
     const aluno = await this.alunoRepository.findOne({
       where: { id },
-      relations: ['usuario', 'turmas', 'documentacao'],
+      relations: ['usuario', 'documentacao', 'turmas'],
     });
-    if (!aluno) throw new NotFoundException('Aluno não encontrado');
+
+    if (!aluno) {
+      throw new NotFoundException('Aluno não encontrado');
+    }
+
     return aluno;
   }
 
@@ -167,49 +154,39 @@ export class AlunoService {
     const aluno = await this.findOne(id);
     const usuario = aluno.usuario;
 
-    if (!usuario) throw new NotFoundException('Usuário base não encontrado.');
-
     if (dto.nome) usuario.nome = dto.nome;
-    
-    if (dto.serieAno) aluno.serieAno = dto.serieAno;
-    if (dto.telefone) aluno.telefone = dto.telefone;
+    if (dto.email) usuario.email = dto.email;
 
-    if (dto.data_nascimento) {
-      aluno.dataNascimento = parseDate(
-        dto.data_nascimento,
-        'Data de Nascimento',
-      );
-    }
-    
+    if (dto.serieAno) aluno.serieAno = dto.serieAno;
+    if (dto.escolaOrigem) aluno.escolaOrigem = dto.escolaOrigem;
+
     await this.usuarioRepository.save(usuario);
-    return await this.alunoRepository.save(aluno);
+    return this.alunoRepository.save(aluno);
   }
 
   async remove(id: string): Promise<void> {
     const aluno = await this.findOne(id);
-
     await this.alunoRepository.remove(aluno);
-
     await this.usuarioRepository.delete(id);
   }
 
-  async generateMatricula(): Promise<string> {
+  private async generateMatricula(): Promise<string> {
     const now = new Date();
     const ano = now.getFullYear().toString();
     const mes = (now.getMonth() + 1).toString().padStart(2, '0');
 
-    const ultimaMatricula = await this.alunoRepository
+    const ultima = await this.alunoRepository
       .createQueryBuilder('aluno')
-      .where('aluno.matricula_aluno LIKE :prefix', { prefix: `${ano}${mes}%` })
+      .where('aluno.matricula_aluno LIKE :prefix', {
+        prefix: `${ano}${mes}%`,
+      })
       .orderBy('aluno.matricula_aluno', 'DESC')
       .getOne();
 
-    let sequencia = 1;
-    if (ultimaMatricula) {
-      const ultimaSeq = parseInt(ultimaMatricula.matriculaAluno.slice(6, 9));
-      sequencia = ultimaSeq + 1;
-    }
+    const seq = ultima
+      ? parseInt(ultima.matriculaAluno.slice(6), 10) + 1
+      : 1;
 
-    return `${ano}${mes}${sequencia.toString().padStart(3, '0')}`;
+    return `${ano}${mes}${seq.toString().padStart(3, '0')}`;
   }
 }

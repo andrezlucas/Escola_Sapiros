@@ -1,31 +1,59 @@
-import { Column, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Turma } from '../../turma/entities/turma.entity';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  OneToOne,
+  OneToMany,
+  ManyToMany,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
 import { Usuario } from '../../usuario/entities/usuario.entity';
+import { Turma } from '../../turma/entities/turma.entity';
+import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 
 @Entity('professores')
 export class Professor {
+
   @PrimaryColumn('uuid')
   id: string;
 
-  @OneToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @OneToOne(() => Usuario, {
+    cascade: false,
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'id' })
   usuario: Usuario;
 
-  @Column({ name: 'registro_funcional', unique: true, nullable: true })
-  registroFuncional?: string;
+  @ManyToMany(() => Disciplina, (disciplina) => disciplina.professores)
+  disciplinas: Disciplina[];
 
-  @Column({ nullable: true })
-  cargo?: string;
-
-  @Column({ name: 'carga_horaria', type: 'float', default: 0 })
-  cargaHoraria: number;
-
-  @OneToMany(() => Turma, turma => turma.professor)
+  @OneToMany(() => Turma, (turma) => turma.professor)
   turmas: Turma[];
 
-  @CreateDateColumn()
-  ProfessorcriadoEm: Date;
 
-  @UpdateDateColumn()
-  ProfessoratualizadoEm: Date;
+  @Column({ name: 'curso_graduacao', length: 100 })
+  graduacao: string;
+
+  @Column({ name: 'instituicao', length: 100 })
+  instituicao: string;
+
+  @Column({ name: 'data_inicio_graduacao', type: 'date' })
+  dataInicioGraduacao: Date;
+
+  @Column({
+    name: 'data_conclusao_graduacao',
+    type: 'date',
+    nullable: true,
+  })
+  dataConclusaoGraduacao?: Date;
+
+  @CreateDateColumn({ name: 'criado_em' })
+  criadoEm: Date;
+
+  @UpdateDateColumn({ name: 'atualizado_em' })
+  atualizadoEm: Date;
 }
