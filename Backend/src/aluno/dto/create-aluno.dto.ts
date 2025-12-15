@@ -1,4 +1,5 @@
 import { IsString, IsOptional, Length, IsDateString, IsEmail, IsEnum, IsBoolean, IsNumberString, IsNotEmpty } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { CreateUsuarioDto } from '../../usuario/dto/create-usuario.dto';
 import { Sexo } from '../../usuario/entities/usuario.entity';
 
@@ -61,8 +62,18 @@ export class CreateAlunoDto extends CreateUsuarioDto {
   @IsString()
   responsavelNome: string;
 
+  
   @IsNotEmpty()
   @IsDateString()
+  @Transform(({ value }) => {
+    if (!value) return value;
+    // converte DD/MM/YYYY em YYYY-MM-DD
+    const parts = value.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return value;
+  })
   responsavel_Data_Nascimento: string;
 
   @IsNotEmpty()
