@@ -101,36 +101,60 @@ export class ProfessorService {
     return professor;
   }
 
-  async update(id: string, updateDto: UpdateProfessorDto): Promise<Professor> {
-    const professor = await this.findOne(id);
+ async update(id: string, updateDto: UpdateProfessorDto): Promise<Professor> {
+  return this.dataSource.transaction(async (manager) => {
+    const professor = await manager.findOne(Professor, {
+      where: { id },
+      relations: ['usuario'],
+    });
+
+    if (!professor) {
+      throw new NotFoundException('Professor não encontrado');
+    }
+
     const usuario = professor.usuario;
 
-    if (updateDto.nome) usuario.nome = updateDto.nome;
-    if (updateDto.email) usuario.email = updateDto.email;
-    if (updateDto.cpf) usuario.cpf = updateDto.cpf;
-    if (updateDto.telefone) usuario.telefone = updateDto.telefone;
-    if (updateDto.sexo) usuario.sexo = updateDto.sexo;
+    Object.assign(usuario, {
+      nome: updateDto.nome ?? usuario.nome,
+      email: updateDto.email ?? usuario.email,
+      cpf: updateDto.cpf ?? usuario.cpf,
+      telefone: updateDto.telefone ?? usuario.telefone,
+      sexo: updateDto.sexo ?? usuario.sexo,
+      enderecoLogradouro:
+        updateDto.enderecoLogradouro ?? usuario.enderecoLogradouro,
+      enderecoNumero:
+        updateDto.enderecoNumero ?? usuario.enderecoNumero,
+      enderecoCep: updateDto.enderecoCep ?? usuario.enderecoCep,
+      enderecoComplemento:
+        updateDto.enderecoComplemento ?? usuario.enderecoComplemento,
+      enderecoBairro:
+        updateDto.enderecoBairro ?? usuario.enderecoBairro,
+      enderecoEstado:
+        updateDto.enderecoEstado ?? usuario.enderecoEstado,
+      enderecoCidade:
+        updateDto.enderecoCidade ?? usuario.enderecoCidade,
+    });
 
-    await this.usuarioRepository.save(usuario);
+    if (updateDto.data_nascimento) {
+      usuario.dataNascimento = new Date(updateDto.data_nascimento);
+    }
 
-    if (updateDto.cursoGraduacao)
-      professor.graduacao = updateDto.cursoGraduacao;
+    Object.assign(professor, {
+      graduacao: updateDto.cursoGraduacao ?? professor.graduacao,
+      instituicao: updateDto.instituicao ?? professor.instituicao,
+      dataInicioGraduacao: updateDto.dataInicioGraduacao
+        ? new Date(updateDto.dataInicioGraduacao)
+        : professor.dataInicioGraduacao,
+      dataConclusaoGraduacao: updateDto.dataConclusaoGraduacao
+        ? new Date(updateDto.dataConclusaoGraduacao)
+        : professor.dataConclusaoGraduacao,
+    });
 
-    if (updateDto.instituicao)
-      professor.instituicao = updateDto.instituicao;
+    await manager.save(usuario);
+    return manager.save(professor);
+  });
+}
 
-    if (updateDto.dataInicioGraduacao)
-      professor.dataInicioGraduacao = new Date(
-        updateDto.dataInicioGraduacao,
-      );
-
-    if (updateDto.dataConclusaoGraduacao)
-      professor.dataConclusaoGraduacao = new Date(
-        updateDto.dataConclusaoGraduacao,
-      );
-
-    return this.professorRepository.save(professor);
-  }
 
   async remove(id: string): Promise<void> {
     const professor = await this.findOne(id);
