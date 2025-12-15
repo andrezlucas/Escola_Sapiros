@@ -10,7 +10,7 @@ export class Aluno {
   id: string;
 
   @OneToOne(() => Usuario, { onDelete: 'CASCADE', eager: true })
-  @JoinColumn({ name: 'id' })
+  @JoinColumn({ name: 'usuario_id' })
   usuario: Usuario;
 
   @OneToOne(() => Documentacao, (documentacao) => documentacao.aluno, {

@@ -4,26 +4,31 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial, DataSource } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { Aluno } from './entities/aluno.entity';
-import { Usuario, Role } from '../usuario/entities/usuario.entity';
+import { Usuario, Role, Sexo } from '../usuario/entities/usuario.entity';
 import { Documentacao } from '../documentacao/entities/documentacao.entity';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
 
-const parseDate = (value: string | Date, fieldName: string): Date => {
+/* =========================
+   HELPERS DE DATA
+========================= */
+const parseDate = (value: string | Date, field: string): Date => {
   if (value instanceof Date) return value;
 
   const d = new Date(value);
   if (isNaN(d.getTime())) {
-    throw new ConflictException(`${fieldName} inválida`);
+    throw new ConflictException(`${field} inválida`);
   }
   return d;
 };
 
-const parseOptionalDate = (value?: string | Date): Date | undefined => {
+const parseOptionalDate = (
+  value?: string | Date,
+): Date | undefined => {
   if (!value) return undefined;
   if (value instanceof Date) return value;
 
@@ -56,19 +61,41 @@ export class AlunoService {
     }
 
     return this.dataSource.transaction(async (manager) => {
-      const usuarioData: DeepPartial<Usuario> = {
+
+      /* =========================
+         CRIA USUÁRIO
+      ========================== */
+      const usuario = manager.create(Usuario, {
         nome: dto.nome,
         email: dto.email,
         cpf: dto.cpf,
+        telefone: dto.telefone,
+
+        sexo: dto.sexo ?? Sexo.NAO_INFORMADO,
+        dataNascimento: parseDate(
+          dto.data_nascimento,
+          'Data de nascimento',
+        ),
+
+        enderecoLogradouro: dto.enderecoLogradouro,
+        enderecoNumero: dto.enderecoNumero,
+        enderecoCep: dto.enderecoCep,
+        enderecoComplemento: dto.enderecoComplemento,
+        enderecoBairro: dto.enderecoBairro,
+        enderecoEstado: dto.enderecoEstado,
+        enderecoCidade: dto.enderecoCidade,
+
         senha: await bcrypt.hash('Sapiros@123', 10),
         role: Role.ALUNO,
         isBlocked: true,
-      };
+      });
 
-      const usuario = manager.create(Usuario, usuarioData);
       const usuarioSalvo = await manager.save(Usuario, usuario);
 
-      const alunoData: DeepPartial<Aluno> = {
+      /* =========================
+         CRIA ALUNO
+      ========================== */
+      const aluno = manager.create(Aluno, {
         id: usuarioSalvo.id,
         usuario: usuarioSalvo,
 
@@ -77,20 +104,27 @@ export class AlunoService {
         escolaOrigem: dto.escolaOrigem,
 
         rgNumero: dto.rgNumero,
-        rgDataEmissao: parseDate(dto.rgDataEmissao, 'RG data emissão'),
+        rgDataEmissao: parseDate(
+          dto.rgDataEmissao,
+          'RG data emissão',
+        ),
         rgOrgaoEmissor: dto.rgOrgaoEmissor,
 
         nacionalidade: dto.nacionalidade,
         naturalidade: dto.naturalidade,
 
-        possuiNecessidadesEspeciais: dto.possuiNecessidadesEspeciais ?? false,
-        descricaoNecessidadesEspeciais: dto.descricaoNecessidadesEspeciais,
+        possuiNecessidadesEspeciais:
+          dto.possuiNecessidadesEspeciais ?? false,
+        descricaoNecessidadesEspeciais:
+          dto.descricaoNecessidadesEspeciais,
 
         possuiAlergias: dto.possuiAlergias ?? false,
         descricaoAlergias: dto.descricaoAlergias,
 
-        autorizacaoSaidaSozinho: dto.autorizacaoSaidaSozinho ?? false,
-        autorizacaoUsoImagem: dto.autorizacaoUsoImagem ?? false,
+        autorizacaoSaidaSozinho:
+          dto.autorizacaoSaidaSozinho ?? false,
+        autorizacaoUsoImagem:
+          dto.autorizacaoUsoImagem ?? false,
 
         responsavelNome: dto.responsavelNome,
         responsavelDataNascimento: parseOptionalDate(
@@ -101,7 +135,8 @@ export class AlunoService {
         responsavelNaturalidade: dto.responsavel_naturalidade,
         responsavelCpf: dto.responsavelCpf,
         responsavelRg: dto.responsavelRg,
-        responsavelRgOrgaoEmissor: dto.responsavel_rg_OrgaoEmissor,
+        responsavelRgOrgaoEmissor:
+          dto.responsavel_rg_OrgaoEmissor,
         responsavelTelefone: dto.responsavelTelefone,
         responsavelEmail: dto.responsavelEmail,
         responsavelCep: dto.responsavelCep,
@@ -111,21 +146,21 @@ export class AlunoService {
         responsavelBairro: dto.responsavelBairro,
         responsavelCidade: dto.responsavelCidade,
         responsavelEstado: dto.responsavelEstado,
-      };
+      });
 
-      const aluno = manager.create(Aluno, alunoData);
       const alunoSalvo = await manager.save(Aluno, aluno);
 
+      /* =========================
+         DOCUMENTAÇÃO
+      ========================== */
       const documentacao = manager.create(Documentacao, {
         aluno: alunoSalvo,
       });
 
-      const documentacaoSalva = await manager.save(
+      alunoSalvo.documentacao = await manager.save(
         Documentacao,
         documentacao,
       );
-
-      alunoSalvo.documentacao = documentacaoSalva;
 
       return alunoSalvo;
     });
@@ -173,7 +208,9 @@ export class AlunoService {
   private async generateMatricula(): Promise<string> {
     const now = new Date();
     const ano = now.getFullYear().toString();
-    const mes = (now.getMonth() + 1).toString().padStart(2, '0');
+    const mes = (now.getMonth() + 1)
+      .toString()
+      .padStart(2, '0');
 
     const ultima = await this.alunoRepository
       .createQueryBuilder('aluno')
@@ -187,6 +224,8 @@ export class AlunoService {
       ? parseInt(ultima.matriculaAluno.slice(6), 10) + 1
       : 1;
 
-    return `${ano}${mes}${seq.toString().padStart(3, '0')}`;
+    return `${ano}${mes}${seq
+      .toString()
+      .padStart(3, '0')}`;
   }
 }

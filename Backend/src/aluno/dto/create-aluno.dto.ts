@@ -63,7 +63,7 @@ export class CreateAlunoDto extends CreateUsuarioDto {
 
   @IsNotEmpty()
   @IsDateString()
-  responsavel_Data_Nascimento: Date;
+  responsavel_Data_Nascimento: string;
 
   @IsNotEmpty()
   @IsEnum(Sexo)
