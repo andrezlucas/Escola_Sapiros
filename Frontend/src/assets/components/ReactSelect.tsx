@@ -1,5 +1,5 @@
 import Select from "react-select";
-import { Controller } from "react-hook-form";
+import { Controller, type RegisterOptions } from "react-hook-form";
 
 interface SelectFieldProps {
   name: string;
@@ -7,6 +7,7 @@ interface SelectFieldProps {
   options: { value: string; label: string }[];
   placeholder?: string;
   isDisabled?: boolean;
+  rules?: RegisterOptions;
 }
 
 export default function ReactSelect({

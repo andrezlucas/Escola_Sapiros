@@ -181,7 +181,7 @@ function AlunoList() {
     <div className="p-4">
       <div className="mb-4">
         <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] max-w-130">
-          <FaSearch className="w-4 h-4 text-[#1D5D7F]" />
+          <FaSearch className="w-4 h-2 text-[#1D5D7F]" />
           <input
             type="search"
             placeholder="Buscar por aluno"

@@ -87,6 +87,8 @@ function FormLogin() {
       localStorage.setItem("role", result.usuario.role);
       localStorage.setItem("nome", result.usuario.nome);
 
+      const token = localStorage.getItem("token")
+      console.log(token);
       const role = result.usuario.role?.toLowerCase().trim();
       switch (role) {
         case "coordenacao":

@@ -1,5 +1,8 @@
 import { useState } from "react";
 import AlunoList from "../components/AlunoList";
+import TurmaList from "../components/TurmaList";
+import ProfessorList from "../components/ProfessorList";
+import DisciplinaList from "../components/DisciplinaList";
 
 function Gerenciamento() {
   const [etapa, setEtapa] = useState<String>("");
@@ -50,8 +53,12 @@ function Gerenciamento() {
       </div>
       <div className="flex flex-col gap-4">
         {etapa === "aluno" && <AlunoList />}
+        {etapa === "turma" && <TurmaList/>}
+        {etapa === "professor" && <ProfessorList/>}
+        {etapa === "disciplina" && <DisciplinaList/>}
       </div>
     </div>
+    
   );
 }
 

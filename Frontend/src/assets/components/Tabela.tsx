@@ -1,6 +1,7 @@
 export type Coluna<T> = {
   titulo: string;
   render: (item: T) => React.ReactNode;
+  largura?: string;
 };
 
 export type TabelaProps<T> = {

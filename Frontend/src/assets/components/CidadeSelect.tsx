@@ -21,7 +21,10 @@ export default function CidadeSelect() {
       control={control}
       options={cidades}
       placeholder="Selecione a cidade"
-      isDisabled={!estadoSelecionado || cidades.length === 0}
+      rules={{
+        required: "Cidade é obrigatório",
+      }}
+      isDisabled={!estadoSelecionado}
     />
   );
 }

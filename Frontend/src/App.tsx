@@ -9,6 +9,7 @@ import Calendario from "./assets/pages/Calendario";
 import DashboardAluno from "./assets/pages/DashboardAluno";
 import Gerenciamento from "./assets/pages/Gerenciamento";
 import EditarDocumento from "./assets/pages/EditarDocumento";
+import { ToastContainer } from "react-toastify";
 function App() {
   return (
     <>
@@ -30,6 +31,11 @@ function App() {
           element={<EditarDocumento/>}
         />
       </Routes>
+      <ToastContainer
+          position="bottom-center"
+          autoClose={3000}
+          theme="dark"
+        />
     </>
   );
 }
