@@ -29,6 +29,7 @@ type DadosAluno = {
   necessidades_especiais?: string;
   tem_alergia?: string;
   quais_alergias?: string;
+  saida_sozinho?: string;
   uso_imagem?: string;
 };
 
@@ -137,20 +138,22 @@ function Matricula(): JSX.Element {
       descricaoNecessidadesEspeciais: aluno.necessidades_especiais,
       possuiAlergias: aluno.tem_alergia === "sim",
       descricaoAlergias: aluno.quais_alergias,
+      autorizacaoSaidaSozinho: aluno.saida_sozinho === "sim",
       autorizacaoUsoImagem: aluno.uso_imagem === "sim",
 
       responsavelNome: responsavel.nome,
       responsavelCpf: onlyDigits(responsavel.cpf),
       responsavelRg: onlyDigits(responsavel.rg) || responsavel.rg,
-      responsavelRgOrgaoEmissor: responsavel.orgao_emissor,
       responsavelTelefone: onlyDigits(responsavel.celular),
       responsavelEmail: responsavel.email,
-      responsavelDataNascimento: responsavel.data_nascimento
+
+      responsavel_Data_Nascimento: responsavel.data_nascimento
         ? new Date(responsavel.data_nascimento).toISOString().split("T")[0]
         : undefined,
-      responsavelSexo: mapSexoFrontToDto(responsavel.sexo),
-      responsavelNacionalidade: responsavel.nacionalidade,
-      responsavelNaturalidade: responsavel.naturalidade,
+      responsavel_sexo: mapSexoFrontToDto(responsavel.sexo),
+      responsavel_nacionalidade: responsavel.nacionalidade,
+      responsavel_naturalidade: responsavel.naturalidade,
+      responsavel_rg_OrgaoEmissor: responsavel.orgao_emissor,
       responsavelCep: onlyDigits(responsavel.cep),
       responsavelLogradouro: responsavel.logradouro,
       responsavelNumero: responsavel.numero,
@@ -161,7 +164,7 @@ function Matricula(): JSX.Element {
     };
 
     Object.keys(payload).forEach(
-      (k) => payload[k] === undefined && delete payload[k]
+      (k) => (payload[k] === undefined || payload[k] === "") && delete payload[k]
     );
 
     return payload;
@@ -276,13 +279,17 @@ function Matricula(): JSX.Element {
         )}
 
         {etapa === 4 && (
-          <button
-            onClick={handleFinalSubmit}
-            disabled={enviando}
-            className="w-48 h-12 bg-[#1D5D7F] text-white rounded-lg"
-          >
-            {enviando ? "Enviando..." : "Finalizar matrícula"}
-          </button>
+          <div className="w-full flex justify-center mt-10">
+            <div className="w-48">
+              <button
+                onClick={handleFinalSubmit}
+                disabled={enviando}
+                className="w-full bg-[#1D5D7F] h-12 sm:h-14 text-white text-lg sm:text-xl font-normal rounded-lg transition duration-200 focus:outline-none focus:ring-4"
+              >
+                {enviando ? "Enviando..." : "Finalizar matrícula"}
+              </button>
+            </div>
+          </div>
         )}
 
         <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
