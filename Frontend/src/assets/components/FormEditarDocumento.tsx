@@ -186,7 +186,7 @@ function FormEditarDocumento({
           onClick={() => onBack(getValues())}
           className="w-full sm:w-40 h-12 bg-[#1D5D7F] text-white rounded-lg"
         >
-          Confirmar mudanças
+          Confirmar alterações 
         </button>
         <button
           type="submit"

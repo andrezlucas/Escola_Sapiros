@@ -1,20 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { useFormContext } from "react-hook-form";
 import { Input } from "./Input";
 import FormSelect from "./FormSelect";
 
 export interface Professor {
-  nome: string;
   id: string;
-  usuario: {
-    nome: string;
-  };
+  nome?: string;
+  usuario?: { nome: string };
 }
 
 export interface Aluno {
-  nome: string;
   id: string;
-  usuario: { nome: string };
+  nome?: string;
+  usuario?: { nome: string };
 }
 
 export interface Disciplina {
@@ -26,9 +24,9 @@ export type TurmaFormData = {
   nome_turma: string;
   anoLetivo: string;
   turno: "MANHÃ" | "TARDE" | "NOITE";
-  data_inicio?: string;
-  data_fim?: string;
-  professorId?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  professorId?: string | null;
   alunosIds?: string[];
   disciplinasIds?: string[];
   descricao?: string;
@@ -41,7 +39,6 @@ interface FormTurmaProps {
   professores: Professor[];
   alunos: Aluno[];
   disciplinas?: Disciplina[];
-  valoresIniciais?: Partial<TurmaFormData>;
 }
 
 export default function FormTurma({
@@ -49,44 +46,22 @@ export default function FormTurma({
   professores,
   alunos,
   disciplinas = [],
-  valoresIniciais,
 }: FormTurmaProps) {
-  const { register, handleSubmit, reset, watch } = useForm<TurmaFormData>({
-    defaultValues: {
-      nome_turma: "",
-      anoLetivo: "",
-      turno: "MANHÃ",
-      data_inicio: "",
-      data_fim: "",
-      professorId: "",
-      alunosIds: [],
-      disciplinasIds: [],
-      ativa: true,
-      capacidade_maxima: 30,
-    },
-  });
+  const { register, handleSubmit, setValue, watch } =
+    useFormContext<TurmaFormData>();
 
   const [buscaAluno, setBuscaAluno] = useState("");
   const [buscaDisciplina, setBuscaDisciplina] = useState("");
 
-  useEffect(() => {
-    if (valoresIniciais) {
-      reset({
-        ...valoresIniciais,
-        anoLetivo: String(valoresIniciais.anoLetivo ?? ""),
-        turno: valoresIniciais.turno ?? "MANHÃ",
-        capacidade_maxima: valoresIniciais.capacidade_maxima ?? 30,
-        ativa: valoresIniciais.ativa ?? true,
-        alunosIds: valoresIniciais.alunosIds ?? [],
-        disciplinasIds: valoresIniciais.disciplinasIds ?? [],
-      });
-    }
-  }, [valoresIniciais, reset]);
+  const alunosIds = watch("alunosIds") ?? [];
+  const professorId = watch("professorId");
 
   const alunosFiltrados = useMemo(
     () =>
       alunos.filter((a) =>
-        a.usuario.nome.toLowerCase().includes(buscaAluno.toLowerCase())
+        (a.usuario?.nome ?? a.nome ?? "")
+          .toLowerCase()
+          .includes(buscaAluno.toLowerCase())
       ),
     [buscaAluno, alunos]
   );
@@ -99,33 +74,32 @@ export default function FormTurma({
     [buscaDisciplina, disciplinas]
   );
 
-  const handleFormSubmit = (data: TurmaFormData) => {
+  function handleFormSubmit(data: TurmaFormData) {
     onSubmit({
       ...data,
-      anoLetivo: String(data.anoLetivo).trim(),
-      turno: data.turno ?? "MANHÃ",
       capacidade_maxima: Number(data.capacidade_maxima),
-      ativa: !!data.ativa,
-      alunosIds: data.alunosIds || [],
-      disciplinasIds: data.disciplinasIds || [],
+      ativa: Boolean(data.ativa),
+      professorId: data.professorId,
+      alunosIds: data.alunosIds ?? [],
+      disciplinasIds: data.disciplinasIds ?? [],
     });
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <Input
         label={""}
-        {...register("nome_turma", { required: true })}
         placeholder="Nome da turma"
+        {...register("nome_turma", { required: true })}
       />
 
       <Input
         label={""}
+        placeholder="Ano letivo (YYYY)"
         {...register("anoLetivo", {
           required: true,
-          pattern: { value: /^\d{4}$/, message: "Ano letivo inválido" },
+          pattern: /^\d{4}$/,
         })}
-        placeholder="Ano letivo (YYYY)"
       />
 
       <FormSelect
@@ -136,22 +110,32 @@ export default function FormTurma({
           { value: "TARDE", label: "Tarde" },
           { value: "NOITE", label: "Noite" },
         ]}
-        rules={{ required: true }}
       />
 
       <div className="flex gap-2">
-        <Input label="Data Início" type="date" {...register("data_inicio")} />
-        <Input label="Data Fim" type="date" {...register("data_fim")} />
+        <Input label={""} type="date" {...register("dataInicio", {})} />
+        <Input label={""} type="date" {...register("dataFim")} />
       </div>
 
       <Input
-        label="Capacidade máxima"
+        label={""}
         type="number"
-        {...register("capacidade_maxima", { min: 1, max: 30 })}
+        placeholder="Capacidade máxima"
+        {...register("capacidade_maxima", {
+          valueAsNumber: true,
+          min: 1,
+        })}
       />
 
       <select
-        {...register("professorId")}
+        value={professorId ?? ""}
+        onChange={(e) =>
+          setValue(
+            "professorId",
+            e.target.value === "" ? null : e.target.value,
+            { shouldDirty: true }
+          )
+        }
         className="w-full border rounded px-3 py-2"
       >
         <option value="">Sem professor</option>
@@ -162,39 +146,46 @@ export default function FormTurma({
         ))}
       </select>
 
-      <div>
-        <input
-          type="text"
-          placeholder="Buscar aluno"
-          value={buscaAluno}
-          onChange={(e) => setBuscaAluno(e.target.value)}
-          className="w-full border rounded px-3 py-2 mb-2"
-        />
-        <select
-          {...register("alunosIds")}
-          multiple
-          className="w-full border rounded px-3 py-2 h-40"
-        >
-          {alunosFiltrados.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.usuario?.nome ?? a.nome ?? "Sem nome"}
-            </option>
-          ))}
-        </select>
-      </div>
+      <input
+        type="text"
+        placeholder="Buscar aluno"
+        value={buscaAluno}
+        onChange={(e) => setBuscaAluno(e.target.value)}
+        className="w-full border rounded px-3 py-2"
+      />
+
+      <select
+        multiple
+        value={alunosIds}
+        onChange={(e) =>
+          setValue(
+            "alunosIds",
+            Array.from(e.target.selectedOptions).map((o) => o.value),
+            { shouldDirty: true }
+          )
+        }
+        className="w-full border rounded px-3 py-2 h-40"
+      >
+        {alunosFiltrados.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.usuario?.nome ?? a.nome ?? "Sem nome"}
+          </option>
+        ))}
+      </select>
 
       {disciplinas.length > 0 && (
-        <div>
+        <>
           <input
             type="text"
             placeholder="Buscar disciplina"
             value={buscaDisciplina}
             onChange={(e) => setBuscaDisciplina(e.target.value)}
-            className="w-full border rounded px-3 py-2 mb-2"
+            className="w-full border rounded px-3 py-2"
           />
+
           <select
-            {...register("disciplinasIds")}
             multiple
+            {...register("disciplinasIds")}
             className="w-full border rounded px-3 py-2 h-40"
           >
             {disciplinasFiltradas.map((d) => (
@@ -203,14 +194,8 @@ export default function FormTurma({
               </option>
             ))}
           </select>
-        </div>
+        </>
       )}
-
-      <textarea
-        {...register("descricao")}
-        placeholder="Descrição"
-        className="w-full border rounded px-3 py-2"
-      />
 
       <label className="flex items-center gap-2">
         <input type="checkbox" {...register("ativa")} />

@@ -83,7 +83,7 @@ export default function TurmaList() {
   return (
     <div className="p-4">
       <div className="mb-4 flex justify-between items-center">
-        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-[#1D5D7F] max-w-130">
+        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] w-full sm:max-w-130">
           <FaSearch className="w-4 h-4 text-[#1D5D7F]" />
           <input
             type="search"
@@ -184,10 +184,6 @@ export default function TurmaList() {
           )}
         />
       )}
-
-      <div className="mt-6 text-sm text-gray-500">
-        Mostrando {turmasFiltradas.length} de {turmas.length} turmas
-      </div>
 
       {modalCriarAberto && (
         <ModalCriarTurma

@@ -72,8 +72,8 @@ export default function ModalEditarTurma({
       professorId: undefined,
       alunosIds: [],
       disciplinasIds: [],
-      data_inicio: "",
-      data_fim: "",
+      dataInicio: "",
+      dataFim: "",
     },
   });
 
@@ -84,25 +84,21 @@ export default function ModalEditarTurma({
       console.log("Turma recebida para edição:", turma);
 
       const formatDate = (dateString: string | null | undefined) => {
-        if (!dateString) return "";
-        try {
-          return new Date(dateString).toISOString().split("T")[0];
-        } catch {
-          return "";
-        }
+        if(!dateString) return "";
+        return dateString.split("T")[0];
       };
 
       methods.reset({
         nome_turma: turma.nome_turma ?? "",
         anoLetivo: turma.ano_letivo ?? "",
         turno: (turma.turno as "MANHÃ" | "TARDE" | "NOITE") ?? "MANHÃ",
-        capacidade_maxima: turma.capacidade_maxima ?? 30,
+        capacidade_maxima: turma.capacidade_maxima ,
         ativa: turma.ativa ?? true,
         professorId: turma.professor?.id ?? undefined,
         alunosIds: turma.alunos?.map((a) => a.id) ?? [],
         disciplinasIds: turma.disciplinas?.map((d) => d.id_disciplina) ?? [],
-        data_inicio: formatDate(turma.data_inicio),
-        data_fim: formatDate(turma.data_fim),
+        dataInicio: formatDate(turma.data_inicio),
+        dataFim: formatDate(turma.data_fim),
       });
     }
   }, [turma, aberto]);
@@ -133,7 +129,6 @@ export default function ModalEditarTurma({
         console.log("Professores para edição:", professoresData);
         console.log("Alunos para edição:", alunosData);
 
-        // Normaliza professores
         let professoresNormalized: Professor[] = [];
         if (Array.isArray(professoresData)) {
           professoresNormalized = professoresData.map(normalizeProfessor);
@@ -144,7 +139,6 @@ export default function ModalEditarTurma({
           professoresNormalized = professoresData.data.map(normalizeProfessor);
         }
 
-        // Normaliza alunos
         let alunosNormalized: Aluno[] = [];
         if (Array.isArray(alunosData)) {
           alunosNormalized = alunosData.map(normalizeAluno);
@@ -152,7 +146,6 @@ export default function ModalEditarTurma({
           alunosNormalized = alunosData.data.map(normalizeAluno);
         }
 
-        // Processa disciplinas
         let disciplinasNormalized: Disciplina[] = [];
         if (Array.isArray(disciplinasData)) {
           disciplinasNormalized = disciplinasData;
@@ -185,11 +178,11 @@ export default function ModalEditarTurma({
         turno: data.turno,
         capacidade_maxima: Number(data.capacidade_maxima),
         ativa: data.ativa ?? true,
-        professorId: data.professorId || undefined,
+        professorId: data.professorId === undefined ? null : data.professorId,
         alunosIds: data.alunosIds || [],
         disciplinasIds: data.disciplinasIds || [],
-        data_inicio: data.data_inicio || undefined,
-        data_fim: data.data_fim || undefined,
+        dataInicio: data.dataInicio || null,
+        dataFim: data.dataFim || null,
       };
 
       console.log("Payload PATCH:", payload);
@@ -212,7 +205,6 @@ export default function ModalEditarTurma({
 
       toast.success("Turma atualizada com sucesso!");
 
-      
       setTimeout(() => {
         onAtualizarLista();
         onClose();

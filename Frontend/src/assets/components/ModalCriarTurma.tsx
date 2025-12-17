@@ -49,7 +49,6 @@ export default function ModalCriarTurma({
       const data = await res.json();
       console.log("Dados brutos professores:", data);
 
-      // Normaliza os dados
       let professoresData: Professor[] = [];
 
       if (Array.isArray(data)) {
@@ -83,7 +82,6 @@ export default function ModalCriarTurma({
       const data = await res.json();
       console.log("Dados brutos alunos:", data);
 
-      // Normaliza os dados
       let alunosData: Aluno[] = [];
 
       if (Array.isArray(data)) {
@@ -145,8 +143,8 @@ export default function ModalCriarTurma({
         professorId: data.professorId || undefined,
         alunosIds: data.alunosIds || [],
         disciplinasIds: data.disciplinasIds || [],
-        data_inicio: data.data_inicio || undefined,
-        data_fim: data.data_fim || undefined,
+        dataInicio: data.dataInicio || undefined,
+        data_fim: data.dataFim || undefined,
       };
 
       console.log("Payload enviado:", payload);
