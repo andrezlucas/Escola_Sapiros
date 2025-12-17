@@ -93,6 +93,7 @@ function DashboardCoordenacao() {
         navigateTo={navigateTo}
         menuItems={options.main}
         bottomMenuItems={options.bottom}
+        activeView={currentView}
       />
       <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
         <div className="h-16">

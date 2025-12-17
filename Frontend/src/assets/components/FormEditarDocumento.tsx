@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import CardTituloMatricula from "./CardTituloMatricula";
 import { FormRowMatricula } from "./FormRowMatricula";
 import FormTextoMatricula from "./FormTextoMatricula";
 import { Input } from "./Input";
+import { toast } from "react-toastify";
 
 export type FormDocumentoData = {
   RG_ALUNO?: FileList;
@@ -16,10 +18,19 @@ export type FormDocumentoData = {
   COMPROVANTE_RESIDENCIA_RESP?: FileList;
 };
 
+export type Documento = {
+  id: string;
+  tipo: string;
+  nomeArquivo: string;
+  url?: string;
+};
+
 type Props = {
+  documentacaoId: string;
+  documentos: Documento[];
   onSubmit: (data: FormDocumentoData) => Promise<void>;
   onBack: (data: FormDocumentoData) => void;
-  onAlunoUpdated?: () => void;
+  onAlunoUpdated?: () => Promise<void> | void;
 };
 
 function validarArquivo(files?: FileList) {
@@ -39,7 +50,23 @@ function validarArquivo(files?: FileList) {
   return true;
 }
 
-function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
+const Badge = ({ ok }: { ok: boolean }) => (
+  <span
+    className={`text-xs font-semibold px-2 py-1 rounded-full ${
+      ok ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+    }`}
+  >
+    {ok ? "Enviado" : "Não enviado"}
+  </span>
+);
+
+function FormEditarDocumento({
+  documentacaoId,
+  documentos,
+  onSubmit,
+  onBack,
+  onAlunoUpdated,
+}: Props) {
   const {
     register,
     handleSubmit,
@@ -47,11 +74,85 @@ function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
     formState: { errors },
   } = useFormContext<FormDocumentoData>();
 
+  const [docs, setDocs] = useState<Documento[]>(documentos);
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    setDocs(documentos);
+  }, [documentos]);
+
+  function existeDocumento(tipo: string) {
+    return docs.find((d) => d.tipo === tipo);
+  }
+
+  const removerDocumento = async (documentoId: string) => {
+    try {
+      const res = await fetch(
+        `http://localhost:3000/documentacao/${documentacaoId}/documentos/${documentoId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error();
+
+      toast.success("Documento removido com sucesso");
+      setDocs((prev) => prev.filter((d) => d.id !== documentoId));
+      await onAlunoUpdated?.();
+    } catch {
+      toast.error("Erro ao remover documento");
+    }
+  };
+
   const submitForm = async (data: FormDocumentoData) => {
     await onSubmit(data);
-    if (onAlunoUpdated) {
-      await onAlunoUpdated();
-    }
+    await onAlunoUpdated?.();
+  };
+
+  const renderInput = (label: string, tipo: keyof FormDocumentoData) => {
+    const doc = existeDocumento(tipo);
+
+    return (
+      <FormTextoMatricula title={label}>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Badge ok={!!doc} />
+            {doc && (
+              <div className="flex gap-3 text-sm">
+                <a
+                  href={doc.url ?? "#"}
+                  target="_blank"
+                  className="text-blue-600 hover:underline"
+                >
+                  Visualizar
+                </a>
+                <button
+                  type="button"
+                  onClick={() => removerDocumento(doc.id)}
+                  className="text-red-600 hover:underline"
+                >
+                  Remover
+                </button>
+              </div>
+            )}
+          </div>
+
+          <Input
+            label=""
+            type="file"
+            disabled={!!doc}
+            {...register(tipo, { validate: validarArquivo })}
+          />
+
+          {errors[tipo] && (
+            <span className="text-sm text-red-500">
+              {errors[tipo]?.message as string}
+            </span>
+          )}
+        </div>
+      </FormTextoMatricula>
+    );
   };
 
   return (
@@ -59,151 +160,37 @@ function FormEditarDocumento({ onSubmit, onBack, onAlunoUpdated }: Props) {
       <CardTituloMatricula>Documentos do(a) aluno(a)</CardTituloMatricula>
 
       <FormRowMatricula>
-        <FormTextoMatricula title="Registro Geral (RG)">
-          <Input
-            label={""}
-            type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            {...register("RG_ALUNO", { validate: validarArquivo })}
-          />
-          {errors.RG_ALUNO && (
-            <span className="text-sm text-red-500">
-              {errors.RG_ALUNO.message}
-            </span>
-          )}
-        </FormTextoMatricula>
-
-        <FormTextoMatricula title="CPF">
-          <Input
-            label={""}
-            type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            {...register("CPF_ALUNO", { validate: validarArquivo })}
-          />
-          {errors.CPF_ALUNO && (
-            <span className="text-sm text-red-500">
-              {errors.CPF_ALUNO.message}
-            </span>
-          )}
-        </FormTextoMatricula>
-
-        <FormTextoMatricula title="Certidão de Nascimento">
-          <Input
-            label={""}
-            type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            {...register("CERTIDAO_NASCIMENTO", { validate: validarArquivo })}
-          />
-          {errors.CERTIDAO_NASCIMENTO && (
-            <span className="text-sm text-red-500">
-              {errors.CERTIDAO_NASCIMENTO.message}
-            </span>
-          )}
-        </FormTextoMatricula>
+        {renderInput("Registro Geral (RG)", "RG_ALUNO")}
+        {renderInput("CPF", "CPF_ALUNO")}
+        {renderInput("Certidão de Nascimento", "CERTIDAO_NASCIMENTO")}
       </FormRowMatricula>
 
-      <FormTextoMatricula title="Comprovante de Residência">
-        <Input
-          label={""}
-          type="file"
-          accept="application/pdf,image/jpeg,image/png"
-          {...register("COMPROVANTE_RESIDENCIA_ALUNO", {
-            validate: validarArquivo,
-          })}
-        />
-        {errors.COMPROVANTE_RESIDENCIA_ALUNO && (
-          <span className="text-sm text-red-500">
-            {errors.COMPROVANTE_RESIDENCIA_ALUNO.message}
-          </span>
-        )}
-      </FormTextoMatricula>
+      {renderInput("Comprovante de Residência", "COMPROVANTE_RESIDENCIA_ALUNO")}
+      {renderInput("Foto 3x4", "FOTO_3X4")}
+      {renderInput("Histórico Escolar", "HISTORICO_ESCOLAR")}
 
-      <FormTextoMatricula title="Foto 3x4">
-        <Input
-          label={""}
-          type="file"
-          accept="image/jpeg,image/png"
-          {...register("FOTO_3X4", { validate: validarArquivo })}
-        />
-        {errors.FOTO_3X4 && (
-          <span className="text-sm text-red-500">
-            {errors.FOTO_3X4.message}
-          </span>
-        )}
-      </FormTextoMatricula>
-
-      <FormTextoMatricula title="Histórico Escolar">
-        <Input
-          label={""}
-          type="file"
-          accept="application/pdf,image/jpeg,image/png"
-          {...register("HISTORICO_ESCOLAR", { validate: validarArquivo })}
-        />
-        {errors.HISTORICO_ESCOLAR && (
-          <span className="text-sm text-red-500">
-            {errors.HISTORICO_ESCOLAR.message}
-          </span>
-        )}
-      </FormTextoMatricula>
       <CardTituloMatricula>Documentos do Responsável</CardTituloMatricula>
 
       <FormRowMatricula>
-        <FormTextoMatricula title="RG do Responsável">
-          <Input
-            label={""}
-            type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            {...register("RG_RESPONSAVEL", { validate: validarArquivo })}
-          />
-          {errors.RG_RESPONSAVEL && (
-            <span className="text-sm text-red-500">
-              {errors.RG_RESPONSAVEL.message}
-            </span>
-          )}
-        </FormTextoMatricula>
-
-        <FormTextoMatricula title="CPF do Responsável">
-          <Input
-            label={""}
-            type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            {...register("CPF_RESPONSAVEL", { validate: validarArquivo })}
-          />
-          {errors.CPF_RESPONSAVEL && (
-            <span className="text-sm text-red-500">
-              {errors.CPF_RESPONSAVEL.message}
-            </span>
-          )}
-        </FormTextoMatricula>
-
-        <FormTextoMatricula title="Comprovante de Residência">
-          <Input
-            label={""}
-            type="file"
-            accept="application/pdf,image/jpeg,image/png"
-            {...register("COMPROVANTE_RESIDENCIA_RESP", {
-              validate: validarArquivo,
-            })}
-          />
-          {errors.COMPROVANTE_RESIDENCIA_RESP && (
-            <span className="text-sm text-red-500">
-              {errors.COMPROVANTE_RESIDENCIA_RESP.message}
-            </span>
-          )}
-        </FormTextoMatricula>
+        {renderInput("RG do Responsável", "RG_RESPONSAVEL")}
+        {renderInput("CPF do Responsável", "CPF_RESPONSAVEL")}
+        {renderInput(
+          "Comprovante de Residência",
+          "COMPROVANTE_RESIDENCIA_RESP"
+        )}
       </FormRowMatricula>
 
-      <div className="w-full flex justify-center gap-6 mt-10">
+      <div className="flex flex-col sm:flex-row justify-center gap-6 mt-10">
         <button
           type="button"
           onClick={() => onBack(getValues())}
-          className="w-40 h-12 bg-[#1D5D7F] text-white rounded-lg"
+          className="w-full sm:w-40 h-12 bg-[#1D5D7F] text-white rounded-lg"
         >
-          Sair
+          Confirmar mudanças
         </button>
         <button
           type="submit"
-          className="w-40 h-12 bg-[#1D5D7F] text-white rounded-lg"
+          className="w-full sm:w-40 h-12 bg-[#1D5D7F] text-white rounded-lg"
         >
           Salvar documentos
         </button>

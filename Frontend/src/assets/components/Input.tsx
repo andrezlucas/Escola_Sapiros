@@ -9,7 +9,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export function Input({ label, error, icon, ...props }: InputProps) {
   return (
     <div className="relative w-full">
-      <label className="block text-sm font-medium text-blue-900 mb-1">
+      <label className="block text-sm font-medium text-black mb-1">
         {label}
       </label>
 

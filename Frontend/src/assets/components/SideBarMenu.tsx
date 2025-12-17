@@ -12,19 +12,19 @@ interface SideBarMenuProps {
   navigateTo: (viewName: string) => void;
   menuItems: MenuItem[];
   bottomMenuItems: MenuItem[];
+  activeView: string;
 }
 
 export default function SideBarMenu({
   navigateTo,
   menuItems,
   bottomMenuItems,
+  activeView,
 }: SideBarMenuProps) {
-  const [active, setActive] = useState(menuItems[0].viewName);
-
   const renderMenu = (items: MenuItem[]) =>
     items.map((item, index) => {
       const IconComponent = item.icon;
-      const isActive = active === item.viewName;
+      const isActive = activeView === item.viewName;
 
       return (
         <button
@@ -35,7 +35,6 @@ export default function SideBarMenu({
               return;
             }
             navigateTo(item.viewName);
-            setActive(item.viewName);
           }}
           className={`relative flex items-center gap-3 px-4 py-2 rounded-full transition-all duration-300 ${
             isActive ? "text-[#1D5D7F]" : "text-[#e6eef8]"
@@ -58,7 +57,6 @@ export default function SideBarMenu({
           alt="Logo Sapiros"
           onClick={() => {
             navigateTo(menuItems[0].viewName);
-            setActive(menuItems[0].viewName);
           }}
           className="w-28 md:w-36 lg:w-40 h-auto object-contain cursor-pointer"
         />

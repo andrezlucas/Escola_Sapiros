@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import FormProfessor, { type ProfessorFormData } from "./FormProfessor";
 import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { useForm, FormProvider } from "react-hook-form";
 import { FaCheckCircle, FaBan, FaTrash } from "react-icons/fa";
+import ValidarCpf from "../utils/ValidarCpf";
 
 interface Disciplina {
   id: string;
@@ -99,11 +101,7 @@ export default function ModalEditarProfessor({
 
       const formatDate = (dateString: string | null | undefined) => {
         if (!dateString) return "";
-        try {
-          return new Date(dateString).toISOString().split("T")[0];
-        } catch {
-          return "";
-        }
+        return dateString.split("T")[0];
       };
 
       reset({
@@ -133,7 +131,7 @@ export default function ModalEditarProfessor({
     try {
       const formatDateForBackend = (dateString: string) => {
         if (!dateString) return undefined;
-        return new Date(dateString).toISOString();
+        return `${dateString}T00:00:00.000Z`;
       };
 
       const payload = {

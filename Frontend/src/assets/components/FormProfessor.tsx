@@ -1,6 +1,13 @@
 import { useFormContext } from "react-hook-form";
+import ValidarCpf from "../utils/ValidarCpf";
+import ValidarEmail from "../utils/ValidarEmail";
+import { Input } from "./Input";
+import FormSelect from "./FormSelect";
+import EstadoSelect from "./EstadosSelect";
+import CidadeSelect from "./CidadeSelect";
+import { BuscarCep } from "../utils/BuscarCep";
+import { maskCep } from "../utils/MaskCep";
 
-// Valores conforme o backend espera
 type SexoType = "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO";
 type RoleType = "aluno" | "professor" | "coordenacao";
 
@@ -22,7 +29,7 @@ export interface ProfessorFormData {
   instituicao: string;
   dataInicioGraduacao: string;
   dataConclusaoGraduacao?: string;
-  role?: RoleType; // Adicione se necessário
+  role?: RoleType;
 }
 
 interface FormProfessorProps {
@@ -32,8 +39,11 @@ interface FormProfessorProps {
 export default function FormProfessor({ onSubmit }: FormProfessorProps) {
   const {
     register,
+    setValue,
     handleSubmit,
     formState: { errors },
+    watch,
+    control,
   } = useFormContext<ProfessorFormData>();
 
   const formatCPF = (value: string) => {
@@ -53,22 +63,12 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
       .replace(/(-\d{4})\d+?$/, "$1");
   };
 
-  const formatCEP = (value: string) => {
-    return value
-      .replace(/\D/g, "")
-      .replace(/(\d{5})(\d)/, "$1-$2")
-      .replace(/(-\d{3})\d+?$/, "$1");
-  };
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Dados Pessoais */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nome Completo *
-          </label>
-          <input
+          <Input
+            label={"Nome completo:"}
             type="text"
             {...register("nome", { required: "Nome é obrigatório" })}
             className="w-full p-2 border rounded-lg"
@@ -79,13 +79,12 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            CPF *
-          </label>
-          <input
+          <Input
+            label={"CPF:"}
             type="text"
             {...register("cpf", {
               required: "CPF é obrigatório",
+              validate: ValidarCpf,
               onChange: (e) => {
                 e.target.value = formatCPF(e.target.value);
               },
@@ -99,13 +98,12 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email *
-          </label>
-          <input
+          <Input
+            label={"Email:"}
             type="email"
             {...register("email", {
               required: "Email é obrigatório",
+              validate: ValidarEmail,
               pattern: {
                 value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                 message: "Email inválido",
@@ -119,13 +117,14 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Telefone *
-          </label>
-          <input
+          <Input
+            label={"Telefone:"}
             type="text"
             {...register("telefone", {
               required: "Telefone é obrigatório",
+              validate: (value) =>
+                value.replace(/\D/g, "").length === 11 ||
+                "Telefone deve conter DDD + número",
               onChange: (e) => {
                 e.target.value = formatTelefone(e.target.value);
               },
@@ -141,34 +140,41 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Sexo *
-          </label>
-          <select
-            {...register("sexo", { required: "Sexo é obrigatório" })}
-            className="w-full p-2 border rounded-lg"
-          >
-            <option value="">Selecione</option>
-            <option value="MASCULINO">Masculino</option>
-            <option value="FEMININO">Feminino</option>
-            <option value="OUTRO">Outro</option>
-            <option value="NAO_INFORMADO">Não Informado</option>
-          </select>
-          {errors.sexo && (
-            <span className="text-red-500 text-sm">{errors.sexo.message}</span>
-          )}
+          <FormSelect
+            label="Sexo:"
+            name="sexo"
+            options={[
+              { value: "MASCULINO", label: "Masculino" },
+              { value: "FEMININO", label: "Feminino" },
+            ]}
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Data de Nascimento *
-          </label>
-          <input
+          <Input
+            label="Data de Nascimento:"
             type="date"
             {...register("dataNascimento", {
               required: "Data de nascimento é obrigatória",
+              validate: (value) => {
+                if (!value) return "Data de nascimento é obrigatória";
+
+                const nascimento = new Date(value + "T12:00:00");
+                const hoje = new Date();
+
+                let idade = hoje.getFullYear() - nascimento.getFullYear();
+                const m = hoje.getMonth() - nascimento.getMonth();
+
+                if (
+                  m < 0 ||
+                  (m === 0 && hoje.getDate() < nascimento.getDate())
+                ) {
+                  idade--;
+                }
+
+                return idade >= 18 || "Professor deve ter no mínimo 18 anos";
+              },
             })}
-            className="w-full p-2 border rounded-lg"
           />
           {errors.dataNascimento && (
             <span className="text-red-500 text-sm">
@@ -177,15 +183,12 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
           )}
         </div>
 
-        {/* Endereço */}
         <div className="md:col-span-2">
           <h3 className="text-lg font-semibold mb-2">Endereço</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Logradouro
-              </label>
-              <input
+              <Input
+                label={"Logadouro:"}
                 type="text"
                 {...register("enderecoLogradouro")}
                 className="w-full p-2 border rounded-lg"
@@ -193,10 +196,8 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Número
-              </label>
-              <input
+              <Input
+                label={"Número"}
                 type="text"
                 {...register("enderecoNumero")}
                 className="w-full p-2 border rounded-lg"
@@ -204,26 +205,33 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                CEP
-              </label>
-              <input
+              <Input
+                label={"CEP:"}
                 type="text"
                 {...register("enderecoCep", {
-                  onChange: (e) => {
-                    e.target.value = formatCEP(e.target.value);
+                  required: "CEP obrigatório",
+                  onChange: async (e) => {
+                    const value = maskCep(e.target.value);
+                    e.target.value = value;
+
+                    if (value.replace(/\D/g, "").length === 8) {
+                      const d = await BuscarCep(value);
+                      if (d) {
+                        setValue("enderecoLogradouro", d.logradouro || "");
+                        setValue("enderecoBairro", d.bairro || "");
+                        setValue("enderecoCidade", d.cidade || "");
+                        setValue("enderecoEstado", d.estado || "");
+                      }
+                    }
                   },
                 })}
-                className="w-full p-2 border rounded-lg"
-                maxLength={9}
+                error={errors?.enderecoCep?.message}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Complemento
-              </label>
-              <input
+              <Input
+                label={"Complemento:"}
                 type="text"
                 {...register("enderecoComplemento")}
                 className="w-full p-2 border rounded-lg"
@@ -231,10 +239,8 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bairro
-              </label>
-              <input
+              <Input
+                label={"Bairro:"}
                 type="text"
                 {...register("enderecoBairro")}
                 className="w-full p-2 border rounded-lg"
@@ -242,39 +248,21 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cidade
-              </label>
-              <input
-                type="text"
-                {...register("enderecoCidade")}
-                className="w-full p-2 border rounded-lg"
-              />
+              <CidadeSelect />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estado
-              </label>
-              <input
-                type="text"
-                {...register("enderecoEstado")}
-                className="w-full p-2 border rounded-lg"
-                maxLength={2}
-              />
+              <EstadoSelect control={control} />
             </div>
           </div>
         </div>
 
-        {/* Formação Acadêmica */}
         <div className="md:col-span-2">
           <h3 className="text-lg font-semibold mb-2">Formação Acadêmica</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Curso de Graduação *
-              </label>
-              <input
+              <Input
+                label={"Curso de Graduação:"}
                 type="text"
                 {...register("cursoGraduacao", {
                   required: "Curso de graduação é obrigatório",
@@ -289,10 +277,8 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Instituição *
-              </label>
-              <input
+              <Input
+                label={"Instituição:"}
                 type="text"
                 {...register("instituicao", {
                   required: "Instituição é obrigatória",
@@ -307,15 +293,12 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Data de Início da Graduação *
-              </label>
-              <input
+              <Input
+                label={"Data de Início da Graduação:"}
                 type="date"
                 {...register("dataInicioGraduacao", {
                   required: "Data de início é obrigatória",
                 })}
-                className="w-full p-2 border rounded-lg"
               />
               {errors.dataInicioGraduacao && (
                 <span className="text-red-500 text-sm">
@@ -325,13 +308,15 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Data de Conclusão da Graduação
-              </label>
-              <input
+              <Input
+                label={"Data de Conclusão da Graduação:"}
                 type="date"
-                {...register("dataConclusaoGraduacao")}
-                className="w-full p-2 border rounded-lg"
+                {...register("dataConclusaoGraduacao", {
+                  validate: (value) =>
+                    !value ||
+                    new Date(value) >= new Date(watch("dataInicioGraduacao")) ||
+                    "Data de conclusão não pode ser anterior ao início",
+                })}
               />
             </div>
           </div>

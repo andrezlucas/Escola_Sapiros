@@ -13,6 +13,7 @@ import { ToastContainer } from "react-toastify";
 function App() {
   return (
     <>
+      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
@@ -28,14 +29,9 @@ function App() {
         <Route path="/gerenciamento" element={<Gerenciamento />} />
         <Route
           path="/alunos/:id/documentos/editar"
-          element={<EditarDocumento/>}
+          element={<EditarDocumento />}
         />
       </Routes>
-      <ToastContainer
-          position="bottom-center"
-          autoClose={3000}
-          theme="dark"
-        />
     </>
   );
 }

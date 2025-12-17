@@ -7,6 +7,12 @@ import FormEditarDocumento, {
 import Tabela from "../components/Tabela";
 import { toast } from "react-toastify";
 
+interface Documento {
+  id: string;
+  tipo: string;
+  nomeArquivo: string;
+}
+
 interface Aluno {
   id: string;
   usuario: {
@@ -14,7 +20,7 @@ interface Aluno {
     email: string;
     role: string;
     isBlocked?: boolean;
-  } | null;
+  };
   status?: "Ativo" | "Inativo";
   documentacaoId?: string;
 }
@@ -32,8 +38,9 @@ function AlunoList() {
   const [selectedDocumentacaoId, setSelectedDocumentacaoId] = useState<
     string | null
   >(null);
-  const methods = useForm<FormDocumentoData>();
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
 
+  const methods = useForm<FormDocumentoData>();
   const token = localStorage.getItem("token");
 
   async function fetchAlunos() {
@@ -45,16 +52,14 @@ function AlunoList() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      if (!res.ok) {
-        console.error("Erro ao obter alunos:", res.status);
-        return;
-      }
+
+      if (!res.ok) return;
+
       const data = await res.json();
       const lista = Array.isArray(data) ? data : data.data;
 
       const normalizados: Aluno[] = lista.map((a: any) => ({
         ...a,
-
         status: a.usuario
           ? a.usuario.isBlocked
             ? "Inativo"
@@ -64,9 +69,11 @@ function AlunoList() {
       }));
 
       setAlunos(normalizados);
-      if (!Array.isArray(data) && data.pages) setTotalPaginas(data.pages);
+      if (!Array.isArray(data) && data.pages) {
+        setTotalPaginas(data.pages);
+      }
     } catch (err) {
-      console.error("Erro ao buscar alunos:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -85,50 +92,33 @@ function AlunoList() {
         }
       );
 
-      if (!res.ok) throw new Error("Erro ao buscar documentação atualizada");
+      if (!res.ok) throw new Error();
 
       const docAtualizada = await res.json();
       const alunoAtualizado: Aluno = docAtualizada.aluno;
 
-      setAlunos((prev) => {
-        const existe = prev.some((a) => a.id === alunoAtualizado.id);
-        if (existe) {
-          return prev.map((a) =>
-            a.id === alunoAtualizado.id
-              ? {
-                  ...a,
-                  usuario: alunoAtualizado.usuario,
-                  status: alunoAtualizado.usuario
-                    ? alunoAtualizado.usuario.isBlocked
-                      ? "Inativo"
-                      : "Ativo"
-                    : undefined,
-                  documentacaoId: docAtualizada.id,
-                }
-              : a
-          );
-        }
-        return [
-          ...prev,
-          {
-            ...alunoAtualizado,
-            status: alunoAtualizado.usuario
-              ? alunoAtualizado.usuario.isBlocked
-                ? "Inativo"
-                : "Ativo"
-              : undefined,
-            documentacaoId: docAtualizada.id,
-          },
-        ];
-      });
-    } catch (err) {
-      console.error(err);
+      setAlunos((prev) =>
+        prev.map((a) =>
+          a.id === alunoAtualizado.id
+            ? {
+                ...a,
+                usuario: alunoAtualizado.usuario,
+                status: alunoAtualizado.usuario?.isBlocked
+                  ? "Inativo"
+                  : "Ativo",
+                documentacaoId: docAtualizada.id,
+              }
+            : a
+        )
+      );
+    } catch {
       toast.error("Erro ao atualizar aluno.");
     }
   };
 
   const handleEnviarDocumentos = async (data: FormDocumentoData) => {
     if (!selectedDocumentacaoId) return;
+
     try {
       for (const [key, value] of Object.entries(data)) {
         if (value && value.length > 0) {
@@ -145,17 +135,36 @@ function AlunoList() {
             }
           );
 
-          if (!res.ok) throw new Error(`Erro ao enviar arquivo: ${key}`);
+          if (!res.ok) throw new Error();
         }
       }
 
       toast.success("Documentos enviados com sucesso!");
       setIsModalOpen(false);
-
       await atualizarAluno(selectedDocumentacaoId);
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Erro ao enviar documentos.");
+    }
+  };
+
+  const abrirModal = async (documentacaoId: string) => {
+    try {
+      const res = await fetch(
+        `http://localhost:3000/documentacao/${documentacaoId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error();
+
+      const doc = await res.json();
+
+      setSelectedDocumentacaoId(doc.id);
+      setDocumentos(doc.documentos ?? []);
+      setIsModalOpen(true);
+    } catch {
+      toast.error("Erro ao carregar documentos.");
     }
   };
 
@@ -172,15 +181,10 @@ function AlunoList() {
       (a.usuario?.nome ?? "").toLowerCase().includes(search.toLowerCase())
     );
 
-  const abrirModal = (documentacaoId: string) => {
-    setSelectedDocumentacaoId(documentacaoId);
-    setIsModalOpen(true);
-  };
-
   return (
     <div className="p-4">
       <div className="mb-4">
-        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] max-w-130">
+        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] w-full sm:max-w-130">
           <FaSearch className="w-4 h-2 text-[#1D5D7F]" />
           <input
             type="search"
@@ -219,7 +223,15 @@ function AlunoList() {
             { titulo: "Aluno", render: (a) => a.usuario?.nome ?? "-" },
             { titulo: "Email", render: (a) => a.usuario?.email ?? "-" },
             { titulo: "Tipo", render: (a) => a.usuario?.role ?? "-" },
-            { titulo: "Status", render: (a) => a.status ?? "-" },
+            {
+              titulo: "Status",
+              render: (p) =>
+                p.usuario.isBlocked ? (
+                  <span className="text-red-600 font-semibold">Inativo</span>
+                ) : (
+                  <span className="text-green-600 font-semibold">Ativo</span>
+                ),
+            },
           ]}
           renderExtra={(aluno) =>
             aluno.documentacaoId ? (
@@ -234,35 +246,16 @@ function AlunoList() {
         />
       )}
 
-      <div className="flex justify-center gap-3 mt-4">
-        <button
-          disabled={page === 1}
-          onClick={() => setPage((p) => p - 1)}
-          className="px-3 py-1 border rounded disabled:opacity-40"
-        >
-          {"<"}
-        </button>
-        <span>Página {page}</span>
-        <button
-          disabled={page === totalPaginas}
-          onClick={() => setPage((p) => p + 1)}
-          className="px-1 py-1 border rounded-xs disabled:opacity-40"
-        >
-          {">"}
-        </button>
-      </div>
-
       {isModalOpen && selectedDocumentacaoId && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white p-8 rounded-lg w-[90%] max-w-3xl">
+          <div className="bg-white p-4 sm:p-8 rounded-lg w-[95%] sm:w-[90%] max-w-3xl max-h-[90vh] overflow-y-auto">
             <FormProvider {...methods}>
               <FormEditarDocumento
+                documentacaoId={selectedDocumentacaoId}
+                documentos={documentos}
                 onSubmit={handleEnviarDocumentos}
                 onBack={() => setIsModalOpen(false)}
-                onAlunoUpdated={() =>
-                  selectedDocumentacaoId &&
-                  atualizarAluno(selectedDocumentacaoId)
-                }
+                onAlunoUpdated={() => atualizarAluno(selectedDocumentacaoId)}
               />
             </FormProvider>
           </div>

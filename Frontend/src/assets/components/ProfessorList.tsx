@@ -99,9 +99,17 @@ export default function ProfessorList() {
           dados={professoresFiltrados}
           colunas={[
             { titulo: "Nome", render: (p) => p.usuario.nome },
-            { titulo: "Email", render: (p) => p.usuario.email },
             { titulo: "CPF", render: (p) => p.usuario.cpf },
-            { titulo: "Graduação", render: (p) => p.graduacao },
+            { titulo: "Telefone", render: (p) => p.usuario.telefone },
+            {
+              titulo: "Status",
+              render: (p) =>
+                p.usuario.isBlocked ? (
+                  <span className="text-red-600 font-semibold">Inativo</span>
+                ) : (
+                  <span className="text-green-600 font-semibold">Ativo</span>
+                ),
+            },
             {
               titulo: "Turmas",
               render: (p) => `${p.turmas?.length || 0}`,
