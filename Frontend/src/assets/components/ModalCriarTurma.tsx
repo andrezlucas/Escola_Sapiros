@@ -143,11 +143,7 @@ export default function ModalCriarTurma({
         professorId: data.professorId || undefined,
         alunosIds: data.alunosIds || [],
         disciplinasIds: data.disciplinasIds || [],
-        dataInicio: data.dataInicio || undefined,
-        data_fim: data.dataFim || undefined,
       };
-
-      console.log("Payload enviado:", payload);
 
       const res = await fetch("http://localhost:3000/turmas", {
         method: "POST",
@@ -158,19 +154,18 @@ export default function ModalCriarTurma({
         body: JSON.stringify(payload),
       });
 
+      const responseData = await res.json();
+
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(
-          Array.isArray(err.message) ? err.message.join(", ") : err.message
-        );
+        throw new Error(responseData.message || "Erro ao criar turma");
       }
 
       toast.success("Turma criada com sucesso!");
       onAtualizarLista();
       onClose();
     } catch (err: any) {
-      console.error("Erro detalhado:", err);
-      toast.error(`Erro ao criar turma: ${err.message}`);
+      console.error("Erro criar turma:", err);
+      toast.error(err.message);
     }
   }
 

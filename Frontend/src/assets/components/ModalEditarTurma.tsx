@@ -72,8 +72,6 @@ export default function ModalEditarTurma({
       professorId: undefined,
       alunosIds: [],
       disciplinasIds: [],
-      dataInicio: "",
-      dataFim: "",
     },
   });
 
@@ -83,22 +81,15 @@ export default function ModalEditarTurma({
     if (turma && aberto) {
       console.log("Turma recebida para edição:", turma);
 
-      const formatDate = (dateString: string | null | undefined) => {
-        if(!dateString) return "";
-        return dateString.split("T")[0];
-      };
-
       methods.reset({
         nome_turma: turma.nome_turma ?? "",
         anoLetivo: turma.ano_letivo ?? "",
         turno: (turma.turno as "MANHÃ" | "TARDE" | "NOITE") ?? "MANHÃ",
-        capacidade_maxima: turma.capacidade_maxima ,
+        capacidade_maxima: turma.capacidade_maxima,
         ativa: turma.ativa ?? true,
         professorId: turma.professor?.id ?? undefined,
         alunosIds: turma.alunos?.map((a) => a.id) ?? [],
         disciplinasIds: turma.disciplinas?.map((d) => d.id_disciplina) ?? [],
-        dataInicio: formatDate(turma.data_inicio),
-        dataFim: formatDate(turma.data_fim),
       });
     }
   }, [turma, aberto]);
@@ -172,18 +163,20 @@ export default function ModalEditarTurma({
 
   async function handleAtualizarTurma(data: TurmaFormData) {
     try {
-      const payload = {
+      const payload: any = {
         nome_turma: data.nome_turma,
         anoLetivo: data.anoLetivo,
         turno: data.turno,
         capacidade_maxima: Number(data.capacidade_maxima),
         ativa: data.ativa ?? true,
-        professorId: data.professorId === undefined ? null : data.professorId,
         alunosIds: data.alunosIds || [],
         disciplinasIds: data.disciplinasIds || [],
-        dataInicio: data.dataInicio || null,
-        dataFim: data.dataFim || null,
       };
+      if (!data.professorId) {
+        payload.professorId = null;
+      } else {
+        payload.professorId = data.professorId;
+      }
 
       console.log("Payload PATCH:", payload);
 
@@ -284,12 +277,6 @@ export default function ModalEditarTurma({
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancelar
-                </button>
-                <button
-                  onClick={methods.handleSubmit(handleAtualizarTurma)}
-                  className="px-4 py-2 bg-[#1D5D7F] text-white rounded-lg hover:bg-[#164a66]"
-                >
-                  Salvar
                 </button>
               </div>
             </div>

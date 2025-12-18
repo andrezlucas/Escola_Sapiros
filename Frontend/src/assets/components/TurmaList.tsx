@@ -80,6 +80,14 @@ export default function TurmaList() {
     return professor.usuario?.nome || professor.nome || "—";
   };
 
+  function formatarTurno(turno?: string) {
+  if (!turno) return "—";
+
+  return turno
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
   return (
     <div className="p-4">
       <div className="mb-4 flex justify-between items-center">
@@ -131,7 +139,9 @@ export default function TurmaList() {
               titulo: "Turma",
               render: (t) => (
                 <div>
-                  <div className="font-medium">{t.nome_turma ?? "—"}</div>
+                  <div className="font-medium">
+                    {t.nome_turma ?? "—"} - {formatarTurno(t.turno)}
+                  </div>
                   <div className="text-sm text-gray-500">{t.ano_letivo}</div>
                 </div>
               ),

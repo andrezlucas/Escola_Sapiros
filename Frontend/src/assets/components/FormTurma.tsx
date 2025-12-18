@@ -24,8 +24,6 @@ export type TurmaFormData = {
   nome_turma: string;
   anoLetivo: string;
   turno: "MANHÃ" | "TARDE" | "NOITE";
-  dataInicio?: string;
-  dataFim?: string;
   professorId?: string | null;
   alunosIds?: string[];
   disciplinasIds?: string[];
@@ -112,11 +110,6 @@ export default function FormTurma({
         ]}
       />
 
-      <div className="flex gap-2">
-        <Input label={""} type="date" {...register("dataInicio", {})} />
-        <Input label={""} type="date" {...register("dataFim")} />
-      </div>
-
       <Input
         label={""}
         type="number"
@@ -130,11 +123,9 @@ export default function FormTurma({
       <select
         value={professorId ?? ""}
         onChange={(e) =>
-          setValue(
-            "professorId",
-            e.target.value === "" ? null : e.target.value,
-            { shouldDirty: true }
-          )
+          setValue("professorId", e.target.value || undefined, {
+            shouldDirty: true,
+          })
         }
         className="w-full border rounded px-3 py-2"
       >

@@ -105,17 +105,14 @@ export default function CalendarioPage() {
         <div className="p-2">
           <header className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4 bg-white rounded-lg border border-gray-200 h-15">
-              <img
-                src="/avatar.png"
-                alt="avatar"
-                className="w-10 h-10 rounded-full"
-              />
               <div>
-                <p className="font-semibold">{nome}</p>
-                <p className="text-sm text-gray-500">{LetraMaiuscula(role)}</p>
+                <p className="px-2 font-semibold">{nome}</p>
+                <p className="px-2 text-sm text-gray-500">{LetraMaiuscula(role)}</p>
               </div>
               <div className="ml-160">
-                <span className="px-3 py-2text-sm ">{LetraMaiuscula(role)}</span>
+                <span className="px-3 py-2text-sm ">
+                  {LetraMaiuscula(role)}
+                </span>
               </div>
             </div>
 

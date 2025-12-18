@@ -10,9 +10,13 @@ import DashboardAluno from "./assets/pages/DashboardAluno";
 import Gerenciamento from "./assets/pages/Gerenciamento";
 import EditarDocumento from "./assets/pages/EditarDocumento";
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 function App() {
+  
   return (
     <>
+    
       <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
       <Routes>
         <Route path="/" element={<Login />} />
