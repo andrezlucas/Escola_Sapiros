@@ -1,16 +1,32 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Usuario, Role } from './entities/usuario.entity';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import { Turma } from '../turma/entities/turma.entity';
+import { Professor } from '../professor/entities/professor.entity';
+import { Aluno } from '../aluno/entities/aluno.entity';
 
 @Injectable()
 export class UsuarioService {
   constructor(
     @InjectRepository(Usuario)
     private usuarioRepository: Repository<Usuario>,
+
+    @InjectRepository(Turma)
+    private turmaRepository: Repository<Turma>,
+
+    @InjectRepository(Professor)
+    private professorRepository: Repository<Professor>,
+
+    @InjectRepository(Aluno)
+    private alunoRepository: Repository<Aluno>,
   ) {}
 
   async findAll(): Promise<Omit<Usuario, 'senha'>[]> {
@@ -73,7 +89,6 @@ export class UsuarioService {
 
     Object.assign(usuario, dto);
     const salvo = await this.usuarioRepository.save(usuario);
-
     const { senha, ...resto } = salvo;
     return resto;
   }
@@ -89,11 +104,39 @@ export class UsuarioService {
     });
   }
 
-
   async setBlocked(id: string, isBlocked: boolean): Promise<Usuario> {
     const usuario = await this.findOne(id);
     usuario.isBlocked = isBlocked;
-    return this.usuarioRepository.save(usuario);
-}
 
+    if (isBlocked) {
+      if (usuario.role === Role.PROFESSOR) {
+        const professor = await this.professorRepository.findOne({
+          where: { usuario: { id: usuario.id } },
+        });
+
+        if (professor) {
+          await this.turmaRepository
+            .createQueryBuilder()
+            .update(Turma)
+            .set({ professor: undefined})
+            .where('professor_id = :id', { id: professor.id })
+            .execute();
+        }
+      }
+
+      if (usuario.role === Role.ALUNO) {
+        const aluno = await this.alunoRepository.findOne({
+          where: { usuario: { id: usuario.id } },
+          relations: ['turmas'],
+        });
+
+        if (aluno?.turmas?.length) {
+          aluno.turmas = [];
+          await this.alunoRepository.save(aluno);
+        }
+      }
+    }
+
+    return this.usuarioRepository.save(usuario);
+  }
 }

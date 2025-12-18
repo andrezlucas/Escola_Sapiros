@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -10,6 +11,7 @@ import { CreateTurmaDto } from './dto/create-turma.dto';
 import { UpdateTurmaDto } from './dto/update-turma.dto';
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Professor } from '../professor/entities/professor.entity';
+import { Usuario } from '../usuario/entities/usuario.entity';
 
 @Injectable()
 export class TurmaService {
@@ -24,16 +26,32 @@ export class TurmaService {
     private readonly professorRepository: Repository<Professor>,
   ) {}
 
+  private validarUsuarioBloqueado(
+    usuario: Usuario,
+    tipo: 'Aluno' | 'Professor',
+  ) {
+    if (usuario.isBlocked) {
+      throw new ForbiddenException(
+        `${tipo} ${usuario.nome} está bloqueado(a)`,
+      );
+    }
+  }
+
   private async loadAlunos(alunosIds?: string[]): Promise<Aluno[]> {
     if (!alunosIds || alunosIds.length === 0) return [];
 
     const alunos = await this.alunoRepository.find({
       where: { id: In(alunosIds) },
+      relations: ['usuario'],
     });
 
     if (alunos.length !== alunosIds.length) {
       throw new NotFoundException('Um ou mais alunos não foram encontrados');
     }
+
+    alunos.forEach(aluno =>
+      this.validarUsuarioBloqueado(aluno.usuario, 'Aluno'),
+    );
 
     return alunos;
   }
@@ -45,11 +63,14 @@ export class TurmaService {
 
     const professor = await this.professorRepository.findOne({
       where: { id: professorId },
+      relations: ['usuario'],
     });
 
     if (!professor) {
       throw new NotFoundException('Professor não encontrado');
     }
+
+    this.validarUsuarioBloqueado(professor.usuario, 'Professor');
 
     return professor;
   }
@@ -57,7 +78,7 @@ export class TurmaService {
   private async validarConflitoProfessor(
     professorId: string,
     turno: string,
-    ano_letivo: string,
+    anoLetivo: string,
     turmaId?: string,
   ): Promise<void> {
     const query = this.turmaRepository
@@ -65,7 +86,7 @@ export class TurmaService {
       .leftJoin('turma.professor', 'professor')
       .where('professor.id = :professorId', { professorId })
       .andWhere('turma.turno = :turno', { turno })
-      .andWhere('turma.ano_letivo = :ano_letivo', { ano_letivo })
+      .andWhere('turma.ano_letivo = :anoLetivo', { anoLetivo })
       .andWhere('turma.ativa = true');
 
     if (turmaId) {
@@ -96,14 +117,15 @@ export class TurmaService {
       ano_letivo: dto.anoLetivo,
       turno: dto.turno,
       ativa: dto.ativa ?? true,
-      data_inicio: new Date(dto.dataInicio),
-      data_fim: dto.dataFim ? new Date(dto.dataFim) : undefined,
     });
 
     turma.professor = await this.loadProfessor(dto.professorId);
     turma.alunos = await this.loadAlunos(dto.alunosIds);
 
-    if (turma.capacidade_maxima && turma.alunos.length > turma.capacidade_maxima) {
+    if (
+      turma.capacidade_maxima &&
+      turma.alunos.length > turma.capacidade_maxima
+    ) {
       throw new BadRequestException(
         'Número de alunos excede a capacidade máxima da turma',
       );
@@ -114,7 +136,7 @@ export class TurmaService {
 
   async findAll(): Promise<Turma[]> {
     return this.turmaRepository.find({
-      relations: ['alunos', 'professor', 'avisos'],
+      relations: ['alunos', 'alunos.usuario', 'professor', 'professor.usuario', 'avisos'],
       order: { nome_turma: 'ASC' },
     });
   }
@@ -122,7 +144,7 @@ export class TurmaService {
   async findOne(id: string): Promise<Turma> {
     const turma = await this.turmaRepository.findOne({
       where: { id },
-      relations: ['alunos', 'professor', 'avisos'],
+      relations: ['alunos', 'alunos.usuario', 'professor', 'professor.usuario', 'avisos'],
     });
 
     if (!turma) {
@@ -137,13 +159,13 @@ export class TurmaService {
 
     const professorId = dto.professorId ?? turma.professor?.id;
     const turno = dto.turno ?? turma.turno;
-    const ano_letivo = dto.anoLetivo ?? turma.ano_letivo;
+    const anoLetivo = dto.anoLetivo ?? turma.ano_letivo;
 
     if (professorId) {
       await this.validarConflitoProfessor(
         professorId,
         turno,
-        ano_letivo,
+        anoLetivo,
         turma.id,
       );
     }
@@ -151,17 +173,9 @@ export class TurmaService {
     turma.nome_turma = dto.nome_turma ?? turma.nome_turma;
     turma.capacidade_maxima =
       dto.capacidade_maxima ?? turma.capacidade_maxima;
-    turma.ano_letivo = dto.anoLetivo ?? turma.ano_letivo;
-    turma.turno = dto.turno ?? turma.turno;
+    turma.ano_letivo = anoLetivo;
+    turma.turno = turno;
     turma.ativa = dto.ativa ?? turma.ativa;
-
-    if (dto.dataInicio) {
-      turma.data_inicio = new Date(dto.dataInicio);
-    }
-
-    if (dto.dataFim !== undefined) {
-      turma.data_fim = dto.dataFim ? new Date(dto.dataFim) : undefined;
-    }
 
     if (dto.professorId !== undefined) {
       turma.professor = dto.professorId
@@ -173,7 +187,10 @@ export class TurmaService {
       turma.alunos = await this.loadAlunos(dto.alunosIds);
     }
 
-    if (turma.capacidade_maxima && turma.alunos.length > turma.capacidade_maxima) {
+    if (
+      turma.capacidade_maxima &&
+      turma.alunos.length > turma.capacidade_maxima
+    ) {
       throw new BadRequestException(
         'Número de alunos excede a capacidade máxima da turma',
       );
@@ -197,11 +214,14 @@ export class TurmaService {
 
     const aluno = await this.alunoRepository.findOne({
       where: { id: alunoId },
+      relations: ['usuario'],
     });
 
     if (!aluno) {
       throw new NotFoundException('Aluno não encontrado');
     }
+
+    this.validarUsuarioBloqueado(aluno.usuario, 'Aluno');
 
     if (turma.alunos.some(a => a.id === aluno.id)) {
       throw new BadRequestException('Aluno já matriculado');
@@ -220,7 +240,6 @@ export class TurmaService {
 
   async removeAluno(turmaId: string, alunoId: string): Promise<Turma> {
     const turma = await this.findOne(turmaId);
-
     turma.alunos = turma.alunos.filter(a => a.id !== alunoId);
     return this.turmaRepository.save(turma);
   }

@@ -47,14 +47,6 @@ export class Turma {
   @Column({ name: 'turno' })
   turno: string;
 
-  // Define data_inicio com valor padrão CURRENT_DATE
-  @Column({ type: 'date', name: 'data_inicio', default: () => 'CURRENT_DATE' })
-  data_inicio: Date;
-
-  // data_fim opcional
-  @Column({ type: 'date', name: 'data_fim', nullable: true })
-  data_fim?: Date;
-
   @Column({ default: true })
   ativa: boolean;
 

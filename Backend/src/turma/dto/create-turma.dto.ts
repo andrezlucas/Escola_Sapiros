@@ -30,14 +30,6 @@ export class CreateTurmaDto {
   })
   turno: string;
 
-  @IsDateString()
-  @IsNotEmpty({ message: 'A data de início é obrigatória' })
-  dataInicio: string;
-
-  @IsDateString()
-  @IsOptional()
-  dataFim?: string;
-
   @IsNumber()
   @IsPositive()
   @Min(1, { message: 'capacidade_maxima deve ser no mínimo 1' })
