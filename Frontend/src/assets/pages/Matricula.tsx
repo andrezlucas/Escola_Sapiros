@@ -3,7 +3,9 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast, ToastContainer } from "react-toastify";
 import FormAluno from "../components/FormAluno";
 import FormResponsavel from "../components/FormResponsavel";
-import FormDocumento, { type FormDocumentoData } from "../components/FormDocumento";
+import FormDocumento, {
+  type FormDocumentoData,
+} from "../components/FormDocumento";
 
 type DadosAluno = {
   nome?: string;
@@ -164,7 +166,8 @@ function Matricula(): JSX.Element {
     };
 
     Object.keys(payload).forEach(
-      (k) => (payload[k] === undefined || payload[k] === "") && delete payload[k]
+      (k) =>
+        (payload[k] === undefined || payload[k] === "") && delete payload[k]
     );
 
     return payload;
@@ -292,7 +295,11 @@ function Matricula(): JSX.Element {
           </div>
         )}
 
-        <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
+        <ToastContainer
+          position="bottom-center"
+          autoClose={3000}
+          theme="dark"
+        />
       </div>
     </FormProvider>
   );

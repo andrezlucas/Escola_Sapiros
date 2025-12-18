@@ -4,15 +4,21 @@ import SelectField from "./ReactSelect";
 
 export default function CidadeSelect() {
   const { control, watch } = useFormContext();
-  const estadoSelecionado = watch("estado");
-  const [cidades, setCidades] = useState<{ value: string; label: string }[]>([]);
+  const estadoSelecionado = watch("enderecoEstado");
+  const [cidades, setCidades] = useState<{ value: string; label: string }[]>(
+    []
+  );
 
   useEffect(() => {
     if (!estadoSelecionado) return setCidades([]);
 
-    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoSelecionado}/municipios`)
+    fetch(
+      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoSelecionado}/municipios`
+    )
       .then((res) => res.json())
-      .then((data) => setCidades(data.map((c: any) => ({ value: c.nome, label: c.nome }))));
+      .then((data) =>
+        setCidades(data.map((c: any) => ({ value: c.nome, label: c.nome })))
+      );
   }, [estadoSelecionado]);
 
   return (
