@@ -6,11 +6,12 @@ import { Turma } from './entities/turma.entity';
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Professor } from '../professor/entities/professor.entity';
+import { TurmaAtivaGuard } from './guards/turma-ativa.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Turma, Aluno, Disciplina, Professor])],
   controllers: [TurmaController],
-  providers: [TurmaService],
+  providers: [TurmaService, TurmaAtivaGuard],
   exports: [TurmaService],
 })
 export class TurmaModule {}

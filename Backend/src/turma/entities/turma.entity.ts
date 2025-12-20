@@ -1,7 +1,16 @@
-import { 
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, 
-  OneToMany, ManyToMany, JoinTable, ManyToOne, JoinColumn 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToMany,
+  ManyToOne,
+  JoinTable,
+  JoinColumn,
 } from 'typeorm';
+
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Aviso } from '../../avisos/entities/aviso.entity';
@@ -12,26 +21,31 @@ export class Turma {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToMany(() => Aluno, aluno => aluno.turmas)
-  @JoinTable({
-    name: 'alunos_turmas',
-    joinColumn: { name: 'turma_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'aluno_id', referencedColumnName: 'id' },
-  })
+  // 🔗 Aluno pertence a UMA turma
+  @OneToMany(() => Aluno, aluno => aluno.turma)
   alunos: Aluno[];
 
+  // 📚 Turma pode ter várias disciplinas
   @ManyToMany(() => Disciplina, disciplina => disciplina.turmas)
   @JoinTable({
     name: 'turma_disciplinas',
     joinColumn: { name: 'turma_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'disciplina_id', referencedColumnName: 'id_disciplina' },
+    inverseJoinColumn: {
+      name: 'disciplina_id',
+      referencedColumnName: 'id_disciplina',
+    },
   })
   disciplinas: Disciplina[];
 
+  // 📢 Avisos da turma
   @OneToMany(() => Aviso, aviso => aviso.turma)
   avisos: Aviso[];
 
-  @ManyToOne(() => Professor, professor => professor.turmas, { nullable: true })
+  // 👨‍🏫 Professor responsável (opcional)
+  @ManyToOne(() => Professor, professor => professor.turmas, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'professor_id' })
   professor?: Professor;
 
@@ -44,7 +58,7 @@ export class Turma {
   @Column({ name: 'ano_letivo' })
   ano_letivo: string;
 
-  @Column({ name: 'turno' })
+  @Column()
   turno: string;
 
   @Column({ default: true })

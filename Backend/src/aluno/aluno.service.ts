@@ -10,31 +10,11 @@ import * as bcrypt from 'bcrypt';
 import { Aluno } from './entities/aluno.entity';
 import { Usuario, Role, Sexo } from '../usuario/entities/usuario.entity';
 import { Documentacao } from '../documentacao/entities/documentacao.entity';
+import { Turma } from '../turma/entities/turma.entity';
+
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
-
-/* =========================
-   HELPERS DE DATA
-========================= */
-const parseDate = (value: string | Date, field: string): Date => {
-  if (value instanceof Date) return value;
-
-  const d = new Date(value);
-  if (isNaN(d.getTime())) {
-    throw new ConflictException(`${field} inválida`);
-  }
-  return d;
-};
-
-const parseOptionalDate = (
-  value?: string | Date,
-): Date | undefined => {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
-
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? undefined : d;
-};
+import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 
 @Injectable()
 export class AlunoService {
@@ -47,6 +27,9 @@ export class AlunoService {
 
     @InjectRepository(Documentacao)
     private readonly documentacaoRepository: Repository<Documentacao>,
+
+    @InjectRepository(Turma)
+    private readonly turmaRepository: Repository<Turma>,
 
     private readonly dataSource: DataSource,
   ) {}
@@ -61,22 +44,13 @@ export class AlunoService {
     }
 
     return this.dataSource.transaction(async (manager) => {
-
-      /* =========================
-         CRIA USUÁRIO
-      ========================== */
       const usuario = manager.create(Usuario, {
         nome: dto.nome,
         email: dto.email,
         cpf: dto.cpf,
         telefone: dto.telefone,
-
         sexo: dto.sexo ?? Sexo.NAO_INFORMADO,
-        dataNascimento: parseDate(
-          dto.data_nascimento,
-          'Data de nascimento',
-        ),
-
+        dataNascimento: new Date(dto.data_nascimento),
         enderecoLogradouro: dto.enderecoLogradouro,
         enderecoNumero: dto.enderecoNumero,
         enderecoCep: dto.enderecoCep,
@@ -84,52 +58,38 @@ export class AlunoService {
         enderecoBairro: dto.enderecoBairro,
         enderecoEstado: dto.enderecoEstado,
         enderecoCidade: dto.enderecoCidade,
-
         senha: await bcrypt.hash('Sapiros@123', 10),
         role: Role.ALUNO,
         isBlocked: true,
       });
 
-      const usuarioSalvo = await manager.save(Usuario, usuario);
+      const usuarioSalvo = await manager.save(usuario);
 
-      /* =========================
-         CRIA ALUNO
-      ========================== */
       const aluno = manager.create(Aluno, {
-        id: usuarioSalvo.id,
         usuario: usuarioSalvo,
-
         matriculaAluno: await this.generateMatricula(),
         serieAno: dto.serieAno,
         escolaOrigem: dto.escolaOrigem,
-
         rgNumero: dto.rgNumero,
-        rgDataEmissao: parseDate(
-          dto.rgDataEmissao,
-          'RG data emissão',
-        ),
+        rgDataEmissao: new Date(dto.rgDataEmissao),
         rgOrgaoEmissor: dto.rgOrgaoEmissor,
-
         nacionalidade: dto.nacionalidade,
         naturalidade: dto.naturalidade,
-
         possuiNecessidadesEspeciais:
           dto.possuiNecessidadesEspeciais ?? false,
         descricaoNecessidadesEspeciais:
           dto.descricaoNecessidadesEspeciais,
-
         possuiAlergias: dto.possuiAlergias ?? false,
         descricaoAlergias: dto.descricaoAlergias,
-
         autorizacaoSaidaSozinho:
           dto.autorizacaoSaidaSozinho ?? false,
         autorizacaoUsoImagem:
           dto.autorizacaoUsoImagem ?? false,
-
         responsavelNome: dto.responsavelNome,
-        responsavelDataNascimento: parseOptionalDate(
-          dto.responsavel_Data_Nascimento,
-        ),
+        responsavelDataNascimento:
+          dto.responsavel_Data_Nascimento
+            ? new Date(dto.responsavel_Data_Nascimento)
+            : undefined,
         responsavel_sexo: dto.responsavel_sexo,
         responsavelNacionalidade: dto.responsavel_nacionalidade,
         responsavelNaturalidade: dto.responsavel_naturalidade,
@@ -148,19 +108,13 @@ export class AlunoService {
         responsavelEstado: dto.responsavelEstado,
       });
 
-      const alunoSalvo = await manager.save(Aluno, aluno);
+      const alunoSalvo = await manager.save(aluno);
 
-      /* =========================
-         DOCUMENTAÇÃO
-      ========================== */
       const documentacao = manager.create(Documentacao, {
         aluno: alunoSalvo,
       });
 
-      alunoSalvo.documentacao = await manager.save(
-        Documentacao,
-        documentacao,
-      );
+      alunoSalvo.documentacao = await manager.save(documentacao);
 
       return alunoSalvo;
     });
@@ -168,14 +122,14 @@ export class AlunoService {
 
   async findAll(): Promise<Aluno[]> {
     return this.alunoRepository.find({
-      relations: ['usuario', 'documentacao', 'turmas'],
+      relations: ['usuario', 'documentacao', 'turma'],
     });
   }
 
   async findOne(id: string): Promise<Aluno> {
     const aluno = await this.alunoRepository.findOne({
       where: { id },
-      relations: ['usuario', 'documentacao', 'turmas'],
+      relations: ['usuario', 'documentacao', 'turma'],
     });
 
     if (!aluno) {
@@ -191,7 +145,6 @@ export class AlunoService {
 
     if (dto.nome) usuario.nome = dto.nome;
     if (dto.email) usuario.email = dto.email;
-
     if (dto.serieAno) aluno.serieAno = dto.serieAno;
     if (dto.escolaOrigem) aluno.escolaOrigem = dto.escolaOrigem;
 
@@ -203,6 +156,45 @@ export class AlunoService {
     const aluno = await this.findOne(id);
     await this.alunoRepository.remove(aluno);
     await this.usuarioRepository.delete(id);
+  }
+
+  async transferirTurma(
+    alunoId: string,
+    dto: TransferirTurmaDto,
+  ): Promise<Aluno> {
+    const aluno = await this.alunoRepository.findOne({
+      where: { id: alunoId },
+      relations: ['turma'],
+    });
+
+    if (!aluno) {
+      throw new NotFoundException('Aluno não encontrado');
+    }
+
+    if (aluno.turma?.id === dto.turmaId) {
+      throw new ConflictException(
+        'Aluno já está matriculado nesta turma',
+      );
+    }
+
+    const turma = await this.turmaRepository.findOne({
+      where: { id: dto.turmaId },
+      relations: ['alunos'],
+    });
+
+    if (!turma) {
+      throw new NotFoundException('Turma não encontrada');
+    }
+
+    if (
+      turma.capacidade_maxima &&
+      turma.alunos.length >= turma.capacidade_maxima
+    ) {
+      throw new ConflictException('Turma lotada');
+    }
+
+    aluno.turma = turma;
+    return this.alunoRepository.save(aluno);
   }
 
   private async generateMatricula(): Promise<string> {
@@ -229,3 +221,4 @@ export class AlunoService {
       .padStart(3, '0')}`;
   }
 }
+

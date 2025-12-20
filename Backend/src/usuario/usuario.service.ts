@@ -17,16 +17,16 @@ import { Aluno } from '../aluno/entities/aluno.entity';
 export class UsuarioService {
   constructor(
     @InjectRepository(Usuario)
-    private usuarioRepository: Repository<Usuario>,
+    private readonly usuarioRepository: Repository<Usuario>,
 
     @InjectRepository(Turma)
-    private turmaRepository: Repository<Turma>,
+    private readonly turmaRepository: Repository<Turma>,
 
     @InjectRepository(Professor)
-    private professorRepository: Repository<Professor>,
+    private readonly professorRepository: Repository<Professor>,
 
     @InjectRepository(Aluno)
-    private alunoRepository: Repository<Aluno>,
+    private readonly alunoRepository: Repository<Aluno>,
   ) {}
 
   async findAll(): Promise<Omit<Usuario, 'senha'>[]> {
@@ -36,7 +36,9 @@ export class UsuarioService {
 
   async findOne(id: string): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
-    if (!usuario) throw new NotFoundException('Usuário não encontrado');
+    if (!usuario) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
     return usuario;
   }
 
@@ -49,7 +51,9 @@ export class UsuarioService {
     const senhaPadrao = 'Sapiros@123';
 
     if ((dto as any).senha === senhaPadrao) {
-      throw new BadRequestException('A senha padrão não pode ser usada no cadastro.');
+      throw new BadRequestException(
+        'A senha padrão não pode ser usada no cadastro.',
+      );
     }
 
     const salt = await bcrypt.genSalt();
@@ -69,7 +73,10 @@ export class UsuarioService {
     return resto;
   }
 
-  async update(id: string, dto: UpdateUsuarioDto): Promise<Omit<Usuario, 'senha'>> {
+  async update(
+    id: string,
+    dto: UpdateUsuarioDto,
+  ): Promise<Omit<Usuario, 'senha'>> {
     const usuario = await this.findOne(id);
 
     if (dto.senha) {
@@ -109,6 +116,7 @@ export class UsuarioService {
     usuario.isBlocked = isBlocked;
 
     if (isBlocked) {
+      // 🔹 Se for PROFESSOR → remove das turmas
       if (usuario.role === Role.PROFESSOR) {
         const professor = await this.professorRepository.findOne({
           where: { usuario: { id: usuario.id } },
@@ -118,20 +126,21 @@ export class UsuarioService {
           await this.turmaRepository
             .createQueryBuilder()
             .update(Turma)
-            .set({ professor: undefined})
+            .set({ professor: undefined })
             .where('professor_id = :id', { id: professor.id })
             .execute();
         }
       }
 
+      // 🔹 Se for ALUNO → remove da turma
       if (usuario.role === Role.ALUNO) {
         const aluno = await this.alunoRepository.findOne({
           where: { usuario: { id: usuario.id } },
-          relations: ['turmas'],
+          relations: ['turma'],
         });
 
-        if (aluno?.turmas?.length) {
-          aluno.turmas = [];
+        if (aluno?.turma) {
+          aluno.turma = undefined;
           await this.alunoRepository.save(aluno);
         }
       }

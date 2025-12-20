@@ -42,7 +42,7 @@ export class TurmaService {
 
     const alunos = await this.alunoRepository.find({
       where: { id: In(alunosIds) },
-      relations: ['usuario'],
+      relations: ['usuario', 'turma'],
     });
 
     if (alunos.length !== alunosIds.length) {
@@ -120,23 +120,36 @@ export class TurmaService {
     });
 
     turma.professor = await this.loadProfessor(dto.professorId);
-    turma.alunos = await this.loadAlunos(dto.alunosIds);
 
-    if (
-      turma.capacidade_maxima &&
-      turma.alunos.length > turma.capacidade_maxima
-    ) {
-      throw new BadRequestException(
-        'Número de alunos excede a capacidade máxima da turma',
-      );
+    const alunos = await this.loadAlunos(dto.alunosIds);
+
+    for (const aluno of alunos) {
+      if (aluno.turma) {
+        throw new BadRequestException(
+          `Aluno ${aluno.usuario.nome} já está matriculado em outra turma`,
+        );
+      }
     }
 
-    return this.turmaRepository.save(turma);
+    const turmaSalva = await this.turmaRepository.save(turma);
+
+    for (const aluno of alunos) {
+      aluno.turma = turmaSalva;
+      await this.alunoRepository.save(aluno);
+    }
+
+    return this.findOne(turmaSalva.id);
   }
 
   async findAll(): Promise<Turma[]> {
     return this.turmaRepository.find({
-      relations: ['alunos', 'alunos.usuario', 'professor', 'professor.usuario', 'avisos'],
+      relations: [
+        'alunos',
+        'alunos.usuario',
+        'professor',
+        'professor.usuario',
+        'avisos',
+      ],
       order: { nome_turma: 'ASC' },
     });
   }
@@ -144,7 +157,13 @@ export class TurmaService {
   async findOne(id: string): Promise<Turma> {
     const turma = await this.turmaRepository.findOne({
       where: { id },
-      relations: ['alunos', 'alunos.usuario', 'professor', 'professor.usuario', 'avisos'],
+      relations: [
+        'alunos',
+        'alunos.usuario',
+        'professor',
+        'professor.usuario',
+        'avisos',
+      ],
     });
 
     if (!turma) {
@@ -173,8 +192,8 @@ export class TurmaService {
     turma.nome_turma = dto.nome_turma ?? turma.nome_turma;
     turma.capacidade_maxima =
       dto.capacidade_maxima ?? turma.capacidade_maxima;
-    turma.ano_letivo = anoLetivo;
     turma.turno = turno;
+    turma.ano_letivo = anoLetivo;
     turma.ativa = dto.ativa ?? turma.ativa;
 
     if (dto.professorId !== undefined) {
@@ -184,19 +203,23 @@ export class TurmaService {
     }
 
     if (dto.alunosIds !== undefined) {
-      turma.alunos = await this.loadAlunos(dto.alunosIds);
+      const alunos = await this.loadAlunos(dto.alunosIds);
+
+      for (const aluno of alunos) {
+        if (aluno.turma && aluno.turma.id !== turma.id) {
+          throw new BadRequestException(
+            `Aluno ${aluno.usuario.nome} já está em outra turma`,
+          );
+        }
+      }
+
+      for (const aluno of alunos) {
+        aluno.turma = turma;
+        await this.alunoRepository.save(aluno);
+      }
     }
 
-    if (
-      turma.capacidade_maxima &&
-      turma.alunos.length > turma.capacidade_maxima
-    ) {
-      throw new BadRequestException(
-        'Número de alunos excede a capacidade máxima da turma',
-      );
-    }
-
-    return this.turmaRepository.save(turma);
+    return this.findOne(turma.id);
   }
 
   async toggleAtiva(id: string, ativa: boolean): Promise<Turma> {
@@ -214,7 +237,7 @@ export class TurmaService {
 
     const aluno = await this.alunoRepository.findOne({
       where: { id: alunoId },
-      relations: ['usuario'],
+      relations: ['usuario', 'turma'],
     });
 
     if (!aluno) {
@@ -223,8 +246,10 @@ export class TurmaService {
 
     this.validarUsuarioBloqueado(aluno.usuario, 'Aluno');
 
-    if (turma.alunos.some(a => a.id === aluno.id)) {
-      throw new BadRequestException('Aluno já matriculado');
+    if (aluno.turma) {
+      throw new BadRequestException(
+        'Este aluno já está matriculado em outra turma',
+      );
     }
 
     if (
@@ -234,14 +259,26 @@ export class TurmaService {
       throw new BadRequestException('Capacidade máxima atingida');
     }
 
-    turma.alunos.push(aluno);
-    return this.turmaRepository.save(turma);
+    aluno.turma = turma;
+    await this.alunoRepository.save(aluno);
+
+    return this.findOne(turmaId);
   }
 
   async removeAluno(turmaId: string, alunoId: string): Promise<Turma> {
-    const turma = await this.findOne(turmaId);
-    turma.alunos = turma.alunos.filter(a => a.id !== alunoId);
-    return this.turmaRepository.save(turma);
+    const aluno = await this.alunoRepository.findOne({
+      where: { id: alunoId },
+      relations: ['turma'],
+    });
+
+    if (!aluno || aluno.turma?.id !== turmaId) {
+      throw new NotFoundException('Aluno não pertence a esta turma');
+    }
+
+    aluno.turma = undefined;
+    await this.alunoRepository.save(aluno);
+
+    return this.findOne(turmaId);
   }
 
   async definirProfessor(

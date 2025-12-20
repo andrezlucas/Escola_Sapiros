@@ -11,13 +11,16 @@ import {
   ValidationPipe,
   ParseUUIDPipe,
 } from '@nestjs/common';
+
 import { TurmaService } from './turma.service';
 import { Turma } from './entities/turma.entity';
 import { CreateTurmaDto } from './dto/create-turma.dto';
 import { UpdateTurmaDto } from './dto/update-turma.dto';
+
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { RolesGuard } from '../auth/roles/roles.guard';
+import { TurmaAtivaGuard } from './guards/turma-ativa.guard';
 
 @Controller('turmas')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,7 +35,9 @@ export class TurmaController {
 
   @Roles('coordenacao', 'professores')
   @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Turma> {
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<Turma> {
     return this.turmaService.findOne(id);
   }
 
@@ -45,8 +50,12 @@ export class TurmaController {
 
   @Roles('coordenacao')
   @Patch(':id')
+  @UseGuards(TurmaAtivaGuard)
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTurmaDto): Promise<Turma> {
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTurmaDto,
+  ): Promise<Turma> {
     return this.turmaService.update(id, dto);
   }
 
@@ -61,12 +70,15 @@ export class TurmaController {
 
   @Roles('coordenacao')
   @Delete(':id')
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
     return this.turmaService.remove(id);
   }
 
   @Roles('coordenacao')
   @Post(':turmaId/alunos/:alunoId')
+  @UseGuards(TurmaAtivaGuard)
   async addAluno(
     @Param('turmaId', ParseUUIDPipe) turmaId: string,
     @Param('alunoId', ParseUUIDPipe) alunoId: string,
@@ -76,6 +88,7 @@ export class TurmaController {
 
   @Roles('coordenacao')
   @Delete(':turmaId/alunos/:alunoId')
+  @UseGuards(TurmaAtivaGuard)
   async removeAluno(
     @Param('turmaId', ParseUUIDPipe) turmaId: string,
     @Param('alunoId', ParseUUIDPipe) alunoId: string,
@@ -85,16 +98,23 @@ export class TurmaController {
 
   @Roles('coordenacao')
   @Post(':turmaId/professor/:professorId')
+  @UseGuards(TurmaAtivaGuard)
   async definirProfessor(
     @Param('turmaId', ParseUUIDPipe) turmaId: string,
     @Param('professorId', ParseUUIDPipe) professorId: string,
   ): Promise<Turma> {
-    return this.turmaService.definirProfessor(turmaId, professorId);
+    return this.turmaService.definirProfessor(
+      turmaId,
+      professorId,
+    );
   }
 
   @Roles('coordenacao')
   @Delete(':turmaId/professor')
-  async removerProfessor(@Param('turmaId', ParseUUIDPipe) turmaId: string): Promise<Turma> {
+  @UseGuards(TurmaAtivaGuard)
+  async removerProfessor(
+    @Param('turmaId', ParseUUIDPipe) turmaId: string,
+  ): Promise<Turma> {
     return this.turmaService.removerProfessor(turmaId);
   }
 }

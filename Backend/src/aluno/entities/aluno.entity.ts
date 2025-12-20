@@ -1,4 +1,4 @@
-import { Column, ManyToMany, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, JoinTable } from 'typeorm';
+import { Column, ManyToMany, ManyToOne, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, JoinTable } from 'typeorm';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Documentacao } from '../../documentacao/entities/documentacao.entity';
@@ -19,8 +19,14 @@ export class Aluno {
   })
   documentacao?: Documentacao;
 
- @ManyToMany(() => Turma, (turma) => turma.alunos)
-  turmas?: Turma[];
+  @ManyToOne(() => Turma, (turma) => turma.alunos, {
+    nullable: true,          // aluno pode existir sem turma
+    onDelete: 'SET NULL',    // ao apagar a turma, o aluno não é deletado
+    eager: true,
+  })
+  @JoinColumn({ name: 'turma_id' })
+  turma?: Turma;
+
 
 
   @Column({ name: 'matricula_aluno', unique: true })

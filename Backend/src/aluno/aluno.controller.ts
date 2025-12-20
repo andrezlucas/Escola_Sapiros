@@ -15,6 +15,7 @@ import type { Request } from 'express';
 import { AlunoService } from './aluno.service';
 import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
+import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
@@ -78,4 +79,13 @@ export class AlunoController {
   ) {
     return await this.alunoService.remove(id);
   }
+
+  @Post(':id/transferir-turma')
+transferirTurma(
+  @Param('id') id: string,
+  @Body() dto: TransferirTurmaDto,
+) {
+  return this.alunoService.transferirTurma(id, dto);
+}
+
 }
