@@ -31,9 +31,7 @@ export class TurmaService {
     tipo: 'Aluno' | 'Professor',
   ) {
     if (usuario.isBlocked) {
-      throw new ForbiddenException(
-        `${tipo} ${usuario.nome} está bloqueado(a)`,
-      );
+      throw new ForbiddenException(`${tipo} ${usuario.nome} está bloqueado(a)`);
     }
   }
 
@@ -49,7 +47,7 @@ export class TurmaService {
       throw new NotFoundException('Um ou mais alunos não foram encontrados');
     }
 
-    alunos.forEach(aluno =>
+    alunos.forEach((aluno) =>
       this.validarUsuarioBloqueado(aluno.usuario, 'Aluno'),
     );
 
@@ -190,8 +188,7 @@ export class TurmaService {
     }
 
     turma.nome_turma = dto.nome_turma ?? turma.nome_turma;
-    turma.capacidade_maxima =
-      dto.capacidade_maxima ?? turma.capacidade_maxima;
+    turma.capacidade_maxima = dto.capacidade_maxima ?? turma.capacidade_maxima;
     turma.turno = turno;
     turma.ano_letivo = anoLetivo;
     turma.ativa = dto.ativa ?? turma.ativa;
@@ -218,6 +215,8 @@ export class TurmaService {
         await this.alunoRepository.save(aluno);
       }
     }
+
+    await this.turmaRepository.save(turma);
 
     return this.findOne(turma.id);
   }
@@ -281,10 +280,7 @@ export class TurmaService {
     return this.findOne(turmaId);
   }
 
-  async definirProfessor(
-    turmaId: string,
-    professorId: string,
-  ): Promise<Turma> {
+  async definirProfessor(turmaId: string, professorId: string): Promise<Turma> {
     const turma = await this.findOne(turmaId);
 
     await this.validarConflitoProfessor(

@@ -32,8 +32,6 @@ interface Turma {
   turno: string;
   ativa: boolean;
   capacidade_maxima: number;
-  data_inicio?: string;
-  data_fim?: string;
   professor?: ProfessorMin;
   alunos: AlunoMin[];
   disciplinas: DisciplinaMin[];
@@ -43,7 +41,7 @@ interface ModalEditarTurmaProps {
   turma: Turma;
   aberto: boolean;
   onClose: () => void;
-  onAtualizarLista: () => void;
+  onAtualizarLista: () => Promise<void> | void;
 }
 
 export default function ModalEditarTurma({
@@ -55,11 +53,14 @@ export default function ModalEditarTurma({
   const [professores, setProfessores] = useState<Professor[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+  const [ativa, setAtiva] = useState<boolean>(turma.ativa); // ✅ ESTADO LOCAL
+
   const [loading, setLoading] = useState({
     professores: false,
     alunos: false,
     disciplinas: false,
   });
+
   const token = localStorage.getItem("token");
 
   const methods = useForm<TurmaFormData>({
@@ -68,25 +69,21 @@ export default function ModalEditarTurma({
       anoLetivo: "",
       turno: "MANHÃ",
       capacidade_maxima: 30,
-      ativa: true,
       professorId: undefined,
       alunosIds: [],
       disciplinasIds: [],
     },
   });
 
-  const { reset } = methods;
-
   useEffect(() => {
     if (turma && aberto) {
-      console.log("Turma recebida para edição:", turma);
+      setAtiva(turma.ativa); // ✅ sincroniza status
 
       methods.reset({
         nome_turma: turma.nome_turma ?? "",
         anoLetivo: turma.ano_letivo ?? "",
-        turno: (turma.turno as "MANHÃ" | "TARDE" | "NOITE") ?? "MANHÃ",
+        turno: turma.turno as any,
         capacidade_maxima: turma.capacidade_maxima,
-        ativa: turma.ativa ?? true,
         professorId: turma.professor?.id ?? undefined,
         alunosIds: turma.alunos?.map((a) => a.id) ?? [],
         disciplinasIds: turma.disciplinas?.map((d) => d.id_disciplina) ?? [],
@@ -101,7 +98,7 @@ export default function ModalEditarTurma({
       try {
         setLoading({ professores: true, alunos: true, disciplinas: true });
 
-        const [professoresRes, alunosRes, disciplinasRes] = await Promise.all([
+        const [profRes, alunoRes, discRes] = await Promise.all([
           fetch("http://localhost:3000/professores", {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -113,72 +110,48 @@ export default function ModalEditarTurma({
           }),
         ]);
 
-        const professoresData = await professoresRes.json();
-        const alunosData = await alunosRes.json();
-        const disciplinasData = await disciplinasRes.json();
+        const professoresData = await profRes.json();
+        const alunosData = await alunoRes.json();
+        const disciplinasData = await discRes.json();
 
-        console.log("Professores para edição:", professoresData);
-        console.log("Alunos para edição:", alunosData);
+        setProfessores(
+          Array.isArray(professoresData)
+            ? professoresData.map(normalizeProfessor)
+            : professoresData.data?.map(normalizeProfessor) ?? []
+        );
 
-        let professoresNormalized: Professor[] = [];
-        if (Array.isArray(professoresData)) {
-          professoresNormalized = professoresData.map(normalizeProfessor);
-        } else if (
-          professoresData.data &&
-          Array.isArray(professoresData.data)
-        ) {
-          professoresNormalized = professoresData.data.map(normalizeProfessor);
-        }
+        setAlunos(
+          Array.isArray(alunosData)
+            ? alunosData.map(normalizeAluno)
+            : alunosData.data?.map(normalizeAluno) ?? []
+        );
 
-        let alunosNormalized: Aluno[] = [];
-        if (Array.isArray(alunosData)) {
-          alunosNormalized = alunosData.map(normalizeAluno);
-        } else if (alunosData.data && Array.isArray(alunosData.data)) {
-          alunosNormalized = alunosData.data.map(normalizeAluno);
-        }
-
-        let disciplinasNormalized: Disciplina[] = [];
-        if (Array.isArray(disciplinasData)) {
-          disciplinasNormalized = disciplinasData;
-        } else if (
-          disciplinasData.data &&
-          Array.isArray(disciplinasData.data)
-        ) {
-          disciplinasNormalized = disciplinasData.data;
-        }
-
-        setProfessores(professoresNormalized);
-        setAlunos(alunosNormalized);
-        setDisciplinas(disciplinasNormalized);
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        toast.error("Erro ao carregar listas de professores e alunos");
+        setDisciplinas(
+          Array.isArray(disciplinasData)
+            ? disciplinasData
+            : disciplinasData.data ?? []
+        );
+      } catch (e) {
+        toast.error("Erro ao carregar dados");
       } finally {
         setLoading({ professores: false, alunos: false, disciplinas: false });
       }
     }
 
     fetchData();
-  }, [aberto, token]);
+  }, [aberto]);
 
   async function handleAtualizarTurma(data: TurmaFormData) {
     try {
-      const payload: any = {
+      const payload = {
         nome_turma: data.nome_turma,
         anoLetivo: data.anoLetivo,
         turno: data.turno,
         capacidade_maxima: Number(data.capacidade_maxima),
-        ativa: data.ativa ?? true,
-        alunosIds: data.alunosIds || [],
-        disciplinasIds: data.disciplinasIds || [],
+        professorId: data.professorId ?? null,
+        alunosIds: data.alunosIds ?? [],
+        disciplinasIds: data.disciplinasIds ?? [],
       };
-      if (!data.professorId) {
-        payload.professorId = null;
-      } else {
-        payload.professorId = data.professorId;
-      }
-
-      console.log("Payload PATCH:", payload);
 
       const res = await fetch(`http://localhost:3000/turmas/${turma.id}`, {
         method: "PATCH",
@@ -189,52 +162,49 @@ export default function ModalEditarTurma({
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(
-          Array.isArray(err.message) ? err.message.join(", ") : err.message
-        );
-      }
+      if (!res.ok) throw new Error("Erro ao atualizar turma");
 
       toast.success("Turma atualizada com sucesso!");
+      await onAtualizarLista();
+      onClose();
+    } catch (err) {
+      toast.error("Erro ao atualizar turma");
+    }
+  }
 
-      setTimeout(() => {
-        onAtualizarLista();
-        onClose();
-      }, 500);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(`Erro ao atualizar turma: ${err.message}`);
+  async function handleToggleAtiva(novaAtiva: boolean) {
+    try {
+      await fetch(`http://localhost:3000/turmas/${turma.id}/ativa`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ativa: novaAtiva }),
+      });
+
+      setAtiva(novaAtiva); // ✅ atualiza UI
+      toast.success(novaAtiva ? "Turma ativada" : "Turma desativada");
+      await onAtualizarLista();
+    } catch {
+      toast.error("Erro ao alterar status");
     }
   }
 
   async function handleExcluirTurma() {
-    if (
-      !window.confirm(
-        "Tem certeza que deseja excluir esta turma?\nEsta ação não pode ser desfeita."
-      )
-    )
-      return;
+    if (!window.confirm("Deseja realmente excluir esta turma?")) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/turmas/${turma.id}`, {
+      await fetch(`http://localhost:3000/turmas/${turma.id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Erro ao excluir turma");
-      }
-
-      toast.success("Turma excluída com sucesso!");
-      onAtualizarLista();
+      toast.success("Turma excluída");
+      await onAtualizarLista();
       onClose();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(`Erro ao excluir turma: ${err.message}`);
+    } catch {
+      toast.error("Erro ao excluir turma");
     }
   }
 
@@ -246,12 +216,7 @@ export default function ModalEditarTurma({
         <h2 className="text-lg font-bold mb-4">Editar Turma</h2>
 
         {loading.professores || loading.alunos ? (
-          <div className="text-center py-4">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#1D5D7F] mb-2"></div>
-            <p className="text-gray-500">
-              Carregando lista de professores e alunos...
-            </p>
-          </div>
+          <p className="text-center">Carregando...</p>
         ) : (
           <>
             <FormProvider {...methods}>
@@ -263,22 +228,26 @@ export default function ModalEditarTurma({
               />
             </FormProvider>
 
-            <div className="mt-4 flex justify-between">
+            <div className="mt-4 flex justify-between items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={ativa}
+                  onChange={(e) => handleToggleAtiva(e.target.checked)}
+                />
+                Turma ativa
+              </label>
+
               <button
                 onClick={handleExcluirTurma}
-                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="px-3 py-2 bg-red-600 text-white rounded-lg"
               >
-                Excluir Turma
+                Excluir
               </button>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-              </div>
+              <button onClick={onClose} className="px-4 py-2 border rounded-lg">
+                Fechar
+              </button>
             </div>
           </>
         )}

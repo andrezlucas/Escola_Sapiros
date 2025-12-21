@@ -76,7 +76,6 @@ export default function FormTurma({
     onSubmit({
       ...data,
       capacidade_maxima: Number(data.capacidade_maxima),
-      ativa: Boolean(data.ativa),
       professorId: data.professorId,
       alunosIds: data.alunosIds ?? [],
       disciplinasIds: data.disciplinasIds ?? [],
@@ -187,11 +186,6 @@ export default function FormTurma({
           </select>
         </>
       )}
-
-      <label className="flex items-center gap-2">
-        <input type="checkbox" {...register("ativa")} />
-        Turma ativa
-      </label>
 
       <button
         type="submit"

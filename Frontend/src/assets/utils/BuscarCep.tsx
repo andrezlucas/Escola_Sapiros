@@ -1,25 +1,23 @@
 export async function BuscarCep(cep: string) {
-  const cepLimpo = cep.replace(/\D/g, "");
-
-  if (cepLimpo.length !== 8) return null;
-
   try {
-    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+    const cleanCep = cep.replace(/\D/g, "");
 
-    const data = await response.json();
+    const res = await fetch(`https://brasilapi.com.br/api/cep/v1/${cleanCep}`);
 
-    if (data.erro) return null;
+    if (!res.ok) {
+      throw new Error("Erro ao buscar CEP na BrasilAPI");
+    }
+
+    const data = await res.json();
 
     return {
-      logradouro: data.logradouro,
-      bairro: data.bairro,
-      cidade: data.localidade,
-      estado: data.uf,
-      complemento: data.complemento,
+      logradouro: data.street ?? "",
+      bairro: data.neighborhood ?? "",
+      cidade: data.city ?? "",
+      estado: data.state ?? "",
     };
   } catch (error) {
+    console.error("Erro ao buscar CEP:", error);
     return null;
   }
 }
-
-

@@ -1,5 +1,5 @@
 import React from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, Controller } from "react-hook-form";
 import FormTextoMatricula from "./FormTextoMatricula";
 import { Input } from "./Input";
 import CardTituloMatricula from "./CardTituloMatricula";
@@ -250,26 +250,29 @@ export default function FormAluno({
           </FormTextoMatricula>
 
           <FormTextoMatricula title="CEP:" className="w-1/2">
-            <Input
-              label=""
-              {...register("cep", {
-                required: "CEP obrigatório",
-                onChange: async (e) => {
+            <Controller
+              name="cep"
+              control={control}
+              rules={{ required: "CEP obrigatório" }}
+              render={({ field }) => (
+                <Input
+                label={""} {...field}
+                onChange={async (e) => {
                   const value = maskCep(e.target.value);
-                  e.target.value = value;
+                  field.onChange(value);
 
                   if (value.replace(/\D/g, "").length === 8) {
                     const d = await BuscarCep(value);
                     if (d) {
-                      setValue("logradouro", d.logradouro || "");
-                      setValue("bairro", d.bairro || "");
-                      setValue("cidade", d.cidade || "");
-                      setValue("estado", d.estado || "");
+                      setValue("logradouro", d.logradouro ?? "");
+                      setValue("bairro", d.bairro ?? "");
+                      setValue("cidade", d.cidade ?? "");
+                      setValue("estado", d.estado ?? "");
                     }
                   }
-                },
-              })}
-              error={errors?.cep?.message}
+                } }
+                error={errors?.cep?.message}                />
+              )}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
