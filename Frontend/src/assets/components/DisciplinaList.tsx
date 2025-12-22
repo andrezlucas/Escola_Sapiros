@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  FaSearch,
-  FaEdit,
-  FaBook,
-  FaClock,
-  FaUsers,
-  FaUserGraduate,
-} from "react-icons/fa";
+import { FaSearch, FaEdit, FaBook } from "react-icons/fa";
 import Tabela from "./Tabela";
 import ModalCriarDisciplina from "../components/ModalCriarDisciplina";
 import ModalEditarDisciplina from "../components/ModalEditarDisciplina";
@@ -77,14 +70,10 @@ export default function DisciplinaList() {
       disciplina.codigo_disciplina.toLowerCase().includes(search.toLowerCase())
   );
 
-  const formatCargaHoraria = (horas: number) => {
-    return `${horas}h`;
-  };
-
   return (
     <div className="p-4">
       <div className="mb-4 flex justify-between items-center">
-        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-[#1D5D7F] max-w-130">
+        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] w-full sm:max-w-130">
           <FaSearch className="w-4 h-4 text-[#1D5D7F]" />
           <input
             type="search"
@@ -126,55 +115,24 @@ export default function DisciplinaList() {
             {
               titulo: "Habilidades",
               render: (d) => (
-                <div>
+                <div className="max-h-24 overflow-y-auto">
                   {d.habilidades && d.habilidades.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                      {d.habilidades.slice(0, 2).map((hab) => (
+                      {d.habilidades.map((hab) => (
                         <span
                           key={hab.id}
+                          title={hab.descricao}
                           className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
                         >
                           {hab.nome}
                         </span>
                       ))}
-                      {d.habilidades.length > 2 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                          +{d.habilidades.length - 2}
-                        </span>
-                      )}
                     </div>
                   ) : (
                     <span className="text-gray-400 text-sm">
                       Nenhuma habilidade
                     </span>
                   )}
-                </div>
-              ),
-            },
-            {
-              titulo: "Carga Horária",
-              render: (d) => (
-                <div className="flex items-center gap-2">
-                  <FaClock className="text-gray-400" />
-                  <span>{formatCargaHoraria(d.cargaHoraria)}</span>
-                </div>
-              ),
-            },
-            {
-              titulo: "Turmas",
-              render: (d) => (
-                <div className="flex items-center gap-2">
-                  <FaUsers className="text-gray-400" />
-                  <span>{d.turmas?.length || 0}</span>
-                </div>
-              ),
-            },
-            {
-              titulo: "Professores",
-              render: (d) => (
-                <div className="flex items-center gap-2">
-                  <FaUserGraduate className="text-gray-400" />
-                  <span>{d.professores?.length || 0}</span>
                 </div>
               ),
             },

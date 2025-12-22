@@ -66,11 +66,10 @@ export default function ModalCriarDisciplina({
       const res = await fetch("http://localhost:3000/turmas", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Erro ao buscar turmas");
+      if (!res.ok) throw new Error();
       setTurmas(await res.json());
     } catch {
       toast.error("Erro ao carregar lista de turmas");
-      setTurmas([]);
     } finally {
       setLoading((prev) => ({ ...prev, turmas: false }));
     }
@@ -82,11 +81,10 @@ export default function ModalCriarDisciplina({
       const res = await fetch("http://localhost:3000/professores", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Erro ao buscar professores");
+      if (!res.ok) throw new Error();
       setProfessores(await res.json());
     } catch {
       toast.error("Erro ao carregar lista de professores");
-      setProfessores([]);
     } finally {
       setLoading((prev) => ({ ...prev, professores: false }));
     }
@@ -97,12 +95,12 @@ export default function ModalCriarDisciplina({
     if (!nome) return;
 
     if (habilidades.some((h) => h.nome.toLowerCase() === nome.toLowerCase())) {
+      toast.warn("Habilidade já adicionada");
       return;
     }
 
-    setValue("habilidades", [...habilidades, { nome }], {
-      shouldDirty: true,
-    });
+    setValue("habilidades", [...habilidades, { nome }], { shouldDirty: true });
+
     setNovaHabilidade("");
   };
 
@@ -116,14 +114,22 @@ export default function ModalCriarDisciplina({
 
   async function handleCriarDisciplina(data: DisciplinaFormData) {
     try {
-      const payload = {
+      const payload: any = {
         codigo_disciplina: data.codigo_disciplina.trim(),
         nome_disciplina: data.nome_disciplina.trim(),
         cargaHoraria: Number(data.cargaHoraria),
-        turmasIds: data.turmasIds || [],
-        professoresIds: data.professoresIds || [],
-        habilidades: data.habilidades || [],
       };
+
+      if (data.turmasIds?.length) payload.turmasIds = data.turmasIds;
+      if (data.professoresIds?.length)
+        payload.professoresIds = data.professoresIds;
+
+      if (data.habilidades?.length) {
+        payload.habilidades = data.habilidades.map((h) => ({
+          nome: h.nome.trim(),
+          descricao: h.descricao?.trim() || undefined,
+        }));
+      }
 
       const res = await fetch("http://localhost:3000/disciplinas", {
         method: "POST",
@@ -136,14 +142,14 @@ export default function ModalCriarDisciplina({
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.message);
+        throw new Error(err.message || "Erro ao criar disciplina");
       }
 
       toast.success("Disciplina criada com sucesso!");
       onAtualizarLista();
       onClose();
     } catch (err: any) {
-      toast.error(`Erro ao criar disciplina: ${err.message}`);
+      toast.error(err.message || "Erro inesperado");
     }
   }
 
@@ -165,6 +171,15 @@ export default function ModalCriarDisciplina({
             className="space-y-4"
           >
             <div>
+              <label className="block text-sm mb-1">Código da disciplina</label>
+              <input
+                {...register("codigo_disciplina", { required: true })}
+                className="w-full p-2 border rounded"
+                placeholder="Ex: MAT001"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm mb-1">Nome da disciplina</label>
               <input
                 {...register("nome_disciplina", { required: true })}
@@ -179,11 +194,9 @@ export default function ModalCriarDisciplina({
                 type="number"
                 {...register("cargaHoraria", { required: true })}
                 className="w-full p-2 border rounded"
-                placeholder="Ex: 30 horas"
               />
             </div>
 
-            {/* HABILIDADES */}
             <div>
               <label className="block text-sm mb-1">Habilidades</label>
 
@@ -223,7 +236,7 @@ export default function ModalCriarDisciplina({
                   onClick={adicionarHabilidade}
                   className="px-4 bg-[#1D5D7F] text-white rounded"
                 >
-                  Adicionar Habilidades
+                  Adicionar
                 </button>
               </div>
             </div>

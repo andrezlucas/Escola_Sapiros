@@ -1,4 +1,4 @@
-import { Column, ManyToMany, ManyToOne, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, JoinTable } from 'typeorm';
+import { Column, ManyToMany, ManyToOne, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, JoinTable, PrimaryGeneratedColumn } from 'typeorm';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Documentacao } from '../../documentacao/entities/documentacao.entity';
@@ -6,7 +6,7 @@ import { Sexo } from '../../usuario/entities/usuario.entity';
 
 @Entity('alunos')
 export class Aluno {
-  @PrimaryColumn('uuid')
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @OneToOne(() => Usuario, { onDelete: 'CASCADE', eager: true })
