@@ -1,13 +1,7 @@
-import { useEffect, useState } from "react";
-import FormTurma, {
-  type TurmaFormData,
-  type Professor,
-  type Aluno,
-  type Disciplina,
-} from "./FormTurma";
+import { useState } from "react";
+import FormTurma, { type TurmaFormData } from "./FormTurma";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { normalizeProfessor, normalizeAluno } from "../utils/dataNormalizer";
 
 interface ModalCriarTurmaProps {
   onClose: () => void;
@@ -18,131 +12,28 @@ export default function ModalCriarTurma({
   onClose,
   onAtualizarLista,
 }: ModalCriarTurmaProps) {
-  const methods = useForm<TurmaFormData>();
-  const [professores, setProfessores] = useState<Professor[]>([]);
-  const [alunos, setAlunos] = useState<Aluno[]>([]);
-  const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
-  const [loading, setLoading] = useState({
-    professores: false,
-    alunos: false,
-    disciplinas: false,
+  const methods = useForm<TurmaFormData>({
+    defaultValues: {
+      nome_turma: "",
+      anoLetivo: new Date().getFullYear().toString(),
+      turno: "MANHÃ",
+      capacidade_maxima: 0,
+      ativa: true,
+    },
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    fetchProfessores();
-    fetchAlunos();
-    fetchDisciplinas();
-  }, []);
-
-  async function fetchProfessores() {
-    try {
-      setLoading((prev) => ({ ...prev, professores: true }));
-      const res = await fetch("http://localhost:3000/professores", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Erro ${res.status}: ${res.statusText}`);
-      }
-
-      const data = await res.json();
-      console.log("Dados brutos professores:", data);
-
-      let professoresData: Professor[] = [];
-
-      if (Array.isArray(data)) {
-        professoresData = data.map(normalizeProfessor);
-      } else if (data.data && Array.isArray(data.data)) {
-        professoresData = data.data.map(normalizeProfessor);
-      }
-
-      console.log("Professores normalizados:", professoresData);
-      setProfessores(professoresData);
-    } catch (error) {
-      console.error("Erro ao buscar professores:", error);
-      toast.error("Erro ao carregar lista de professores");
-      setProfessores([]);
-    } finally {
-      setLoading((prev) => ({ ...prev, professores: false }));
-    }
-  }
-
-  async function fetchAlunos() {
-    try {
-      setLoading((prev) => ({ ...prev, alunos: true }));
-      const res = await fetch("http://localhost:3000/alunos", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Erro ${res.status}: ${res.statusText}`);
-      }
-
-      const data = await res.json();
-      console.log("Dados brutos alunos:", data);
-
-      let alunosData: Aluno[] = [];
-
-      if (Array.isArray(data)) {
-        alunosData = data.map(normalizeAluno);
-      } else if (data.data && Array.isArray(data.data)) {
-        alunosData = data.data.map(normalizeAluno);
-      }
-
-      console.log("Alunos normalizados:", alunosData);
-      setAlunos(alunosData);
-    } catch (error) {
-      console.error("Erro ao buscar alunos:", error);
-      toast.error("Erro ao carregar lista de alunos");
-      setAlunos([]);
-    } finally {
-      setLoading((prev) => ({ ...prev, alunos: false }));
-    }
-  }
-
-  async function fetchDisciplinas() {
-    try {
-      setLoading((prev) => ({ ...prev, disciplinas: true }));
-      const res = await fetch("http://localhost:3000/disciplinas", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Erro ${res.status}: ${res.statusText}`);
-      }
-
-      const data = await res.json();
-      console.log("Dados brutos disciplinas:", data);
-
-      let disciplinasData: Disciplina[] = [];
-
-      if (Array.isArray(data)) {
-        disciplinasData = data;
-      } else if (data.data && Array.isArray(data.data)) {
-        disciplinasData = data.data;
-      }
-
-      setDisciplinas(disciplinasData);
-    } catch (error) {
-      console.error("Erro ao buscar disciplinas:", error);
-      setDisciplinas([]);
-    } finally {
-      setLoading((prev) => ({ ...prev, disciplinas: false }));
-    }
-  }
-
   async function handleCriarTurma(data: TurmaFormData) {
+    setIsSubmitting(true);
     try {
       const payload = {
         nome_turma: data.nome_turma,
-        anoLetivo: String(data.anoLetivo).trim(),
+        anoLetivo: data.anoLetivo,
         turno: data.turno,
-        capacidade_maxima: Number(data.capacidade_maxima),
-        ativa: !!data.ativa,
-        professorId: data.professorId || undefined,
-        alunosIds: data.alunosIds || [],
-        disciplinasIds: data.disciplinasIds || [],
+        capacidade_maxima: parseInt(data.capacidade_maxima.toString()),
+        ativa: data.ativa ?? true,
       };
 
       const res = await fetch("http://localhost:3000/turmas", {
@@ -157,49 +48,59 @@ export default function ModalCriarTurma({
       const responseData = await res.json();
 
       if (!res.ok) {
-        throw new Error(responseData.message || "Erro ao criar turma");
+        throw new Error(
+          Array.isArray(responseData.message) 
+            ? responseData.message.join(", ") 
+            : responseData.message || "Erro ao criar turma"
+        );
       }
 
       toast.success("Turma criada com sucesso!");
       onAtualizarLista();
       onClose();
     } catch (err: any) {
-      console.error("Erro criar turma:", err);
-      toast.error(err.message);
+      console.error("Erro:", err);
+      toast.error(`Erro ao criar turma: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-xl max-h-[600px] rounded-xl p-4 overflow-auto">
-        <h2 className="text-xl font-bold text-[#1D5D7F] mb-4">Criar Turma</h2>
-
-        {loading.professores || loading.alunos ? (
-          <div className="text-center py-4">
-            <p className="text-gray-500">
-              Carregando lista de professores e alunos...
-            </p>
-          </div>
-        ) : (
-          <>
-            <FormProvider {...methods}>
-              <FormTurma
-                onSubmit={handleCriarTurma}
-                professores={professores}
-                alunos={alunos}
-                disciplinas={disciplinas}
-              />
-            </FormProvider>
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-            </div>
-          </>
-        )}
+      <div className="bg-white w-full max-w-2xl max-h-[80vh] rounded-xl p-6 overflow-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-[#1D5D7F]">
+            Criar Nova Turma
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 text-xl"
+          >
+            ✕
+          </button>
+        </div>
+        
+        <FormProvider {...methods}>
+          <FormTurma onSubmit={handleCriarTurma} />
+        </FormProvider>
+        
+        <div className="flex justify-end gap-2 mt-6 pt-6 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={methods.handleSubmit(handleCriarTurma)}
+            disabled={isSubmitting}
+            className="px-4 py-2 bg-[#1D5D7F] text-white rounded-lg hover:bg-[#164a66]"
+          >
+            {isSubmitting ? "Criando..." : "Criar Turma"}
+          </button>
+        </div>
       </div>
     </div>
   );

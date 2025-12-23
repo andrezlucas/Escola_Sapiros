@@ -50,7 +50,7 @@ export default function ModalCriarProfessor({
           : undefined,
       };
 
-      console.log("Payload enviado:", payload); // Para debug
+      
 
       const res = await fetch("http://localhost:3000/professores", {
         method: "POST",
@@ -77,7 +77,7 @@ export default function ModalCriarProfessor({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-xl max-h-[600px] rounded-xl p-4 overflow-auto">
+      <div className="bg-white w-full max-w-2xl max-h-[80vh] rounded-xl p-6 overflow-auto">
         <h2 className="text-xl font-bold text-[#1D5D7F] mb-4">
           Criar Professor
         </h2>

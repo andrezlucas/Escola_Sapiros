@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { toast } from "react-toastify";
 import { FaPlus, FaTrash, FaBook } from "react-icons/fa";
+import { Input } from "./Input";
 
 interface Turma {
   id: string;
@@ -232,22 +233,22 @@ export default function ModalEditarDisciplina({
             className="space-y-4"
           >
             <div className="grid md:grid-cols-2 gap-4">
-              <input
+              <Input
+                label={""}
                 {...register("codigo_disciplina", { required: true })}
-                className="border p-2 rounded"
                 placeholder="Código"
               />
-              <input
+              <Input
+                label={""}
                 {...register("nome_disciplina", { required: true })}
-                className="border p-2 rounded"
                 placeholder="Nome"
               />
             </div>
 
-            <input
+            <Input
+              label={""}
               type="number"
               {...register("cargaHoraria", { required: true })}
-              className="border p-2 rounded w-full"
             />
 
             <div>
@@ -264,25 +265,25 @@ export default function ModalEditarDisciplina({
 
               {habilidades.map((h, i) => (
                 <div key={i} className="flex gap-2 mb-2">
-                  <input
+                  <Input
                     value={h.nome}
                     onChange={(e) => {
                       const list = [...habilidades];
                       list[i].nome = e.target.value;
                       setValue("habilidades", list);
                     }}
-                    className="border p-1 rounded flex-1"
                     placeholder="Nome da habilidade *"
+                    label={""}
                   />
-                  <input
+                  <Input
                     value={h.descricao || ""}
                     onChange={(e) => {
                       const list = [...habilidades];
                       list[i].descricao = e.target.value;
                       setValue("habilidades", list);
                     }}
-                    className="border p-1 rounded flex-1"
                     placeholder="Descrição"
+                    label={""}
                   />
                   <button
                     type="button"

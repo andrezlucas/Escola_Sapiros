@@ -29,11 +29,23 @@ export class DocumentacaoService {
     return this.documentacaoRepo.find({ relations: ['aluno', 'documentos'] });
   }
 
-  async findOne(documentacaoId: string): Promise<Documentacao | null> {
-    return this.documentacaoRepo.findOne({
+  async findOne(documentacaoId: string): Promise<any> {
+    const documentacao = await this.documentacaoRepo.findOne({
       where: { id: documentacaoId },
       relations: ['aluno', 'documentos'],
     });
+
+    if (!documentacao) return null;
+
+    const baseUrl = 'http://localhost:3000/uploads';
+
+    return {
+      ...documentacao,
+      documentos: documentacao.documentos.map((doc) => ({
+        ...doc,
+        url: `${baseUrl}/${doc.nomeArquivo}`,
+      })),
+    };
   }
 
   async substituirDocumento(
@@ -51,9 +63,7 @@ export class DocumentacaoService {
       throw new NotFoundException('Documentação não encontrada');
     }
 
-    const existente = documentacao.documentos.find(
-      doc => doc.tipo === tipo,
-    );
+    const existente = documentacao.documentos.find((doc) => doc.tipo === tipo);
 
     if (existente) {
       if (fs.existsSync(existente.caminho)) {
@@ -79,7 +89,10 @@ export class DocumentacaoService {
     return documentoSalvo;
   }
 
-  async removeDocumento(documentacaoId: string, documentoId: string): Promise<void> {
+  async removeDocumento(
+    documentacaoId: string,
+    documentoId: string,
+  ): Promise<void> {
     const documento = await this.documentoRepo.findOne({
       where: { id: documentoId },
       relations: ['documentacao'],
@@ -90,7 +103,9 @@ export class DocumentacaoService {
     }
 
     if (documento.documentacao.id !== documentacaoId) {
-      throw new BadRequestException('Documento não pertence a esta documentação.');
+      throw new BadRequestException(
+        'Documento não pertence a esta documentação.',
+      );
     }
 
     if (fs.existsSync(documento.caminho)) {
@@ -104,18 +119,18 @@ export class DocumentacaoService {
 
   async remove(documentacaoId: string): Promise<void> {
     const documentacao = await this.documentacaoRepo.findOne({
-        where: { id: documentacaoId },
-        relations: ['documentos'],
+      where: { id: documentacaoId },
+      relations: ['documentos'],
     });
 
     if (!documentacao) {
-        throw new NotFoundException('Documentação não encontrada');
+      throw new NotFoundException('Documentação não encontrada');
     }
 
-    documentacao.documentos.forEach(doc => {
-        if (fs.existsSync(doc.caminho)) {
-            fs.unlinkSync(path.resolve(doc.caminho));
-        }
+    documentacao.documentos.forEach((doc) => {
+      if (fs.existsSync(doc.caminho)) {
+        fs.unlinkSync(path.resolve(doc.caminho));
+      }
     });
 
     await this.documentacaoRepo.delete(documentacaoId);
@@ -123,32 +138,33 @@ export class DocumentacaoService {
 
   async verificarEConcluirMatricula(documentacaoId: string): Promise<void> {
     const TIPOS_OBRIGATORIOS = [
-        TipoDocumento.RG_ALUNO,
-        TipoDocumento.CPF_ALUNO,
-        TipoDocumento.CERTIDAO_NASCIMENTO,
-        TipoDocumento.COMPROVANTE_RESIDENCIA_ALUNO,
-        TipoDocumento.FOTO_3X4,
-        TipoDocumento.HISTORICO_ESCOLAR,
-        TipoDocumento.RG_RESPONSAVEL,
-        TipoDocumento.CPF_RESPONSAVEL,
-        TipoDocumento.COMPROVANTE_RESIDENCIA_RESP,
+      TipoDocumento.RG_ALUNO,
+      TipoDocumento.CPF_ALUNO,
+      TipoDocumento.CERTIDAO_NASCIMENTO,
+      TipoDocumento.COMPROVANTE_RESIDENCIA_ALUNO,
+      TipoDocumento.FOTO_3X4,
+      TipoDocumento.HISTORICO_ESCOLAR,
+      TipoDocumento.RG_RESPONSAVEL,
+      TipoDocumento.CPF_RESPONSAVEL,
+      TipoDocumento.COMPROVANTE_RESIDENCIA_RESP,
     ];
 
     const documentosEnviados = await this.documentoRepo.find({
-        where: { 
-            documentacao: { id: documentacaoId }, 
-            tipo: In(TIPOS_OBRIGATORIOS) as any 
-        },
-        select: ['tipo'],
+      where: {
+        documentacao: { id: documentacaoId },
+        tipo: In(TIPOS_OBRIGATORIOS) as any,
+      },
+      select: ['tipo'],
     });
 
-    const tiposUnicosEnviados = new Set(documentosEnviados.map(d => d.tipo));
+    const tiposUnicosEnviados = new Set(documentosEnviados.map((d) => d.tipo));
 
-    const documentosCompletos = tiposUnicosEnviados.size === TIPOS_OBRIGATORIOS.length;
+    const documentosCompletos =
+      tiposUnicosEnviados.size === TIPOS_OBRIGATORIOS.length;
 
     const documentacao = await this.documentacaoRepo.findOne({
-        where: { id: documentacaoId },
-        relations: ['aluno', 'aluno.usuario'],
+      where: { id: documentacaoId },
+      relations: ['aluno', 'aluno.usuario'],
     });
 
     const usuario = documentacao?.aluno?.usuario;
@@ -156,11 +172,11 @@ export class DocumentacaoService {
     if (!usuario) return;
 
     if (documentosCompletos && usuario.isBlocked) {
-        usuario.isBlocked = false;
-        await this.usuarioRepo.save(usuario);
+      usuario.isBlocked = false;
+      await this.usuarioRepo.save(usuario);
     } else if (!documentosCompletos && !usuario.isBlocked) {
-        usuario.isBlocked = true;
-        await this.usuarioRepo.save(usuario);
+      usuario.isBlocked = true;
+      await this.usuarioRepo.save(usuario);
     }
   }
 }

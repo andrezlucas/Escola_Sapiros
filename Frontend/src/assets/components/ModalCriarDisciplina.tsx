@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { toast } from "react-toastify";
+import { Input } from "./Input";
 
 interface Turma {
   id: string;
@@ -41,7 +42,13 @@ export default function ModalCriarDisciplina({
     },
   });
 
-  const { register, handleSubmit, watch, setValue } = methods;
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = methods;
 
   const habilidades = watch("habilidades") || [];
 
@@ -160,9 +167,6 @@ export default function ModalCriarDisciplina({
           <h2 className="text-xl font-bold text-[#1D5D7F]">
             Adicionar Nova Disciplina
           </h2>
-          <button onClick={onClose} className="text-xl text-gray-500">
-            ✕
-          </button>
         </div>
 
         <FormProvider {...methods}>
@@ -172,28 +176,37 @@ export default function ModalCriarDisciplina({
           >
             <div>
               <label className="block text-sm mb-1">Código da disciplina</label>
-              <input
-                {...register("codigo_disciplina", { required: true })}
-                className="w-full p-2 border rounded"
+              <Input
+                label={""}
+                {...register("codigo_disciplina", {
+                  required: "Codigo da disciplina obrigatório",
+                })}
+                error={errors?.codigo_disciplina?.message}
                 placeholder="Ex: MAT001"
               />
             </div>
 
             <div>
               <label className="block text-sm mb-1">Nome da disciplina</label>
-              <input
-                {...register("nome_disciplina", { required: true })}
-                className="w-full p-2 border rounded"
+              <Input
+                label={""}
+                {...register("nome_disciplina", {
+                  required: "Nome da displina obrigatório",
+                })}
+                error={errors?.nome_disciplina?.message}
                 placeholder="Ex: História"
               />
             </div>
 
             <div>
               <label className="block text-sm mb-1">Carga horária</label>
-              <input
+              <Input
+                label={""}
                 type="number"
-                {...register("cargaHoraria", { required: true })}
-                className="w-full p-2 border rounded"
+                {...register("cargaHoraria", {
+                  required: "Carga horária obrigatório",
+                })}
+                error={errors?.cargaHoraria?.message}
               />
             </div>
 
@@ -219,10 +232,11 @@ export default function ModalCriarDisciplina({
               </div>
 
               <div className="flex gap-2">
-                <input
+                <Input
+                  label={""}
                   value={novaHabilidade}
                   onChange={(e) => setNovaHabilidade(e.target.value)}
-                  className="flex-1 p-2 border rounded"
+                 
                   placeholder="Nova habilidade"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -234,7 +248,7 @@ export default function ModalCriarDisciplina({
                 <button
                   type="button"
                   onClick={adicionarHabilidade}
-                  className="px-4 bg-[#1D5D7F] text-white rounded"
+                  className="px-2  bg-[#1D5D7F] text-white rounded"
                 >
                   Adicionar
                 </button>

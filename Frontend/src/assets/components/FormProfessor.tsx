@@ -71,7 +71,6 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
             label={"Nome completo:"}
             type="text"
             {...register("nome", { required: "Nome é obrigatório" })}
-            className="w-full p-2 border rounded-lg"
           />
           {errors.nome && (
             <span className="text-red-500 text-sm">{errors.nome.message}</span>
@@ -89,7 +88,6 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
                 e.target.value = formatCPF(e.target.value);
               },
             })}
-            className="w-full p-2 border rounded-lg"
             maxLength={14}
           />
           {errors.cpf && (
@@ -109,7 +107,6 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
                 message: "Email inválido",
               },
             })}
-            className="w-full p-2 border rounded-lg"
           />
           {errors.email && (
             <span className="text-red-500 text-sm">{errors.email.message}</span>
@@ -129,7 +126,6 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
                 e.target.value = formatTelefone(e.target.value);
               },
             })}
-            className="w-full p-2 border rounded-lg"
             maxLength={15}
           />
           {errors.telefone && (
@@ -183,15 +179,17 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
           )}
         </div>
 
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 text-[#1D5D7F]">
           <h3 className="text-lg font-semibold mb-2">Endereço</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Input
                 label={"Logadouro:"}
                 type="text"
-                {...register("enderecoLogradouro")}
-                className="w-full p-2 border rounded-lg"
+                {...register("enderecoLogradouro", {
+                  required: "Logadouro obrigatório",
+                })}
+                error={errors?.enderecoLogradouro?.message}
               />
             </div>
 
@@ -199,8 +197,10 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
               <Input
                 label={"Número"}
                 type="text"
-                {...register("enderecoNumero")}
-                className="w-full p-2 border rounded-lg"
+                {...register("enderecoNumero", {
+                  required: "Número obrigatório",
+                })}
+                error={errors?.enderecoNumero?.message}
               />
             </div>
 
@@ -233,8 +233,10 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
               <Input
                 label={"Complemento:"}
                 type="text"
-                {...register("enderecoComplemento")}
-                className="w-full p-2 border rounded-lg"
+                {...register("enderecoComplemento", {
+                  required: "Complemento obrigatório",
+                })}
+                error={errors?.enderecoComplemento?.message}
               />
             </div>
 
@@ -242,8 +244,10 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
               <Input
                 label={"Bairro:"}
                 type="text"
-                {...register("enderecoBairro")}
-                className="w-full p-2 border rounded-lg"
+                {...register("enderecoBairro", {
+                  required: "Bairro obrigatório",
+                })}
+                error={errors?.enderecoBairro?.message}
               />
             </div>
 
@@ -258,7 +262,9 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
         </div>
 
         <div className="md:col-span-2">
-          <h3 className="text-lg font-semibold mb-2">Formação Acadêmica</h3>
+          <h3 className="text-lg font-semibold mb-2  text-[#1D5D7F]">
+            Formação Acadêmica
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Input
@@ -267,7 +273,6 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
                 {...register("cursoGraduacao", {
                   required: "Curso de graduação é obrigatório",
                 })}
-                className="w-full p-2 border rounded-lg"
               />
               {errors.cursoGraduacao && (
                 <span className="text-red-500 text-sm">
@@ -283,7 +288,6 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
                 {...register("instituicao", {
                   required: "Instituição é obrigatória",
                 })}
-                className="w-full p-2 border rounded-lg"
               />
               {errors.instituicao && (
                 <span className="text-red-500 text-sm">

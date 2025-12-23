@@ -274,8 +274,12 @@ export class TurmaService {
       throw new NotFoundException('Aluno não pertence a esta turma');
     }
 
-    aluno.turma = undefined;
-    await this.alunoRepository.save(aluno);
+    await this.alunoRepository
+      .createQueryBuilder()
+      .update(Aluno)
+      .set({ turma: null as any })
+      .where('id = :id', { id: alunoId })
+      .execute();
 
     return this.findOne(turmaId);
   }

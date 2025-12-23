@@ -21,12 +21,13 @@ interface Disciplina {
   nome: string;
 }
 
+// Mude "turno: string" para "turno: "MANHÃ" | "TARDE" | "NOITE""
 interface Turma {
   id: string;
   nome_turma: string;
   ano_letivo: string;
   capacidade_maxima: number;
-  turno: string;
+  turno: "MANHÃ" | "TARDE" | "NOITE"; // Corrigido aqui
   ativa: boolean;
   professor?: Professor;
   alunos: Aluno[];
@@ -53,8 +54,20 @@ export default function TurmaList() {
       });
       if (!res.ok) throw new Error("Erro ao buscar turmas");
       const data = await res.json();
-      console.log("Turmas atualizadas:", data);
-      setTurmas(data);
+
+      // Garantir que o turno tenha o tipo correto
+      const turmasFormatadas: Turma[] = data.map((turma: any) => ({
+        ...turma,
+        // Converter para maiúsculas e garantir que seja um dos valores permitidos
+        turno: (turma.turno?.toUpperCase() === "TARDE"
+          ? "TARDE"
+          : turma.turno?.toUpperCase() === "NOITE"
+          ? "NOITE"
+          : "MANHÃ") as "MANHÃ" | "TARDE" | "NOITE",
+      }));
+
+      console.log("Turmas atualizadas:", turmasFormatadas);
+      setTurmas(turmasFormatadas);
     } catch (err) {
       console.error("Erro ao buscar turmas", err);
       toast.error("Erro ao carregar turmas");
@@ -80,13 +93,10 @@ export default function TurmaList() {
     return professor.usuario?.nome || professor.nome || "—";
   };
 
-  function formatarTurno(turno?: string) {
-  if (!turno) return "—";
-
-  return turno
-    .toLowerCase()
-    .replace(/^\w/, (c) => c.toUpperCase());
-}
+  function formatarTurno(turno?: "MANHÃ" | "TARDE" | "NOITE") {
+    if (!turno) return "—";
+    return turno.charAt(0) + turno.slice(1).toLowerCase();
+  }
 
   return (
     <div className="p-4">

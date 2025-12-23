@@ -149,8 +149,6 @@ export default function ModalEditarProfessor({
           : undefined,
       };
 
-      console.log("Payload PATCH para professor:", payload);
-
       const res = await fetch(
         `http://localhost:3000/professores/${professor.id}`,
         {
@@ -350,21 +348,6 @@ export default function ModalEditarProfessor({
                 Salvar Alterações
               </button>
             </div>
-          </div>
-
-          <div className="mt-4 text-xs text-gray-500">
-            <p>
-              <strong>ID:</strong> {professor.id}
-            </p>
-            <p>
-              <strong>Última atualização:</strong>{" "}
-              {new Date().toLocaleDateString("pt-BR")}
-            </p>
-            {professor.turmas && professor.turmas.length > 0 && (
-              <p>
-                <strong>Turmas atribuídas:</strong> {professor.turmas.length}
-              </p>
-            )}
           </div>
         </div>
       </div>
