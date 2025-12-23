@@ -22,7 +22,7 @@ export class FilterAvisoDto {
 
   @IsOptional()
   @IsDateString()
-  dataFim?: string;
+  datafinal?: string;
 
   @IsOptional()
   @IsString()

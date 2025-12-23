@@ -1,34 +1,44 @@
-import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, IsDateString } from 'class-validator';
 import { TipoAviso } from '../entities/aviso.entity';
 
 export class CreateAvisoDto {
   @IsString()
-  @IsNotEmpty({ message: 'Título é obrigatório' })
-  titulo: string;
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  nome: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Conteúdo é obrigatório' })
-  conteudo: string;
+  @IsNotEmpty({ message: 'Descrição é obrigatória' })
+  descricao: string;
 
-  @IsEnum(TipoAviso, { message: 'Tipo deve ser GERAL, TURMA ou INDIVIDUAL' })
+  @IsEnum(TipoAviso)
   @IsOptional()
   tipo?: TipoAviso = TipoAviso.GERAL;
 
-  @IsDateString({}, { message: 'Data de publicação deve estar em formato ISO válido' })
-  @IsNotEmpty({ message: 'Data de publicação é obrigatória' })
-  dataPublicacao: string;
+  @IsDateString({}, { message: 'dataInicio deve estar em formato ISO (YYYY-MM-DDTHH:mm:ssZ)' })
+  @IsNotEmpty({ message: 'dataInicio é obrigatória' })
+  dataInicio: string;
 
-  @IsDateString({}, { message: 'Data de expiração deve estar em formato ISO válido' })
+  @IsDateString({}, { message: 'datafinal deve estar em formato ISO (YYYY-MM-DDTHH:mm:ssZ)' })
   @IsOptional()
-  dataExpiracao?: string;
+  datafinal?: string;
 
-  @Type(() => Number)
-  @IsInt({ message: 'usuarioId deve ser um número inteiro válido' })
-  @IsNotEmpty({ message: 'usuarioId é obrigatório' })
-  usuarioId: number;
+ 
+  @IsUUID('4')
+  @IsOptional()
+  usuarioId?: string;
 
-  @IsUUID('4', { message: 'turmaId deve ser um UUID válido' })
+  /**
+   * turmaId: obrigatório quando tipo === TURMA
+   */
+  @IsUUID('4')
   @IsOptional()
   turmaId?: string;
+
+  /**
+   * destinatarioAlunoId: obrigatório quando tipo === INDIVIDUAL
+   * representa Aluno.id (UUID)
+   */
+  @IsUUID('4')
+  @IsOptional()
+  destinatarioAlunoId?: string;
 }

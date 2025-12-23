@@ -17,8 +17,8 @@ type AuthRequest = Request & { user?: Usuario | any };
 export class AvisosController {
   constructor(private readonly avisosService: AvisosService) {}
 
-  // Criar aviso: coordenação e professores
-  @Roles(Role.COORDENACAO, Role.PROFESSOR)
+  // Criar aviso: coordenação
+  @Roles(Role.COORDENACAO)
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(@Body() createAvisoDto: CreateAvisoDto, @Req() req: AuthRequest): Promise<Aviso> {
@@ -40,8 +40,8 @@ export class AvisosController {
     return await this.avisosService.findOne(id, req.user);
   }
 
-  // Atualizar aviso: coordenação e professores (service deve validar autoria/escopo)
-  @Roles(Role.COORDENACAO, Role.PROFESSOR)
+  // Atualizar aviso: coordenação (service deve validar autoria/escopo)
+  @Roles(Role.COORDENACAO)
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async update(
@@ -52,8 +52,8 @@ export class AvisosController {
     return await this.avisosService.update(id, updateAvisoDto, req.user);
   }
 
-  // Remover aviso: coordenação e professores (service valida autorização)
-  @Roles(Role.COORDENACAO, Role.PROFESSOR)
+  // Remover aviso: coordenação (service valida autorização)
+  @Roles(Role.COORDENACAO)
   @Delete(':id')
   async remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: AuthRequest): Promise<void> {
     return await this.avisosService.remove(id, req.user);

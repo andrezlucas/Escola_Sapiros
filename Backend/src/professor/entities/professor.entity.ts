@@ -51,6 +51,19 @@ export class Professor {
   })
   dataConclusaoGraduacao?: Date;
 
+  @Column({ name: 'curso_segunda_graduacao', length: 100, nullable: true })
+  segundagraduacao?: string;
+
+  @Column({ name: 'instituicao_segunda_graduacao', length: 100, nullable: true })
+  instituicaoSegundagraduacao?: string;
+
+  @Column({ name: 'data_inicio_segunda_graduacao', type: 'date', nullable: true })
+  dataInicioSegundagraduacao?: Date;
+
+  @Column({ name: 'data_conclusao_segunda_graduacao', type: 'date', nullable: true })
+  dataConclusaoSegundagraduacao?: Date;
+
+
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
 

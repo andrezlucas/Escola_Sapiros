@@ -5,9 +5,12 @@ import { AvisosController } from './avisos.controller';
 import { Aviso } from './entities/aviso.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import { Turma } from '../turma/entities/turma.entity';
+import { Aluno } from '../aluno/entities/aluno.entity'; 
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Aviso, Usuario, Turma])],
+  imports: [
+    TypeOrmModule.forFeature([Aviso, Usuario, Turma, Aluno]), 
+  ],
   controllers: [AvisosController],
   providers: [AvisosService],
   exports: [AvisosService],

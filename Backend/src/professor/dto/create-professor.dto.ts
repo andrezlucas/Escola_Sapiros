@@ -9,7 +9,7 @@ import {
 import { CreateUsuarioDto } from '../../usuario/dto/create-usuario.dto';
 
 export class CreateProfessorDto extends CreateUsuarioDto {
- 
+
   @IsNotEmpty()
   @IsString()
   @Length(1, 100)
@@ -28,4 +28,23 @@ export class CreateProfessorDto extends CreateUsuarioDto {
   @IsOptional()
   @IsDateString()
   dataConclusaoGraduacao?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  segundaGraduacao?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  instituicaoSegundaGraduacao?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dataInicioSegundaGraduacao?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dataConclusaoSegundaGraduacao?: string;
+
 }
