@@ -5,10 +5,11 @@ import { Usuario } from '../usuario/entities/usuario.entity';
 import { ProfessorService } from './professor.service';
 import { ProfessorController } from './professor.controller';
 import { AuthModule } from '../auth/auth.module';
+import { Formacao } from './entities/formacao.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Professor, Usuario]),
+    TypeOrmModule.forFeature([Professor, Usuario, Formacao]),
     AuthModule,
   ],
   controllers: [ProfessorController],

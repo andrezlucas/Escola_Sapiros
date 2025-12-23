@@ -4,6 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { Professor } from './entities/professor.entity';
+import { Formacao } from './entities/formacao.entity';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { UpdateProfessorDto } from './dto/update-professor.dto';
@@ -33,14 +34,12 @@ export class ProfessorService {
       enderecoBairro,
       enderecoEstado,
       enderecoCidade,
-      cursoGraduacao,
-      instituicao,
-      dataInicioGraduacao,
-      dataConclusaoGraduacao,
+      formacoes,
     } = createDto;
 
-    const where = email ? [{ cpf }, { email }] : [{ cpf }];
-    const exists = await this.usuarioRepository.findOne({ where });
+    const exists = await this.usuarioRepository.findOne({
+      where: email ? [{ cpf }, { email }] : [{ cpf }],
+    });
 
     if (exists) {
       throw new ConflictException('CPF ou Email já cadastrado');
@@ -70,13 +69,16 @@ export class ProfessorService {
       const professor = manager.create(Professor, {
         id: usuarioSalvo.id,
         usuario: usuarioSalvo,
-        graduacao: cursoGraduacao,
-        instituicao,
-        dataInicioGraduacao: new Date(dataInicioGraduacao),
-        dataConclusaoGraduacao: dataConclusaoGraduacao
-          ? new Date(dataConclusaoGraduacao)
-          : undefined,
       });
+
+      professor.formacoes = formacoes.map((f) =>
+        manager.create(Formacao, {
+          curso: f.curso,
+          instituicao: f.instituicao,
+          dataInicio: new Date(f.dataInicio),
+          dataConclusao: f.dataConclusao ? new Date(f.dataConclusao) : undefined,
+        }),
+      );
 
       return await manager.save(professor);
     });
@@ -84,14 +86,14 @@ export class ProfessorService {
 
   async findAll(): Promise<Professor[]> {
     return this.professorRepository.find({
-      relations: ['usuario', 'turmas', 'disciplinas'],
+      relations: ['usuario', 'turmas', 'disciplinas', 'formacoes'],
     });
   }
 
   async findOne(id: string): Promise<Professor> {
     const professor = await this.professorRepository.findOne({
       where: { id },
-      relations: ['usuario', 'turmas', 'disciplinas'],
+      relations: ['usuario', 'turmas', 'disciplinas', 'formacoes'],
     });
 
     if (!professor) {
@@ -101,60 +103,54 @@ export class ProfessorService {
     return professor;
   }
 
- async update(id: string, updateDto: UpdateProfessorDto): Promise<Professor> {
-  return this.dataSource.transaction(async (manager) => {
-    const professor = await manager.findOne(Professor, {
-      where: { id },
-      relations: ['usuario'],
+  async update(id: string, updateDto: UpdateProfessorDto): Promise<Professor> {
+    return this.dataSource.transaction(async (manager) => {
+      const professor = await manager.findOne(Professor, {
+        where: { id },
+        relations: ['usuario', 'formacoes'],
+      });
+
+      if (!professor) {
+        throw new NotFoundException('Professor não encontrado');
+      }
+
+      const usuario = professor.usuario;
+
+      Object.assign(usuario, {
+        nome: updateDto.nome ?? usuario.nome,
+        email: updateDto.email ?? usuario.email,
+        cpf: updateDto.cpf ?? usuario.cpf,
+        telefone: updateDto.telefone ?? usuario.telefone,
+        sexo: updateDto.sexo ?? usuario.sexo,
+        enderecoLogradouro: updateDto.enderecoLogradouro ?? usuario.enderecoLogradouro,
+        enderecoNumero: updateDto.enderecoNumero ?? usuario.enderecoNumero,
+        enderecoCep: updateDto.enderecoCep ?? usuario.enderecoCep,
+        enderecoComplemento: updateDto.enderecoComplemento ?? usuario.enderecoComplemento,
+        enderecoBairro: updateDto.enderecoBairro ?? usuario.enderecoBairro,
+        enderecoEstado: updateDto.enderecoEstado ?? usuario.enderecoEstado,
+        enderecoCidade: updateDto.enderecoCidade ?? usuario.enderecoCidade,
+      });
+
+      if (updateDto.data_nascimento) {
+        usuario.dataNascimento = new Date(updateDto.data_nascimento);
+      }
+
+      if (updateDto.formacoes) {
+        await manager.delete(Formacao, { professor: { id } });
+        professor.formacoes = updateDto.formacoes.map((f) =>
+          manager.create(Formacao, {
+            curso: f.curso,
+            instituicao: f.instituicao,
+            dataInicio: new Date(f.dataInicio),
+            dataConclusao: f.dataConclusao ? new Date(f.dataConclusao) : undefined,
+          }),
+        );
+      }
+
+      await manager.save(usuario);
+      return await manager.save(professor);
     });
-
-    if (!professor) {
-      throw new NotFoundException('Professor não encontrado');
-    }
-
-    const usuario = professor.usuario;
-
-    Object.assign(usuario, {
-      nome: updateDto.nome ?? usuario.nome,
-      email: updateDto.email ?? usuario.email,
-      cpf: updateDto.cpf ?? usuario.cpf,
-      telefone: updateDto.telefone ?? usuario.telefone,
-      sexo: updateDto.sexo ?? usuario.sexo,
-      enderecoLogradouro:
-        updateDto.enderecoLogradouro ?? usuario.enderecoLogradouro,
-      enderecoNumero:
-        updateDto.enderecoNumero ?? usuario.enderecoNumero,
-      enderecoCep: updateDto.enderecoCep ?? usuario.enderecoCep,
-      enderecoComplemento:
-        updateDto.enderecoComplemento ?? usuario.enderecoComplemento,
-      enderecoBairro:
-        updateDto.enderecoBairro ?? usuario.enderecoBairro,
-      enderecoEstado:
-        updateDto.enderecoEstado ?? usuario.enderecoEstado,
-      enderecoCidade:
-        updateDto.enderecoCidade ?? usuario.enderecoCidade,
-    });
-
-    if (updateDto.data_nascimento) {
-      usuario.dataNascimento = new Date(updateDto.data_nascimento);
-    }
-
-    Object.assign(professor, {
-      graduacao: updateDto.cursoGraduacao ?? professor.graduacao,
-      instituicao: updateDto.instituicao ?? professor.instituicao,
-      dataInicioGraduacao: updateDto.dataInicioGraduacao
-        ? new Date(updateDto.dataInicioGraduacao)
-        : professor.dataInicioGraduacao,
-      dataConclusaoGraduacao: updateDto.dataConclusaoGraduacao
-        ? new Date(updateDto.dataConclusaoGraduacao)
-        : professor.dataConclusaoGraduacao,
-    });
-
-    await manager.save(usuario);
-    return manager.save(professor);
-  });
-}
-
+  }
 
   async remove(id: string): Promise<void> {
     const professor = await this.findOne(id);

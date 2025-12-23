@@ -1,50 +1,18 @@
 import {
-  IsString,
-  IsDateString,
-  IsOptional,
-  Length,
-  IsNotEmpty,
+  IsArray,
+  ValidateNested,
+  ArrayMinSize,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 import { CreateUsuarioDto } from '../../usuario/dto/create-usuario.dto';
+import { FormacaoDto } from './formacao.dto';
 
 export class CreateProfessorDto extends CreateUsuarioDto {
 
-  @IsNotEmpty()
-  @IsString()
-  @Length(1, 100)
-  cursoGraduacao: string;
-
-
-  @IsNotEmpty()
-  @IsString()
-  @Length(1, 100)
-  instituicao: string;
-
-  @IsNotEmpty()
-  @IsDateString()
-  dataInicioGraduacao: string;
-
-  @IsOptional()
-  @IsDateString()
-  dataConclusaoGraduacao?: string;
-
-  @IsOptional()
-  @IsString()
-  @Length(1, 100)
-  segundaGraduacao?: string;
-
-  @IsOptional()
-  @IsString()
-  @Length(1, 100)
-  instituicaoSegundaGraduacao?: string;
-
-  @IsOptional()
-  @IsDateString()
-  dataInicioSegundaGraduacao?: string;
-
-  @IsOptional()
-  @IsDateString()
-  dataConclusaoSegundaGraduacao?: string;
-
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Professor deve ter ao menos uma formação' })
+  @ValidateNested({ each: true })
+  @Type(() => FormacaoDto)
+  formacoes: FormacaoDto[];
 }

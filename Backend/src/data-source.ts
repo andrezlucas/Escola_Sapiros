@@ -13,6 +13,7 @@ import { Documentacao } from './documentacao/entities/documentacao.entity';
 import * as dotenv from 'dotenv';
 import { Documento } from './documentacao/entities/documento.entity';
 import { Habilidade } from './disciplina/entities/habilidade.entity';
+import { Formacao } from './professor/entities/formacao.entity';
 
 dotenv.config({ path: '.env' });
 
@@ -23,8 +24,8 @@ export const AppDataSource = new DataSource({
   username: process.env.MYSQL_DB_USER,
   password: process.env.MYSQL_DB_PASSWORD,
   database: process.env.MYSQL_DB_NAME,
-  entities: [Usuario, Aluno, Professor, Coordenacao, Disciplina, Nota, Frequencia, Aviso, Turma, Documentacao,Documento,Habilidade],
-  migrations: ['dist/database/migrations/*.ts'],
+  entities: [Usuario, Aluno, Professor, Coordenacao, Disciplina, Nota, Frequencia, Aviso, Turma, Documentacao,Documento,Habilidade,Formacao],
+  migrations: ['dist/database/migrations/*{.ts,.js}'],
   synchronize: false,
   logging: false,
 });
