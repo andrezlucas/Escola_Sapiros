@@ -24,7 +24,7 @@ export const AppDataSource = new DataSource({
   password: process.env.MYSQL_DB_PASSWORD,
   database: process.env.MYSQL_DB_NAME,
   entities: [Usuario, Aluno, Professor, Coordenacao, Disciplina, Nota, Frequencia, Aviso, Turma, Documentacao,Documento,Habilidade],
-  migrations: ['dist/database/migrations/*.js'],
+  migrations: ['dist/database/migrations/*.ts'],
   synchronize: false,
   logging: false,
 });
