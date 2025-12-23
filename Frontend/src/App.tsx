@@ -11,6 +11,7 @@ import Gerenciamento from "./assets/pages/Gerenciamento";
 import EditarDocumento from "./assets/pages/EditarDocumento";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import FormTurma from "./assets/components/FormTurma";
 
 function App() {
   return (

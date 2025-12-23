@@ -122,7 +122,7 @@ export default function DisciplinaList() {
                         <span
                           key={hab.id}
                           title={hab.descricao}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                          className="px-3 py-2 bg-blue-100 text-blue-800 text-xs rounded-full"
                         >
                           {hab.nome}
                         </span>

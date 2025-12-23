@@ -59,6 +59,7 @@ export function CalendarioSemana({
     { hour: 10, label: "10:00" },
     { hour: 11, label: "11:00" },
     { hour: 12, label: "12:00" },
+    { hour: 13, label: "13:00" },
   ];
 
   const formatDayHeader = (date: Date) => {

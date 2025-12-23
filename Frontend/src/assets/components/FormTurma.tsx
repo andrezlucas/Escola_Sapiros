@@ -1,198 +1,248 @@
-import { useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Input } from "./Input";
 import FormSelect from "./FormSelect";
+import { useEffect, useState } from "react";
 
-export interface Professor {
-  id: string;
-  nome?: string;
-  usuario?: { nome: string };
-}
+type TurnoType = "MANHÃ" | "TARDE" | "NOITE" ;
 
-export interface Aluno {
-  id: string;
-  nome?: string;
-  usuario?: { nome: string };
-}
-
-export interface Disciplina {
-  id_disciplina: string;
-  nome: string;
-}
-
-export type TurmaFormData = {
+export interface TurmaFormData {
   nome_turma: string;
   anoLetivo: string;
-  turno: "MANHÃ" | "TARDE" | "NOITE";
-  professorId?: string | null;
-  alunosIds?: string[];
-  disciplinasIds?: string[];
-  descricao?: string;
+  turno: TurnoType;
+  capacidade_maxima: number;
   ativa?: boolean;
-  capacidade_maxima?: number;
-};
+  professorId?: string;
+  alunosIds?: string[];
+}
+
+interface Professor {
+  id: string;
+  nome: string;
+  usuario: {
+    nome: string;
+  };
+}
+
+interface Aluno {
+  id: string;
+  usuario: {
+    nome: string;
+  };
+}
 
 interface FormTurmaProps {
-  onSubmit: (data: TurmaFormData) => void | Promise<void>;
-  professores: Professor[];
-  alunos: Aluno[];
-  disciplinas?: Disciplina[];
+  onSubmit: (data: TurmaFormData) => void;
+  professores?: Professor[];
+  alunos?: Aluno[];
+  isEditMode?: boolean;
 }
 
 export default function FormTurma({
   onSubmit,
-  professores,
-  alunos,
-  disciplinas = [],
+  professores = [],
+  alunos = [],
+  isEditMode = false,
 }: FormTurmaProps) {
-  const { register, handleSubmit, setValue, watch } =
-    useFormContext<TurmaFormData>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useFormContext<TurmaFormData>();
 
-  const [buscaAluno, setBuscaAluno] = useState("");
-  const [buscaDisciplina, setBuscaDisciplina] = useState("");
+  const alunosSelecionados = watch("alunosIds") || [];
+  const capacidadeMaxima = watch("capacidade_maxima") || 0;
 
-  const alunosIds = watch("alunosIds") ?? [];
-  const professorId = watch("professorId");
-
-  const alunosFiltrados = useMemo(
-    () =>
-      alunos.filter((a) =>
-        (a.usuario?.nome ?? a.nome ?? "")
-          .toLowerCase()
-          .includes(buscaAluno.toLowerCase())
-      ),
-    [buscaAluno, alunos]
-  );
-
-  const disciplinasFiltradas = useMemo(
-    () =>
-      disciplinas.filter((d) =>
-        d.nome.toLowerCase().includes(buscaDisciplina.toLowerCase())
-      ),
-    [buscaDisciplina, disciplinas]
-  );
-
-  function handleFormSubmit(data: TurmaFormData) {
-    onSubmit({
-      ...data,
-      capacidade_maxima: Number(data.capacidade_maxima),
-      professorId: data.professorId,
-      alunosIds: data.alunosIds ?? [],
-      disciplinasIds: data.disciplinasIds ?? [],
-    });
-  }
+  const formatAnoLetivo = (value: string) => {
+    return value.replace(/\D/g, "").slice(0, 4);
+  };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-      <Input
-        label={""}
-        placeholder="Nome da turma"
-        {...register("nome_turma", { required: true })}
-      />
-
-      <Input
-        label={""}
-        placeholder="Ano letivo (YYYY)"
-        {...register("anoLetivo", {
-          required: true,
-          pattern: /^\d{4}$/,
-        })}
-      />
-
-      <FormSelect
-        name="turno"
-        label="Período"
-        options={[
-          { value: "MANHÃ", label: "Manhã" },
-          { value: "TARDE", label: "Tarde" },
-          { value: "NOITE", label: "Noite" },
-        ]}
-      />
-
-      <Input
-        label={""}
-        type="number"
-        placeholder="Capacidade máxima"
-        {...register("capacidade_maxima", {
-          valueAsNumber: true,
-          min: 1,
-        })}
-      />
-
-      <select
-        value={professorId ?? ""}
-        onChange={(e) =>
-          setValue("professorId", e.target.value || undefined, {
-            shouldDirty: true,
-          })
-        }
-        className="w-full border rounded px-3 py-2"
-      >
-        <option value="">Sem professor</option>
-        {professores.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.usuario?.nome ?? p.nome ?? "Sem nome"}
-          </option>
-        ))}
-      </select>
-
-      <input
-        type="text"
-        placeholder="Buscar aluno"
-        value={buscaAluno}
-        onChange={(e) => setBuscaAluno(e.target.value)}
-        className="w-full border rounded px-3 py-2"
-      />
-
-      <select
-        multiple
-        value={alunosIds}
-        onChange={(e) =>
-          setValue(
-            "alunosIds",
-            Array.from(e.target.selectedOptions).map((o) => o.value),
-            { shouldDirty: true }
-          )
-        }
-        className="w-full border rounded px-3 py-2 h-40"
-      >
-        {alunosFiltrados.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.usuario?.nome ?? a.nome ?? "Sem nome"}
-          </option>
-        ))}
-      </select>
-
-      {disciplinas.length > 0 && (
-        <>
-          <input
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <Input
+            label={"Nome da Turma:"}
             type="text"
-            placeholder="Buscar disciplina"
-            value={buscaDisciplina}
-            onChange={(e) => setBuscaDisciplina(e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            {...register("nome_turma", {
+              required: "Nome da turma é obrigatório",
+              minLength: {
+                value: 3,
+                message: "Nome deve ter pelo menos 3 caracteres",
+              },
+            })}
+            error={errors?.nome_turma?.message}
           />
+        </div>
 
-          <select
-            multiple
-            {...register("disciplinasIds")}
-            className="w-full border rounded px-3 py-2 h-40"
-          >
-            {disciplinasFiltradas.map((d) => (
-              <option key={d.id_disciplina} value={d.id_disciplina}>
-                {d.nome}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
+        <div>
+          <Input
+            label={"Ano Letivo:"}
+            type="text"
+            {...register("anoLetivo", {
+              required: "Ano letivo é obrigatório",
+              pattern: {
+                value: /^\d{4}$/,
+                message: "Ano letivo deve estar no formato YYYY",
+              },
+              validate: (value) => {
+                const year = parseInt(value);
+                const currentYear = new Date().getFullYear();
+                return (
+                  (year >= 2000 && year <= currentYear + 5) ||
+                  `Ano deve estar entre 2000 e ${currentYear + 5}`
+                );
+              },
+              onChange: (e) => {
+                e.target.value = formatAnoLetivo(e.target.value);
+              },
+            })}
+            maxLength={4}
+            error={errors?.anoLetivo?.message}
+          />
+        </div>
 
-      <button
-        type="submit"
-        className="w-full bg-[#1D5D7F] text-white py-2 rounded-lg"
-      >
-        Salvar
-      </button>
+        <div>
+          <FormSelect
+            label="Turno:"
+            name="turno"
+            options={[
+              { value: "MANHÃ", label: "Manhã" },
+              { value: "TARDE", label: "Tarde" },
+              { value: "NOITE", label: "Noite" },
+            ]}
+            rules={{ required: "Turno é obrigatório" }}
+          />
+        </div>
+
+        <div>
+          <Input
+            label={"Capacidade Máxima:"}
+            type="number"
+            {...register("capacidade_maxima", {
+              required: "Capacidade máxima é obrigatória",
+              min: {
+                value: 1,
+                message: "Capacidade mínima é 1",
+              },
+              max: {
+                value: 30,
+                message: "Capacidade máxima é 30",
+              },
+              valueAsNumber: true,
+              onChange: (e) => {
+                const value = parseInt(e.target.value);
+                if (value > 30) e.target.value = "30";
+                if (value < 1) e.target.value = "1";
+
+                const currentAlunos = alunosSelecionados.length;
+                if (currentAlunos > value) {
+                  const novosAlunos = alunosSelecionados.slice(0, value);
+                  setValue("alunosIds", novosAlunos);
+                }
+              },
+            })}
+            error={errors?.capacidade_maxima?.message}
+          />
+        </div>
+
+        {isEditMode && professores.length > 0 && (
+          <div className="md:col-span-2">
+            <FormSelect
+              label="Professor Responsável:"
+              name="professorId"
+              options={[
+                { value: "", label: "Nenhum professor" },
+                ...professores.map((prof) => ({
+                  value: prof.id,
+                  label:
+                    prof.usuario?.nome ||
+                    prof.nome ||
+                    `Professor ${prof.id.substring(0, 8)}`,
+                })),
+              ]}
+            />
+          </div>
+        )}
+
+        {isEditMode && alunos.length > 0 && (
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Alunos Matriculados ({alunosSelecionados.length}/
+              {capacidadeMaxima})
+            </label>
+            <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-3">
+              {alunos.map((aluno) => {
+                const isSelected = alunosSelecionados.includes(aluno.id);
+                const isDisabled =
+                  !isSelected && alunosSelecionados.length >= capacidadeMaxima;
+
+                return (
+                  <div key={aluno.id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`aluno-${aluno.id}`}
+                      value={aluno.id}
+                      checked={isSelected}
+                      disabled={isDisabled}
+                      onChange={(e) => {
+                        const currentIds = [...alunosSelecionados];
+                        if (e.target.checked) {
+                          if (currentIds.length < capacidadeMaxima) {
+                            currentIds.push(aluno.id);
+                          }
+                        } else {
+                          const index = currentIds.indexOf(aluno.id);
+                          if (index > -1) {
+                            currentIds.splice(index, 1);
+                          }
+                        }
+                        setValue("alunosIds", currentIds, {
+                          shouldValidate: true,
+                        });
+                      }}
+                      className="h-4 w-4 text-[#1D5D7F] border-gray-300 rounded focus:ring-[#1D5D7F]"
+                    />
+                    <label
+                      htmlFor={`aluno-${aluno.id}`}
+                      className={`ml-2 text-sm ${
+                        isDisabled ? "text-gray-400" : "text-gray-700"
+                      }`}
+                    >
+                      {aluno.usuario?.nome ||
+                        `Aluno ${aluno.id.substring(0, 8)}`}
+                      {isDisabled &&
+                        !isSelected &&
+                        " (capacidade máxima atingida)"}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+            {errors?.alunosIds && (
+              <span className="text-red-500 text-sm mt-1">
+                {errors.alunosIds.message}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="md:col-span-2">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="ativa"
+              {...register("ativa")}
+              className="h-4 w-4 text-[#1D5D7F] border-gray-300 rounded focus:ring-[#1D5D7F]"
+              defaultChecked={true}
+            />
+            <label htmlFor="ativa" className="ml-2 text-sm text-gray-700">
+              Turma Ativa
+            </label>
+          </div>
+        </div>
+      </div>
     </form>
   );
 }
