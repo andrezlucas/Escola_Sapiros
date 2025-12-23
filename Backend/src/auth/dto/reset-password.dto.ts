@@ -8,4 +8,9 @@ export class ResetPasswordDto {
   @MinLength(8)
   @MaxLength(64)
   senha: string;
+
+  @IsNotEmpty()
+  @MinLength(8)
+  @MaxLength(64)
+  confirmarSenha: string;
 }

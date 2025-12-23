@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UsePipes,
+  ValidationPipe,
+  BadRequestException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RequestResetPasswordDto } from './dto/request-password-reset.dto';
@@ -15,14 +22,23 @@ export class AuthController {
   }
 
   @Post('senha-bloqueada')
+  async senhaBloqueada(@Body() body: { email: string }) {
+    return this.authService.requestPasswordReset(body.email);
+  }
+  
+  @Post('esqueceu-senha')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async requestPasswordReset(@Body() dto: RequestResetPasswordDto) {
+  async forgotPassword(@Body() dto: RequestResetPasswordDto) {
     return this.authService.requestPasswordReset(dto.email);
   }
 
   @Post('nova-senha')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async resetPassword(@Body() dto: ResetPasswordDto) {
+    if (dto.senha !== dto.confirmarSenha) {
+      throw new BadRequestException('As senhas não coincidem');
+    }
+
     return this.authService.resetPassword(dto.token, dto.senha);
   }
 }
