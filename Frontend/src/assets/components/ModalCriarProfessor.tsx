@@ -15,15 +15,29 @@ export default function ModalCriarProfessor({
   const methods = useForm<ProfessorFormData>({
     defaultValues: {
       sexo: "MASCULINO",
-      role: "professor"
+      role: "professor",
+      formacoes: [
+        {
+          curso: "",
+          instituicao: "",
+          dataInicio: "",
+          dataConclusao: "",
+          nivel: "",
+        },
+      ],
     },
   });
   const token = localStorage.getItem("token");
 
+  const toIsoDate = (date?: string) => {
+    if (!date) return undefined;
+    return new Date(`${date}T00:00:00.000Z`).toISOString();
+  };
+
   async function handleCriarProfessor(data: ProfessorFormData) {
     try {
-      const formatDateForBackend = (dateString: string) => {
-        if (!dateString) return undefined;
+      const formatDateForBackend = (dateString?: string) => {
+        if (!dateString || dateString.trim() === "") return undefined;
         return new Date(dateString).toISOString();
       };
 
@@ -42,15 +56,19 @@ export default function ModalCriarProfessor({
         enderecoBairro: data.enderecoBairro || undefined,
         enderecoEstado: data.enderecoEstado || undefined,
         enderecoCidade: data.enderecoCidade || undefined,
-        cursoGraduacao: data.cursoGraduacao,
-        instituicao: data.instituicao,
-        dataInicioGraduacao: formatDateForBackend(data.dataInicioGraduacao),
-        dataConclusaoGraduacao: data.dataConclusaoGraduacao
-          ? formatDateForBackend(data.dataConclusaoGraduacao)
-          : undefined,
+        formacoes: data.formacoes
+          .filter((f) => f.curso && f.instituicao && f.dataInicio)
+          .map((f) => ({
+            curso: f.curso,
+            instituicao: f.instituicao,
+            nivel: f.nivel,
+            dataInicio: toIsoDate(f.dataInicio),
+            dataConclusao: f.dataConclusao
+              ? toIsoDate(f.dataConclusao)
+              : undefined,
+          })),
       };
-
-      
+      console.log(JSON.stringify(payload, null, 2));
 
       const res = await fetch("http://localhost:3000/professores", {
         method: "POST",

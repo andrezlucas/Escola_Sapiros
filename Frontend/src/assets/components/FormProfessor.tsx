@@ -7,6 +7,7 @@ import EstadoSelect from "./EstadosSelect";
 import CidadeSelect from "./CidadeSelect";
 import { BuscarCep } from "../utils/BuscarCep";
 import { maskCep } from "../utils/MaskCep";
+import { useState } from "react";
 
 type SexoType = "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO";
 type RoleType = "aluno" | "professor" | "coordenacao";
@@ -25,10 +26,13 @@ export interface ProfessorFormData {
   enderecoBairro: string;
   enderecoEstado: string;
   enderecoCidade: string;
-  cursoGraduacao: string;
-  instituicao: string;
-  dataInicioGraduacao: string;
-  dataConclusaoGraduacao?: string;
+  formacoes: {
+    curso: string;
+    instituicao: string;
+    dataInicio: string;
+    dataConclusao?: string;
+    nivel: string;
+  }[];
   role?: RoleType;
 }
 
@@ -46,138 +50,79 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
     control,
   } = useFormContext<ProfessorFormData>();
 
-  const formatCPF = (value: string) => {
-    return value
+  const [segundaFormacao, setSegundaFormacao] = useState(false);
+
+  const formatCPF = (value: string) =>
+    value
       .replace(/\D/g, "")
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d{1,2})/, "$1-$2")
       .replace(/(-\d{2})\d+?$/, "$1");
-  };
 
-  const formatTelefone = (value: string) => {
-    return value
+  const formatTelefone = (value: string) =>
+    value
       .replace(/\D/g, "")
       .replace(/(\d{2})(\d)/, "($1) $2")
       .replace(/(\d{5})(\d)/, "$1-$2")
       .replace(/(-\d{4})\d+?$/, "$1");
-  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Input
-            label={"Nome completo:"}
-            type="text"
-            {...register("nome", { required: "Nome é obrigatório" })}
-          />
-          {errors.nome && (
-            <span className="text-red-500 text-sm">{errors.nome.message}</span>
-          )}
-        </div>
+        <Input
+          label="Nome completo:"
+          {...register("nome", { required: "Nome é obrigatório" })}
+          error={errors?.nome?.message}
+        />
 
-        <div>
-          <Input
-            label={"CPF:"}
-            type="text"
-            {...register("cpf", {
-              required: "CPF é obrigatório",
-              validate: ValidarCpf,
-              onChange: (e) => {
-                e.target.value = formatCPF(e.target.value);
-              },
-            })}
-            maxLength={14}
-          />
-          {errors.cpf && (
-            <span className="text-red-500 text-sm">{errors.cpf.message}</span>
-          )}
-        </div>
+        <Input
+          label="CPF:"
+          {...register("cpf", {
+            required: "CPF é obrigatório",
+            validate: ValidarCpf,
+            onChange: (e) => (e.target.value = formatCPF(e.target.value)),
+          })}
+          maxLength={14}
+        />
 
-        <div>
-          <Input
-            label={"Email:"}
-            type="email"
-            {...register("email", {
-              required: "Email é obrigatório",
-              validate: ValidarEmail,
-              pattern: {
-                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                message: "Email inválido",
-              },
-            })}
-          />
-          {errors.email && (
-            <span className="text-red-500 text-sm">{errors.email.message}</span>
-          )}
-        </div>
+        <Input
+          label="Email:"
+          type="email"
+          {...register("email", {
+            required: "Email é obrigatório",
+            validate: ValidarEmail,
+          })}
+        />
 
-        <div>
-          <Input
-            label={"Telefone:"}
-            type="text"
-            {...register("telefone", {
-              required: "Telefone é obrigatório",
-              validate: (value) =>
-                value.replace(/\D/g, "").length === 11 ||
-                "Telefone deve conter DDD + número",
-              onChange: (e) => {
-                e.target.value = formatTelefone(e.target.value);
-              },
-            })}
-            maxLength={15}
-          />
-          {errors.telefone && (
-            <span className="text-red-500 text-sm">
-              {errors.telefone.message}
-            </span>
-          )}
-        </div>
+        <Input
+          label="Telefone:"
+          {...register("telefone", {
+            required: "Telefone é obrigatório",
+            validate: (v) =>
+              v.replace(/\D/g, "").length === 11 ||
+              "Telefone deve conter DDD + número",
+            onChange: (e) => (e.target.value = formatTelefone(e.target.value)),
+          })}
+          maxLength={15}
+        />
 
-        <div>
-          <FormSelect
-            label="Sexo:"
-            name="sexo"
-            options={[
-              { value: "MASCULINO", label: "Masculino" },
-              { value: "FEMININO", label: "Feminino" },
-            ]}
-          />
-        </div>
+        <FormSelect
+          label="Sexo:"
+          name="sexo"
+          options={[
+            { value: "MASCULINO", label: "Masculino" },
+            { value: "FEMININO", label: "Feminino" },
+          ]}
+        />
 
-        <div>
-          <Input
-            label="Data de Nascimento:"
-            type="date"
-            {...register("dataNascimento", {
-              required: "Data de nascimento é obrigatória",
-              validate: (value) => {
-                if (!value) return "Data de nascimento é obrigatória";
-
-                const nascimento = new Date(value + "T12:00:00");
-                const hoje = new Date();
-
-                let idade = hoje.getFullYear() - nascimento.getFullYear();
-                const m = hoje.getMonth() - nascimento.getMonth();
-
-                if (
-                  m < 0 ||
-                  (m === 0 && hoje.getDate() < nascimento.getDate())
-                ) {
-                  idade--;
-                }
-
-                return idade >= 18 || "Professor deve ter no mínimo 18 anos";
-              },
-            })}
-          />
-          {errors.dataNascimento && (
-            <span className="text-red-500 text-sm">
-              {errors.dataNascimento.message}
-            </span>
-          )}
-        </div>
+        <Input
+          label="Data de Nascimento:"
+          type="date"
+          {...register("dataNascimento", {
+            required: "Data de nascimento é obrigatória",
+          })}
+        />
 
         <div className="md:col-span-2 text-[#1D5D7F]">
           <h3 className="text-lg font-semibold mb-2">Endereço</h3>
@@ -262,68 +207,104 @@ export default function FormProfessor({ onSubmit }: FormProfessorProps) {
         </div>
 
         <div className="md:col-span-2">
-          <h3 className="text-lg font-semibold mb-2  text-[#1D5D7F]">
+          <h3 className="text-lg font-semibold mb-2 text-[#1D5D7F]">
             Formação Acadêmica
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Input
-                label={"Curso de Graduação:"}
-                type="text"
-                {...register("cursoGraduacao", {
-                  required: "Curso de graduação é obrigatório",
-                })}
-              />
-              {errors.cursoGraduacao && (
-                <span className="text-red-500 text-sm">
-                  {errors.cursoGraduacao.message}
-                </span>
-              )}
-            </div>
 
-            <div>
-              <Input
-                label={"Instituição:"}
-                type="text"
-                {...register("instituicao", {
-                  required: "Instituição é obrigatória",
-                })}
-              />
-              {errors.instituicao && (
-                <span className="text-red-500 text-sm">
-                  {errors.instituicao.message}
-                </span>
-              )}
-            </div>
+          <Input
+            label="Curso:"
+            {...register("formacoes.0.curso", {
+              required: "Curso obrigatório",
+            })}
+          />
 
-            <div>
+          <Input
+            label="Instituição:"
+            {...register("formacoes.0.instituicao", {
+              required: "Instituição obrigatória",
+            })}
+          />
+
+          <Input
+            label="Data de Início:"
+            type="date"
+            {...register("formacoes.0.dataInicio", {
+              required: "Data obrigatória",
+            })}
+          />
+
+          <Input
+            label="Data de Conclusão:"
+            type="date"
+            {...register("formacoes.0.dataConclusao", {
+              setValueAs: (v: string) => (v === "" ? undefined : v),
+              validate: (v) => {
+                if (!v) return true;
+                return (
+                  new Date(v) >= new Date(watch("formacoes.0.dataInicio")) ||
+                  "Data inválida"
+                );
+              },
+            })}
+          />
+
+          <FormSelect
+            label="Nível:"
+            name="formacoes.0.nivel"
+            options={[
+              { value: "GRADUACAO", label: "Graduação" },
+              { value: "POS_GRADUACAO", label: "Pós-graduação" },
+              { value: "MESTRADO", label: "Mestrado" },
+              { value: "DOUTORADO", label: "Doutorado" },
+            ]}
+          />
+
+          <button
+            type="button"
+            onClick={() => setSegundaFormacao(true)}
+            className="text-sm text-blue-600 underline"
+          >
+            + Adicionar outra titularidade
+          </button>
+
+          {segundaFormacao && (
+            <>
+              <h4 className="text-lg font-semibold text-[#1D5D7F] mt-4">
+                Segunda Titularidade
+              </h4>
+
+              <Input label="Curso:" {...register("formacoes.1.curso")} />
               <Input
-                label={"Data de Início da Graduação:"}
+                label="Instituição:"
+                {...register("formacoes.1.instituicao")}
+              />
+
+              <Input
+                label="Data de Início:"
                 type="date"
-                {...register("dataInicioGraduacao", {
-                  required: "Data de início é obrigatória",
-                })}
+                {...register("formacoes.1.dataInicio")}
               />
-              {errors.dataInicioGraduacao && (
-                <span className="text-red-500 text-sm">
-                  {errors.dataInicioGraduacao.message}
-                </span>
-              )}
-            </div>
 
-            <div>
               <Input
-                label={"Data de Conclusão da Graduação:"}
+                label="Data de Conclusão:"
                 type="date"
-                {...register("dataConclusaoGraduacao", {
-                  validate: (value) =>
-                    !value ||
-                    new Date(value) >= new Date(watch("dataInicioGraduacao")) ||
-                    "Data de conclusão não pode ser anterior ao início",
+                {...register("formacoes.1.dataConclusao", {
+                  setValueAs: (v: string) => (v === "" ? undefined : v),
                 })}
               />
-            </div>
-          </div>
+
+              <FormSelect
+                label="Nível:"
+                name="formacoes.1.nivel"
+                options={[
+                  { value: "GRADUACAO", label: "Graduação" },
+                  { value: "POS_GRADUACAO", label: "Pós-graduação" },
+                  { value: "MESTRADO", label: "Mestrado" },
+                  { value: "DOUTORADO", label: "Doutorado" },
+                ]}
+              />
+            </>
+          )}
         </div>
       </div>
     </form>

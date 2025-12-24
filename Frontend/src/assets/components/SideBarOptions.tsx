@@ -11,9 +11,6 @@ import { IoMdTv } from "react-icons/io";
 import { MdOutlineManageAccounts } from "react-icons/md";
 import { FaRegFolderOpen } from "react-icons/fa";
 
-
-
-
 export const SideBarOptions = {
   coordenacao: {
     main: [
@@ -62,7 +59,7 @@ export const SideBarOptions = {
         label: "Atividades",
         viewName: "atividades",
       },
-       {
+      {
         icon: FaRegFolderOpen,
         label: "Materiais",
         viewName: "materiais",
@@ -92,28 +89,51 @@ export const SideBarOptions = {
       },
     ],
   },
-  /*
+
   professor: {
     main: [
       { icon: IoHomeOutline, label: "Home", viewName: "dashboard/professor" },
-      { icon: HiOutlineClipboardDocumentList, label: "Minhas Turmas", viewName: "turmas" },
+      {
+        icon: HiOutlineClipboardDocumentList,
+        label: "Minhas Turmas",
+        viewName: "turmas",
+      },
       { icon: FaRegEdit, label: "Lançar Notas", viewName: "lancarNotas" },
     ],
     bottom: [
-      { icon: HiOutlineCog8Tooth, label: "Configurações", viewName: "configuracoes" },
-      { icon: HiOutlineArrowLeftStartOnRectangle, label: "Logout", viewName: "logout" },
+      {
+        icon: HiOutlineCog8Tooth,
+        label: "Configurações",
+        viewName: "configuracoes",
+      },
+      {
+        icon: HiOutlineArrowLeftStartOnRectangle,
+        label: "Logout",
+        viewName: "logout",
+      },
     ],
   },
   responsavel: {
     main: [
       { icon: IoHomeOutline, label: "Home", viewName: "dashboard/responsavel" },
-      { icon: HiOutlineClipboardDocumentList, label: "Filhos", viewName: "filhos" },
+      {
+        icon: HiOutlineClipboardDocumentList,
+        label: "Filhos",
+        viewName: "filhos",
+      },
       { icon: FaRegEdit, label: "Pagamentos", viewName: "pagamentos" },
     ],
     bottom: [
-      { icon: HiOutlineCog8Tooth, label: "Configurações", viewName: "configuracoes" },
-      { icon: HiOutlineArrowLeftStartOnRectangle, label: "Logout", viewName: "logout" },
+      {
+        icon: HiOutlineCog8Tooth,
+        label: "Configurações",
+        viewName: "configuracoes",
+      },
+      {
+        icon: HiOutlineArrowLeftStartOnRectangle,
+        label: "Logout",
+        viewName: "logout",
+      },
     ],
   },
-  */
 };

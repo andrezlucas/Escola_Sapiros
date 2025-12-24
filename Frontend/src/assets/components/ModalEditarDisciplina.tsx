@@ -22,7 +22,6 @@ interface Habilidade {
 
 interface Disciplina {
   id_disciplina: string;
-  codigo_disciplina: string;
   nome_disciplina: string;
   cargaHoraria: number;
   turmas?: Turma[];
@@ -31,7 +30,6 @@ interface Disciplina {
 }
 
 interface DisciplinaFormData {
-  codigo_disciplina: string;
   nome_disciplina: string;
   cargaHoraria: number;
   turmasIds?: string[];
@@ -62,7 +60,6 @@ export default function ModalEditarDisciplina({
     if (!aberto) return;
 
     reset({
-      codigo_disciplina: disciplina.codigo_disciplina,
       nome_disciplina: disciplina.nome_disciplina,
       cargaHoraria: disciplina.cargaHoraria,
       turmasIds: disciplina.turmas?.map((t) => t.id) || [],
@@ -83,7 +80,6 @@ export default function ModalEditarDisciplina({
   async function removerHabilidade(index: number) {
     const habilidade = habilidades[index];
 
-    // 👉 se ainda não foi salva, só remove do estado
     if (!habilidade.id) {
       setValue(
         "habilidades",
@@ -92,7 +88,6 @@ export default function ModalEditarDisciplina({
       return;
     }
 
-    // 👉 se já existe no banco, chama DELETE
     try {
       const res = await fetch(
         `http://localhost:3000/disciplinas/habilidades/${habilidade.id}`,
@@ -162,7 +157,6 @@ export default function ModalEditarDisciplina({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            codigo_disciplina: data.codigo_disciplina.trim(),
             nome_disciplina: data.nome_disciplina.trim(),
             cargaHoraria: Number(data.cargaHoraria),
             turmasIds: data.turmasIds || [],
@@ -220,9 +214,7 @@ export default function ModalEditarDisciplina({
         <div className="flex justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold">Editar Disciplina</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <FaBook /> {disciplina.codigo_disciplina}
-            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600"></div>
           </div>
           <button onClick={onClose}>✕</button>
         </div>
@@ -233,11 +225,6 @@ export default function ModalEditarDisciplina({
             className="space-y-4"
           >
             <div className="grid md:grid-cols-2 gap-4">
-              <Input
-                label={""}
-                {...register("codigo_disciplina", { required: true })}
-                placeholder="Código"
-              />
               <Input
                 label={""}
                 {...register("nome_disciplina", { required: true })}
