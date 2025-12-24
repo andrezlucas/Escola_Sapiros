@@ -6,16 +6,17 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Disciplina } from './entities/disciplina.entity';
 import { Habilidade } from './entities/habilidade.entity';
 import { CreateDisciplinaDto } from './dto/create-disciplina.dto';
 import { UpdateDisciplinaDto } from './dto/update-disciplina.dto';
 import { CreateHabilidadeDto } from './dto/create-habilidade.dto';
 import { UpdateHabilidadeDto } from './dto/update-habilidade.dto';
+
 import { Turma } from '../turma/entities/turma.entity';
 import { Professor } from '../professor/entities/professor.entity';
-import { Role } from '../usuario/entities/usuario.entity';
-import { Usuario } from '../usuario/entities/usuario.entity';
+import { Usuario, Role } from '../usuario/entities/usuario.entity';
 
 @Injectable()
 export class DisciplinaService {
@@ -36,10 +37,18 @@ export class DisciplinaService {
     private readonly habilidadeRepository: Repository<Habilidade>,
   ) {}
 
+  private assertCanManage(user: any): void {
+    if (!user || user.role !== Role.COORDENACAO) {
+      throw new ForbiddenException(
+        'Apenas usuários da coordenação podem executar esta ação',
+      );
+    }
+  }
+
   private async findDisciplinaOrFail(id: string): Promise<Disciplina> {
     const disciplina = await this.disciplinaRepository.findOne({
       where: { id_disciplina: id },
-      relations: ['turmas', 'professores', 'habilidades'], // <-- Inclui habilidades nas relações
+      relations: ['turmas', 'professores', 'habilidades'],
     });
 
     if (!disciplina) {
@@ -49,34 +58,61 @@ export class DisciplinaService {
     return disciplina;
   }
 
-  private async findProfessorByUsuarioId(usuarioId: string): Promise<Professor | null> {
+  private async findProfessorByUsuarioId(
+    usuarioId: string,
+  ): Promise<Professor | null> {
     return this.professorRepository.findOne({
       where: { usuario: { id: usuarioId } as any },
       relations: ['disciplinas'],
     });
   }
 
-  private assertCanManage(user: any): void {
-    if (!user || user.role !== Role.COORDENACAO) {
-      throw new ForbiddenException('Apenas coordenação pode executar esta ação');
+  private async gerarCodigoDisciplina(
+    nome: string,
+  ): Promise<string> {
+    const prefixo = nome
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .substring(0, 3)
+      .toUpperCase();
+
+    const ultimaDisciplina = await this.disciplinaRepository
+      .createQueryBuilder('d')
+      .where('d.codigo_disciplina LIKE :prefixo', {
+        prefixo: `${prefixo}%`,
+      })
+      .orderBy('d.codigo_disciplina', 'DESC')
+      .getOne();
+
+    let proximoNumero = 1;
+
+    if (ultimaDisciplina) {
+      const numeroAtual = parseInt(
+        ultimaDisciplina.codigo_disciplina.substring(3),
+        10,
+      );
+      proximoNumero = numeroAtual + 1;
     }
+
+    return `${prefixo}${proximoNumero.toString().padStart(3, '0')}`;
   }
 
-  async create(createDisciplinaDto: CreateDisciplinaDto, user: any): Promise<Disciplina> {
+  async create(
+    createDisciplinaDto: CreateDisciplinaDto,
+    user: any,
+  ): Promise<Disciplina> {
     this.assertCanManage(user);
 
-    const { codigo_disciplina, nome_disciplina, cargaHoraria, turmasIds, professoresIds, habilidades } =
-      createDisciplinaDto;
+    const {
+      nome_disciplina,
+      cargaHoraria,
+      turmasIds,
+      professoresIds,
+      habilidades,
+    } = createDisciplinaDto;
 
-    const exists = await this.disciplinaRepository.findOne({
-      where: { codigo_disciplina },
-    });
-
-    if (exists) {
-      throw new BadRequestException(
-        `Disciplina com código ${codigo_disciplina} já existe`,
-      );
-    }
+    const codigo_disciplina =
+      await this.gerarCodigoDisciplina(nome_disciplina);
 
     const disciplina = this.disciplinaRepository.create({
       codigo_disciplina,
@@ -85,20 +121,24 @@ export class DisciplinaService {
     });
 
     if (turmasIds?.length) {
-      const turmas = await this.turmaRepository.find({ where: { id: In(turmasIds) } });
-      disciplina.turmas = turmas;
+      disciplina.turmas = await this.turmaRepository.find({
+        where: { id: In(turmasIds) },
+      });
     }
 
     if (professoresIds?.length) {
-      const professores = await this.professorRepository.find({ where: { id: In(professoresIds) } });
-      disciplina.professores = professores;
+      disciplina.professores = await this.professorRepository.find({
+        where: { id: In(professoresIds) },
+      });
     }
 
     if (habilidades?.length) {
-      disciplina.habilidades = habilidades.map(h => this.habilidadeRepository.create({
-        nome: h.nome,
-        descricao: h.descricao,
-      }));
+      disciplina.habilidades = habilidades.map((h) =>
+        this.habilidadeRepository.create({
+          nome: h.nome,
+          descricao: h.descricao,
+        }),
+      );
     }
 
     return this.disciplinaRepository.save(disciplina);
@@ -111,7 +151,7 @@ export class DisciplinaService {
 
     if (user.role === Role.COORDENACAO || user.role === Role.ALUNO) {
       return this.disciplinaRepository.find({
-        relations: ['turmas', 'professores', 'habilidades'], // Inclui habilidades
+        relations: ['turmas', 'professores', 'habilidades'],
       });
     }
 
@@ -159,42 +199,26 @@ export class DisciplinaService {
     throw new ForbiddenException('Acesso não autorizado');
   }
 
-  async update(
-    id: string,
-    updateDisciplinaDto: UpdateDisciplinaDto,
-    user: any,
-  ): Promise<Disciplina> {
-    this.assertCanManage(user);
+ async update(
+  id: string,
+  updateDisciplinaDto: UpdateDisciplinaDto,
+  user: any,
+): Promise<Disciplina> {
+  this.assertCanManage(user);
 
-    const disciplina = await this.findDisciplinaOrFail(id);
+  const disciplina = await this.findDisciplinaOrFail(id);
 
-    if (
-      updateDisciplinaDto.codigo_disciplina &&
-      updateDisciplinaDto.codigo_disciplina !== disciplina.codigo_disciplina
-    ) {
-      const exists = await this.disciplinaRepository.findOne({
-        where: { codigo_disciplina: updateDisciplinaDto.codigo_disciplina },
-      });
-
-      if (exists) {
-        throw new BadRequestException(
-          `Disciplina com código ${updateDisciplinaDto.codigo_disciplina} já existe`,
-        );
-      }
-
-      disciplina.codigo_disciplina = updateDisciplinaDto.codigo_disciplina;
-    }
-
-    if (updateDisciplinaDto.nome_disciplina !== undefined) {
-      disciplina.nome_disciplina = updateDisciplinaDto.nome_disciplina;
-    }
-
-    if (updateDisciplinaDto.cargaHoraria !== undefined) {
-      disciplina.cargaHoraria = updateDisciplinaDto.cargaHoraria;
-    }
-
-    return this.disciplinaRepository.save(disciplina);
+  if (updateDisciplinaDto.nome_disciplina !== undefined) {
+    disciplina.nome_disciplina = updateDisciplinaDto.nome_disciplina;
   }
+
+  if (updateDisciplinaDto.cargaHoraria !== undefined) {
+    disciplina.cargaHoraria = updateDisciplinaDto.cargaHoraria;
+  }
+
+  return this.disciplinaRepository.save(disciplina);
+}
+
 
   async remove(id: string, user: any): Promise<void> {
     this.assertCanManage(user);
@@ -220,14 +244,15 @@ export class DisciplinaService {
     const disciplina = await this.findDisciplinaOrFail(disciplinaId);
 
     const habilidade = this.habilidadeRepository.create({
-      nome: dto.nome, 
+      nome: dto.nome,
       descricao: dto.descricao,
       disciplina,
     });
 
     return this.habilidadeRepository.save(habilidade);
   }
-    private async findHabilidadeOrFail(id: string): Promise<Habilidade> {
+
+  private async findHabilidadeOrFail(id: string): Promise<Habilidade> {
     const habilidade = await this.habilidadeRepository.findOne({
       where: { id },
       relations: ['disciplina'],
@@ -260,7 +285,10 @@ export class DisciplinaService {
     return this.habilidadeRepository.save(habilidade);
   }
 
-  async removeHabilidade(habilidadeId: string, user: any): Promise<void> {
+  async removeHabilidade(
+    habilidadeId: string,
+    user: any,
+  ): Promise<void> {
     this.assertCanManage(user);
 
     const habilidade = await this.findHabilidadeOrFail(habilidadeId);
@@ -268,4 +296,3 @@ export class DisciplinaService {
     await this.habilidadeRepository.remove(habilidade);
   }
 }
-

@@ -12,9 +12,6 @@ import { Type } from 'class-transformer';
 import { CreateHabilidadeDto } from './create-habilidade.dto';
 
 export class CreateDisciplinaDto {
-  @IsString()
-  @IsNotEmpty({ message: 'Código é obrigatório' })
-  codigo_disciplina: string;
 
   @IsString()
   @IsNotEmpty({ message: 'Nome da disciplina é obrigatório' })
