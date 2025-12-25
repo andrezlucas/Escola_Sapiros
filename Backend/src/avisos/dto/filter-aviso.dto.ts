@@ -1,6 +1,11 @@
-import { IsDateString, IsEnum, IsOptional, IsString, IsUUID, IsInt } from 'class-validator';
-import { Type } from 'class-transformer';
-import { TipoAviso } from '../entities/aviso.entity';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
+import { TipoAviso, CategoriaAviso } from '../entities/aviso.entity';
 
 export class FilterAvisoDto {
   @IsOptional()
@@ -8,9 +13,12 @@ export class FilterAvisoDto {
   tipo?: TipoAviso;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  usuarioId?: number;
+  @IsEnum(CategoriaAviso)
+  categoria?: CategoriaAviso;
+
+  @IsOptional()
+  @IsUUID()
+  responsavelId?: string;
 
   @IsOptional()
   @IsUUID()
@@ -18,13 +26,14 @@ export class FilterAvisoDto {
 
   @IsOptional()
   @IsDateString()
-  dataInicio?: string;
+  periodoInicio?: string;
 
   @IsOptional()
   @IsDateString()
-  datafinal?: string;
+  periodoFim?: string;
 
   @IsOptional()
   @IsString()
   termo?: string;
 }
+

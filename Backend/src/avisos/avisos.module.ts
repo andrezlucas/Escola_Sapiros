@@ -6,10 +6,11 @@ import { Aviso } from './entities/aviso.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import { Turma } from '../turma/entities/turma.entity';
 import { Aluno } from '../aluno/entities/aluno.entity'; 
+import { AvisoConfirmacao } from './entities/AvisoConfirmacao.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Aviso, Usuario, Turma, Aluno]), 
+    TypeOrmModule.forFeature([Aviso, Usuario, Turma, Aluno, AvisoConfirmacao]), 
   ],
   controllers: [AvisosController],
   providers: [AvisosService],
