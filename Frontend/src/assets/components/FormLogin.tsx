@@ -87,7 +87,7 @@ function FormLogin() {
       localStorage.setItem("role", result.usuario.role);
       localStorage.setItem("nome", result.usuario.nome);
 
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       console.log(token);
       const role = result.usuario.role?.toLowerCase().trim();
       switch (role) {
@@ -98,7 +98,7 @@ function FormLogin() {
           navigate("dashboard/aluno");
           break;
         case "professor":
-          navigate("");
+          navigate("dashboard/professor");
           break;
         default:
           toast.error("Role desconhecido");
@@ -184,8 +184,6 @@ function FormLogin() {
       <Button type="submit" disabled={loading}>
         {loading ? "Entrando..." : "Entrar"}
       </Button>
-
-      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
     </form>
   );
 }

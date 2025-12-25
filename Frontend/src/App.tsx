@@ -12,6 +12,7 @@ import EditarDocumento from "./assets/pages/EditarDocumento";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FormTurma from "./assets/components/FormTurma";
+import DashboardProfessor from "./assets/pages/DashboardProfessor";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           path="/alunos/:id/documentos/editar"
           element={<EditarDocumento />}
         />
+        <Route path="/dashboard/professor" element={<DashboardProfessor/>}/>
       </Routes>
     </>
   );

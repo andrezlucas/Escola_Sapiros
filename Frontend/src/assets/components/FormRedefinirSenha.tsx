@@ -11,8 +11,32 @@ function FormRedefinirSenha() {
     formState: { errors },
   } = useForm();
 
-  const onSubmit = (data: any) => {
-    console.log("Dados enviados", data);
+  const onSubmit = async (data: any) => {
+    try {
+      const response = await fetch(
+        "http://localhost:3000/auth/esqueceu-senha",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: data.email,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error(result.message || "Erro ao enviar email");
+        return;
+      }
+
+      toast.success("Email de redefinição enviado!");
+    } catch (error) {
+      toast.error("Erro de conexão com o servidor");
+    }
   };
 
   const hasErros = !!errors.email;

@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useForm, FormProvider } from "react-hook-form";
 import { FaCheckCircle, FaBan, FaTrash } from "react-icons/fa";
-import ValidarCpf from "../utils/ValidarCpf";
 
 interface Disciplina {
   id: string;
@@ -35,10 +34,13 @@ interface Professor {
     enderecoEstado?: string;
     enderecoCidade?: string;
   };
-  graduacao: string;
-  instituicao: string;
-  dataInicioGraduacao: string;
-  dataConclusaoGraduacao?: string;
+  formacoes: {
+    curso: string;
+    instituicao: string;
+    dataInicio: string;
+    dataConclusao?: string;
+    nivel: string;
+  }[];
   turmas?: Turma[];
   disciplinas?: Disciplina[];
 }
@@ -74,10 +76,15 @@ export default function ModalEditarProfessor({
       enderecoBairro: "",
       enderecoEstado: "",
       enderecoCidade: "",
-      cursoGraduacao: "",
-      instituicao: "",
-      dataInicioGraduacao: "",
-      dataConclusaoGraduacao: "",
+      formacoes: [
+        {
+          curso: "",
+          instituicao: "",
+          dataInicio: "",
+          dataConclusao: "",
+          nivel: "",
+        },
+      ],
     },
   });
 
@@ -99,7 +106,7 @@ export default function ModalEditarProfessor({
               | "NAO_INFORMADO")
           : "MASCULINO";
 
-      const formatDate = (dateString: string | null | undefined) => {
+      const formatDate = (dateString?: string | null) => {
         if (!dateString) return "";
         return dateString.split("T")[0];
       };
@@ -112,6 +119,7 @@ export default function ModalEditarProfessor({
         sexo: sexoFormatado,
         role: "professor",
         dataNascimento: formatDate(usuario.dataNascimento),
+
         enderecoLogradouro: usuario.enderecoLogradouro ?? "",
         enderecoNumero: usuario.enderecoNumero ?? "",
         enderecoCep: usuario.enderecoCep ?? "",
@@ -119,10 +127,22 @@ export default function ModalEditarProfessor({
         enderecoBairro: usuario.enderecoBairro ?? "",
         enderecoEstado: usuario.enderecoEstado ?? "",
         enderecoCidade: usuario.enderecoCidade ?? "",
-        cursoGraduacao: professor.graduacao ?? "",
-        instituicao: professor.instituicao ?? "",
-        dataInicioGraduacao: formatDate(professor.dataInicioGraduacao),
-        dataConclusaoGraduacao: formatDate(professor.dataConclusaoGraduacao),
+
+        formacoes: professor.formacoes?.map((f) => ({
+          curso: f.curso ?? "",
+          instituicao: f.instituicao ?? "",
+          nivel: f.nivel ?? "",
+          dataInicio: formatDate(f.dataInicio),
+          dataConclusao: formatDate(f.dataConclusao),
+        })) ?? [
+          {
+            curso: "",
+            instituicao: "",
+            nivel: "",
+            dataInicio: "",
+            dataConclusao: "",
+          },
+        ],
       });
     }
   }, [professor, aberto, reset]);
@@ -141,12 +161,17 @@ export default function ModalEditarProfessor({
         telefone: data.telefone.replace(/\D/g, ""),
         sexo: data.sexo,
         role: "professor",
-        cursoGraduacao: data.cursoGraduacao,
-        instituicao: data.instituicao,
-        dataInicioGraduacao: formatDateForBackend(data.dataInicioGraduacao),
-        dataConclusaoGraduacao: data.dataConclusaoGraduacao
-          ? formatDateForBackend(data.dataConclusaoGraduacao)
-          : undefined,
+        formacoes: data.formacoes
+          .filter((f) => f.curso && f.instituicao && f.dataInicio)
+          .map((f) => ({
+            curso: f.curso,
+            instituicao: f.instituicao,
+            nivel: f.nivel,
+            dataInicio: formatDateForBackend(f.dataInicio),
+            dataConclusao: f.dataConclusao
+              ? formatDateForBackend(f.dataConclusao)
+              : undefined,
+          })),
       };
 
       const res = await fetch(
@@ -167,9 +192,6 @@ export default function ModalEditarProfessor({
           Array.isArray(err.message) ? err.message.join(", ") : err.message
         );
       }
-
-      const professorAtualizado = await res.json();
-      console.log("Professor atualizado retornado:", professorAtualizado);
 
       toast.success("Professor atualizado com sucesso!");
       onAtualizarLista();
@@ -208,20 +230,14 @@ export default function ModalEditarProfessor({
         throw new Error(err.message || "Erro ao atualizar status do professor");
       }
 
-      const usuarioAtualizado = await res.json();
-      console.log("Professor bloqueio atualizado:", usuarioAtualizado);
-
       toast.success(
         `Professor ${novoStatus ? "bloqueado" : "desbloqueado"} com sucesso!`
       );
 
       onAtualizarLista();
-
-      setTimeout(() => {
-        onClose();
-      }, 500);
+      setTimeout(onClose, 500);
     } catch (err: any) {
-      console.error("Erro ao alternar bloqueio:", err);
+      console.error(err);
       toast.error(`Erro: ${err.message}`);
     }
   }

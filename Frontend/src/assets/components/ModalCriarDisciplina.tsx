@@ -14,7 +14,6 @@ interface Professor {
 }
 
 interface DisciplinaFormData {
-  codigo_disciplina: string;
   nome_disciplina: string;
   cargaHoraria: number;
   turmasIds?: string[];
@@ -33,7 +32,6 @@ export default function ModalCriarDisciplina({
 }: ModalCriarDisciplinaProps) {
   const methods = useForm<DisciplinaFormData>({
     defaultValues: {
-      codigo_disciplina: "",
       nome_disciplina: "",
       cargaHoraria: 40,
       turmasIds: [],
@@ -122,7 +120,6 @@ export default function ModalCriarDisciplina({
   async function handleCriarDisciplina(data: DisciplinaFormData) {
     try {
       const payload: any = {
-        codigo_disciplina: data.codigo_disciplina.trim(),
         nome_disciplina: data.nome_disciplina.trim(),
         cargaHoraria: Number(data.cargaHoraria),
       };
@@ -176,14 +173,6 @@ export default function ModalCriarDisciplina({
           >
             <div>
               <label className="block text-sm mb-1">Código da disciplina</label>
-              <Input
-                label={""}
-                {...register("codigo_disciplina", {
-                  required: "Codigo da disciplina obrigatório",
-                })}
-                error={errors?.codigo_disciplina?.message}
-                placeholder="Ex: MAT001"
-              />
             </div>
 
             <div>
@@ -236,7 +225,6 @@ export default function ModalCriarDisciplina({
                   label={""}
                   value={novaHabilidade}
                   onChange={(e) => setNovaHabilidade(e.target.value)}
-                 
                   placeholder="Nova habilidade"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
