@@ -117,4 +117,11 @@ export class TurmaController {
   ): Promise<Turma> {
     return this.turmaService.removerProfessor(turmaId);
   }
+
+  //grafico de desempenho
+  @Roles('coordenacao', 'professores')
+  @Get('dashboard/estatisticas')
+  async getDashboard() {
+    return this.turmaService.getDashboard();
+}
 }

@@ -12,6 +12,8 @@ import { UpdateTurmaDto } from './dto/update-turma.dto';
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Professor } from '../professor/entities/professor.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
+import { TurmaDashboardDto } from './dto/turma-dashboard.dto';
+import { TurmaGraficoAlunosDto } from './dto/turma-grafico-alunos.dto';
 
 @Injectable()
 export class TurmaService {
@@ -308,4 +310,49 @@ export class TurmaService {
     const turma = await this.findOne(id);
     await this.turmaRepository.remove(turma);
   }
+
+  async getDashboard(): Promise<TurmaDashboardDto> {
+    const turmas = await this.turmaRepository.find({
+      where: { ativa: true },
+      relations: ['alunos'],
+      order: { nome_turma: 'ASC' },
+    });
+
+    let totalAlunos = 0;
+    let totalCapacidade = 0;
+
+    const graficoAlunosPorTurma: TurmaGraficoAlunosDto[] = turmas.map(
+      (turma) => {
+        const qtdAlunos = turma.alunos?.length ?? 0;
+
+        totalAlunos += qtdAlunos;
+
+        if (turma.capacidade_maxima) {
+          totalCapacidade += turma.capacidade_maxima;
+        }
+
+        return {
+          turmaId: turma.id,
+          nomeTurma: turma.nome_turma,
+          totalAlunos: qtdAlunos,
+          capacidadeMaxima: turma.capacidade_maxima ?? null,
+        };
+      },
+    );
+
+    const taxaOcupacaoGeral =
+      totalCapacidade > 0
+        ? Number(((totalAlunos / totalCapacidade) * 100).toFixed(1))
+        : 0;
+
+    return {
+      graficoAlunosPorTurma,
+      indicadores: {
+        taxaOcupacaoGeral,
+        totalTurmasAtivas: turmas.length,
+        totalAlunos,
+      },
+    };
+  }
+
 }
