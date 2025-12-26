@@ -30,6 +30,12 @@ const formatTime = (value: DateInput | undefined): string => {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 };
 
+const formatDate = (value: DateInput | undefined): string => {
+  const d = parseDateInput(value);
+  if (!d) return "";
+  return d.toLocaleDateString("pt-BR");
+};
+
 export function CalendarioSemana({
   eventos,
   date,
@@ -60,6 +66,11 @@ export function CalendarioSemana({
     { hour: 11, label: "11:00" },
     { hour: 12, label: "12:00" },
     { hour: 13, label: "13:00" },
+    { hour: 14, label: "14:00" },
+    { hour: 15, label: "15:00" },
+    { hour: 16, label: "16:00" },
+    { hour: 17, label: "17:00" },
+    { hour: 18, label: "18:00" },
   ];
 
   const formatDayHeader = (date: Date) => {
@@ -98,23 +109,68 @@ export function CalendarioSemana({
 
     if (!isStartDay && !isEndDay) return false;
 
-    return (isStartDay && hour === startH) || (isEndDay && hour === endH);
+    if (isStartDay) {
+      return hour === startH || (hour > startH && hour <= endH);
+    }
+
+    if (isEndDay) {
+      return hour === endH;
+    }
+
+    return false;
+  };
+
+  const isAllDayEvent = (event: EventInput) => {
+    const start = parseDateInput(event.start);
+    const end = parseDateInput(event.end);
+
+    if (!start || !end) return false;
+
+    const isMidnightStart =
+      start.getHours() === 0 &&
+      start.getMinutes() === 0 &&
+      start.getSeconds() === 0;
+
+    const duration = end.getTime() - start.getTime();
+    const isFullDay = duration >= 23 * 60 * 60 * 1000;
+
+    return isMidnightStart || isFullDay;
   };
 
   const getFullDayEvents = (day: Date) => {
     return eventos.filter((ev) => {
-      const d = parseDateInput(ev.start);
-      if (!d) return false;
+      const start = parseDateInput(ev.start);
+      if (!start) return false;
 
-      const isAllDay =
-        d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0;
+      const sameDay = (d1: Date, d2: Date) =>
+        d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate();
 
-      const sameDay =
-        d.getDate() === day.getDate() &&
-        d.getMonth() === day.getMonth() &&
-        d.getFullYear() === day.getFullYear();
+      const startsOnDay = sameDay(day, start);
+      const isAllDay = isAllDayEvent(ev);
 
-      return isAllDay && sameDay;
+      return isAllDay && startsOnDay;
+    });
+  };
+
+  const getDayEvents = (day: Date) => {
+    return eventos.filter((ev) => {
+      const start = parseDateInput(ev.start);
+      const end = parseDateInput(ev.end);
+
+      if (!start || !end) return false;
+
+      const sameDay = (d1: Date, d2: Date) =>
+        d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate();
+
+      const startsOnDay = sameDay(day, start);
+      const endsOnDay = sameDay(day, end);
+      const isAllDay = isAllDayEvent(ev);
+
+      return !isAllDay && (startsOnDay || endsOnDay);
     });
   };
 
@@ -127,6 +183,7 @@ export function CalendarioSemana({
 
         {weekDays.map((day, i) => {
           const fullDayEvents = getFullDayEvents(day);
+          const dayEvents = getDayEvents(day);
 
           return (
             <div
@@ -148,16 +205,64 @@ export function CalendarioSemana({
                   {fullDayEvents.map((event, idx) => (
                     <div
                       key={idx}
-                      className="text-xs px-2 py-1 rounded"
+                      className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-90"
                       style={{
                         backgroundColor:
                           (event.backgroundColor as string) ?? "#E6F2F8",
                         color: "#1D5D7F",
                       }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEventClick?.(event);
+                      }}
                     >
-                      {event.title}
+                      <div className="font-semibold truncate">
+                        {event.title}
+                      </div>
+                      {event.extendedProps?.categoria && (
+                        <div className="text-[10px] opacity-75 mt-0.5">
+                          {event.extendedProps.categoria}
+                        </div>
+                      )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {dayEvents.length > 0 && fullDayEvents.length === 0 && (
+                <div className="mt-2 space-y-1">
+                  {dayEvents.slice(0, 2).map((event, idx) => {
+                    const start = parseDateInput(event.start);
+                    return (
+                      <div
+                        key={idx}
+                        className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-90"
+                        style={{
+                          backgroundColor:
+                            (event.backgroundColor as string) ?? "#E6F2F8",
+                          color: "#1D5D7F",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick?.(event);
+                        }}
+                      >
+                        <div className="font-semibold truncate">
+                          {event.title}
+                        </div>
+                        {start && (
+                          <div className="text-[10px] opacity-75 mt-0.5">
+                            {formatTime(event.start)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {dayEvents.length > 2 && (
+                    <div className="text-[10px] text-gray-500 mt-1">
+                      +{dayEvents.length - 2} mais
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -197,41 +302,64 @@ export function CalendarioSemana({
                     }
                   }}
                 >
-                  {eventsForSlot.map((event, idx) => (
-                    <div
-                      key={idx}
-                      className="mb-2 p-3 rounded-lg shadow-sm border-l-4 hover:shadow-md cursor-pointer"
-                      style={{
-                        backgroundColor:
-                          (event.backgroundColor as string) ?? "#3D7E8F",
-                        borderLeftColor:
-                          (event.backgroundColor as string) ?? "#3D7E8F",
-                        color: "white",
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEventClick?.(event);
-                      }}
-                    >
-                      <div className="text-xs font-medium opacity-90 mb-1">
-                        {formatTime(event.start)} - {formatTime(event.end)}
+                  {eventsForSlot.map((event, idx) => {
+                    const start = parseDateInput(event.start);
+                    const end = parseDateInput(event.end);
+                    const duration =
+                      start && end
+                        ? (end.getTime() - start.getTime()) / (60 * 60 * 1000)
+                        : 1;
+                    const isLongEvent = duration > 1;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`mb-2 p-3 rounded-lg shadow-sm border-l-4 hover:shadow-md cursor-pointer ${
+                          isLongEvent ? "min-h-[60px]" : ""
+                        }`}
+                        style={{
+                          backgroundColor:
+                            (event.backgroundColor as string) ?? "#3D7E8F",
+                          borderLeftColor:
+                            (event.backgroundColor as string) ?? "#3D7E8F",
+                          color: "white",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick?.(event);
+                        }}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="text-xs font-medium opacity-90 mb-1">
+                            {formatTime(event.start)} - {formatTime(event.end)}
+                          </div>
+                          {event.extendedProps?.tipo && (
+                            <span className="text-[10px] bg-white/20 px-1 rounded">
+                              {event.extendedProps.tipo}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="font-semibold text-sm truncate">
+                          {event.title}
+                        </div>
+
+                        {event.extendedProps?.descricao && (
+                          <div className="text-xs mt-1 opacity-90 line-clamp-2">
+                            {event.extendedProps.descricao}
+                          </div>
+                        )}
+
+                        {event.extendedProps?.categoria && (
+                          <div className="text-xs mt-1 opacity-90">
+                            <span className="bg-white/20 px-1 rounded">
+                              {event.extendedProps.categoria}
+                            </span>
+                          </div>
+                        )}
                       </div>
-
-                      <div className="font-semibold text-sm">{event.title}</div>
-
-                      {event.extendedProps?.descricao && (
-                        <div className="text-xs mt-1 opacity-90">
-                          {event.extendedProps.descricao}
-                        </div>
-                      )}
-
-                      {event.extendedProps?.categoria && (
-                        <div className="text-xs mt-1 opacity-90">
-                          {event.extendedProps.categoria}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}

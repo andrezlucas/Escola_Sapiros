@@ -94,8 +94,7 @@ function EditarDocumento({ idAluno }: EditarDocumentoProps) {
           <FormEditarDocumento
             onSubmit={handleEnviarDocumentos}
             onBack={(data) => console.log("Voltar com dados:", data)}
-            onAlunoUpdated={fetchDocumentacao}
-          />
+            onAlunoUpdated={fetchDocumentacao} documentacaoId={""} documentos={[]}        />
         </FormProvider>
       )}
     </div>

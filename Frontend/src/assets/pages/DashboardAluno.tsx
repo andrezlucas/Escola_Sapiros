@@ -14,8 +14,7 @@ import CardCalendario from "../components/CardCalendario";
 import Matricula from "./Matricula";
 import Calendario from "./Calendario";
 import { SideBarOptions } from "../components/SideBarOptions";
-
-
+import Mural from "./Mural";
 
 function DashboardAluno() {
   const [currentView, setCurrentView] = useState("dashboard/aluno");
@@ -30,11 +29,13 @@ function DashboardAluno() {
   const renderContent = () => {
     switch (currentView) {
       case "documentos":
-        return ;
+        return;
       case "matriculas":
         return <Matricula />;
       case "calendario":
         return <Calendario />;
+      case "mural":
+        return <Mural />;
       default:
         return null;
     }
@@ -97,7 +98,8 @@ function DashboardAluno() {
             <div className="grid grid-cols-5 gap-8 h-full">
               <div className="col-span-3 flex flex-col">
                 <CardMenuBackground>
-                  <CardMenu title="Mural" icon={MuralIcon} />
+                  <CardMenu title="Mural" icon={MuralIcon} 
+                  onClick={() => navigateTo("mural")}/>
                   <CardMenu
                     title="Calendário"
                     icon={CalendarioIcon}

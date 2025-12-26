@@ -15,6 +15,7 @@ import Matricula from "./Matricula";
 import Calendario from "./Calendario";
 import { SideBarOptions } from "../components/SideBarOptions";
 import Gerenciamento from "./Gerenciamento";
+import Mural from "./Mural";
 
 const DocumentosPage = () => (
   <div className="w-full h-full p-8 bg-white rounded-xl shadow-md flex items-center justify-center">
@@ -42,7 +43,8 @@ function DashboardCoordenacao() {
         return <Calendario />;
       case "gerenciamento":
         return <Gerenciamento />;
-
+      case "mural":
+        return <Mural />;
       default:
         return null;
     }
@@ -105,7 +107,8 @@ function DashboardCoordenacao() {
             <div className="grid grid-cols-5 gap-8 h-full">
               <div className="col-span-3 flex flex-col">
                 <CardMenuBackground>
-                  <CardMenu title="Mural" icon={MuralIcon} />
+                  <CardMenu title="Mural" icon={MuralIcon} 
+                  onClick={() => navigateTo("mural")}/>
                   <CardMenu
                     title="Calendário"
                     icon={CalendarioIcon}

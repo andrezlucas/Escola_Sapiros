@@ -66,7 +66,7 @@ export default function TurmaList() {
           : "MANHÃ") as "MANHÃ" | "TARDE" | "NOITE",
       }));
 
-      console.log("Turmas atualizadas:", turmasFormatadas);
+      
       setTurmas(turmasFormatadas);
     } catch (err) {
       console.error("Erro ao buscar turmas", err);
