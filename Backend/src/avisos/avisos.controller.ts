@@ -36,10 +36,10 @@ export class AvisosController {
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async create(
-    @Body() createAvisoDto: CreateAvisoDto,
+    @Body() dto: CreateAvisoDto,
     @Req() req: AuthRequest,
   ): Promise<Aviso> {
-    return this.avisosService.create(createAvisoDto, req.user);
+    return this.avisosService.create(dto, req.user);
   }
 
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
@@ -59,6 +59,12 @@ export class AvisosController {
   }
 
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
+  @Get('nao-confirmados')
+  async naoConfirmados(@Req() req: AuthRequest): Promise<Aviso[]> {
+    return this.avisosService.findNaoConfirmados(req.user);
+  }
+
+  @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   @Get('calendario')
   @UsePipes(new ValidationPipe({ transform: true }))
   async calendario(
@@ -66,6 +72,15 @@ export class AvisosController {
     @Req() req: AuthRequest,
   ): Promise<Aviso[]> {
     return this.avisosService.findForCalendar(filters, req.user);
+  }
+
+  @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
+  @Post(':id/confirmar')
+  async confirmar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthRequest,
+  ): Promise<void> {
+    await this.avisosService.confirmar(id, req.user);
   }
 
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
@@ -82,10 +97,10 @@ export class AvisosController {
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateAvisoDto: UpdateAvisoDto,
+    @Body() dto: UpdateAvisoDto,
     @Req() req: AuthRequest,
   ): Promise<Aviso> {
-    return this.avisosService.update(id, updateAvisoDto, req.user);
+    return this.avisosService.update(id, dto, req.user);
   }
 
   @Roles(Role.COORDENACAO)
@@ -96,20 +111,5 @@ export class AvisosController {
   ): Promise<void> {
     await this.avisosService.remove(id, req.user);
   }
-
-  @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
-  @Post(':id/confirmar')
-  async confirmar(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Req() req: AuthRequest,
-  ): Promise<void> {
-    await this.avisosService.confirmar(id, req.user);
-  }
-
-  @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
-  @Get('nao-confirmados')
-  async naoConfirmados(@Req() req: AuthRequest): Promise<Aviso[]> {
-    return this.avisosService.findNaoConfirmados(req.user);
-  }
-
 }
+

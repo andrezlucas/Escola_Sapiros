@@ -4,11 +4,13 @@ import {
   ManyToOne,
   CreateDateColumn,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Aviso } from './aviso.entity';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 
 @Entity('avisos_confirmacoes')
+@Unique(['aviso', 'usuario'])
 export class AvisoConfirmacao {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -61,15 +61,24 @@ export class AvisosService {
     });
   }
 
-  private parseDateOrThrow(date?: string | Date): Date {
-    if (!date) throw new BadRequestException();
-    const d = typeof date === 'string' ? new Date(date) : date;
-    if (Number.isNaN(d.getTime())) throw new BadRequestException();
-    return d;
+  private parseDateOrThrow(value?: string | Date): Date {
+    if (!value) throw new BadRequestException();
+    if (value instanceof Date) {
+      if (isNaN(value.getTime())) throw new BadRequestException();
+      return value;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+    }
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) throw new BadRequestException();
+    return parsed;
   }
 
   private assertIsCoordenacao(user: AnyUser) {
-    if (!user || user.role !== Role.COORDENACAO) throw new ForbiddenException();
+    if (!user?.id || user.role !== Role.COORDENACAO)
+      throw new ForbiddenException();
   }
 
   private async validateAvisoByTipo(
@@ -82,14 +91,12 @@ export class AvisosService {
     }
 
     if (tipo === TipoAviso.TURMA) {
-      if (!turmaId) throw new BadRequestException();
-      if (destinatarioAlunoId) throw new BadRequestException();
+      if (!turmaId || destinatarioAlunoId) throw new BadRequestException();
       await this.findTurmaOrFail(turmaId);
     }
 
     if (tipo === TipoAviso.INDIVIDUAL) {
-      if (!destinatarioAlunoId) throw new BadRequestException();
-      if (turmaId) throw new BadRequestException();
+      if (!destinatarioAlunoId || turmaId) throw new BadRequestException();
       await this.findAlunoOrFail(destinatarioAlunoId);
     }
   }
@@ -110,9 +117,11 @@ export class AvisosService {
     if (aviso.tipo === TipoAviso.TURMA) {
       if (user.role === Role.COORDENACAO) return;
 
-      if (user.role === Role.PROFESSOR) {
-        if (aviso.turma?.professor?.usuario?.id === user.id) return;
-      }
+      if (
+        user.role === Role.PROFESSOR &&
+        aviso.turma?.professor?.usuario?.id === user.id
+      )
+        return;
 
       if (user.role === Role.ALUNO) {
         const aluno = await this.findAlunoByUsuarioId(user.id);
@@ -164,13 +173,13 @@ export class AvisosService {
     if (filters?.turmaId)
       qb.andWhere('turma.id = :tid', { tid: filters.turmaId });
     if (filters?.termo)
-      qb.andWhere('(a.nome ILIKE :t OR a.descricao ILIKE :t)', {
+      qb.andWhere('(a.nome LIKE :t OR a.descricao LIKE :t)', {
         t: `%${filters.termo}%`,
       });
 
     const avisos = await qb.getMany();
-
     const visiveis: Aviso[] = [];
+
     for (const aviso of avisos) {
       try {
         await this.assertCanRead(aviso, user);
@@ -198,8 +207,8 @@ export class AvisosService {
       .orderBy('a.dataInicio', 'DESC');
 
     const avisos = await qb.getMany();
-
     const visiveis: Aviso[] = [];
+
     for (const aviso of avisos) {
       try {
         await this.assertCanRead(aviso, user);
@@ -257,7 +266,7 @@ export class AvisosService {
     return this.avisoRepository.save(aviso);
   }
 
-  async remove(id: string, user: AnyUser) {
+  async remove(id: string, user: AnyUser): Promise<void> {
     this.assertIsCoordenacao(user);
     const aviso = await this.avisoRepository.findOne({ where: { id } });
     if (!aviso) throw new NotFoundException();
@@ -280,12 +289,14 @@ export class AvisosService {
             f: fim,
           }).orWhere(
             '(a.dataFinal IS NOT NULL AND a.dataFinal BETWEEN :i AND :f)',
+            { i: inicio, f: fim },
           );
         }),
       )
       .getMany();
 
     const visiveis: Aviso[] = [];
+
     for (const aviso of avisos) {
       try {
         await this.assertCanRead(aviso, user);
@@ -296,7 +307,9 @@ export class AvisosService {
     return visiveis;
   }
 
-  async confirmar(avisoId: string, user: AnyUser) {
+  async confirmar(avisoId: string, user: AnyUser): Promise<void> {
+    if (!user?.id) throw new ForbiddenException();
+
     const aviso = await this.findOne(avisoId, user);
 
     const existe = await this.confirmacaoRepo.findOne({
@@ -316,4 +329,3 @@ export class AvisosService {
     );
   }
 }
-
