@@ -10,11 +10,12 @@ import { IoHomeOutline } from "react-icons/io5";
 import { IoMdTv } from "react-icons/io";
 import { MdOutlineManageAccounts } from "react-icons/md";
 import { FaRegFolderOpen } from "react-icons/fa";
+import { IoBarChartOutline } from "react-icons/io5";
 
 export const SideBarOptions = {
   coordenacao: {
     main: [
-      { icon: IoHomeOutline, label: "Home", viewName: "dashboard/coordenacao" },
+      { icon: IoHomeOutline, label: "Home", viewName: "home" },
       {
         icon: HiOutlineClipboardDocumentList,
         label: "Documentos",
@@ -32,7 +33,7 @@ export const SideBarOptions = {
         viewName: "calendario",
       },
       {
-        icon: HiOutlineAcademicCap,
+        icon: IoBarChartOutline,
         label: "Relatórios",
         viewName: "relatorios",
       },
@@ -53,7 +54,7 @@ export const SideBarOptions = {
   },
   aluno: {
     main: [
-      { icon: IoHomeOutline, label: "Home", viewName: "dashboard/aluno" },
+      { icon: IoHomeOutline, label: "Home", viewName: "home" },
       {
         icon: HiOutlineClipboardDocumentList,
         label: "Atividades",
@@ -92,7 +93,7 @@ export const SideBarOptions = {
 
   professor: {
     main: [
-      { icon: IoHomeOutline, label: "Home", viewName: "dashboard/professor" },
+      { icon: IoHomeOutline, label: "Home", viewName: "home" },
       {
         icon: HiOutlineClipboardDocumentList,
         label: "Minhas Turmas",

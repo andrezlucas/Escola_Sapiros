@@ -56,7 +56,7 @@ export default function SideBarMenu({
           src={LogoDasboard}
           alt="Logo Sapiros"
           onClick={() => {
-            navigateTo(menuItems[0].viewName);
+            navigateTo("home");
           }}
           className="w-28 md:w-36 lg:w-40 h-auto object-contain cursor-pointer"
         />

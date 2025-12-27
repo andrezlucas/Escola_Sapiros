@@ -3,7 +3,6 @@ import SideBarMenu from "../components/SideBarMenu";
 import CardMenuBackground from "../components/CardMenuBackground";
 import CardMenu from "../components/CardMenu";
 import CardMural from "../components/CardMural";
-import { useState } from "react";
 import ImagenDocumentos from "../imagens/imagendocumento.png";
 import ImagenMatricula from "../imagens/imagenmatricula.png";
 import ImagenPortal from "../imagens/imagenPortal.png";
@@ -11,17 +10,18 @@ import ImagenMural from "../imagens/imagenmural.png";
 import ImagenPerfil from "../imagens/imagenperfil.png";
 import ImagenConfig from "../imagens/imagenconfig.png";
 import CardCalendario from "../components/CardCalendario";
-import Matricula from "./Matricula";
 import Calendario from "./Calendario";
 import { SideBarOptions } from "../components/SideBarOptions";
-
-
+import { useSearchParams } from "react-router-dom";
+import CardMuralDashboard from "../components/CardMuralDashboard";
+import Mural from "./Mural";
 
 function DashboardProfessor() {
-  const [currentView, setCurrentView] = useState("dashboard/professor");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentView = searchParams.get("view") || "home";
 
-  const navigateTo = (viewName: string) => {
-    setCurrentView(viewName);
+  const navigateTo = (view: string) => {
+    setSearchParams({ view }, { replace: true });
   };
 
   const role = "professor";
@@ -29,12 +29,10 @@ function DashboardProfessor() {
 
   const renderContent = () => {
     switch (currentView) {
-      case "documentos":
-        return ;
-      case "matriculas":
-        return ;
       case "calendario":
         return <Calendario />;
+      case "mural":
+        return <Mural />;
       default:
         return null;
     }
@@ -87,46 +85,44 @@ function DashboardProfessor() {
         bottomMenuItems={options.bottom}
         activeView={currentView}
       />
+
       <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
         <div className="h-16">
           <HeaderBar />
         </div>
 
         <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
-          {currentView === "dashboard/professor" ? (
+          {currentView === "home" ? (
             <div className="grid grid-cols-5 gap-8 h-full">
               <div className="col-span-3 flex flex-col">
                 <CardMenuBackground>
-                  <CardMenu title="Mural" icon={MuralIcon} />
+                  <CardMenu
+                    title="Mural"
+                    icon={MuralIcon}
+                    onClick={() => navigateTo("mural")}
+                  />
                   <CardMenu
                     title="Calendário"
                     icon={CalendarioIcon}
                     onClick={() => navigateTo("calendario")}
                   />
                   <CardMenu title="Gerenciamento" icon={GerenciamentoIcon} />
-                  <CardMenu
-                    title="Documentos"
-                    icon={DocumentosIcon}
-                    onClick={() => navigateTo("documentos")}
-                  />
+                  <CardMenu title="Documentos" icon={DocumentosIcon} />
                   <CardMenu title="Relatórios" icon={RelatoriosIcon} />
-                  <CardMenu
-                    title="Matrícula"
-                    icon={MatriculaIcon}
-                    onClick={() => navigateTo("matriculas")}
-                  />
+                  <CardMenu title="Matrícula" icon={MatriculaIcon} />
                 </CardMenuBackground>
 
                 <h2 className="font-poppins font-normal text-[24px] leading-9 text-[#3D7E8F] mb-4">
-                  DASHBOARD Professor
+                  DASHBOARD PROFESSOR
                 </h2>
 
                 <div className="flex-1">
                   <CardMural type="mini" />
                 </div>
               </div>
+
               <div className="col-span-2 flex flex-col space-y-6 h-full">
-                <CardMural type="full" />
+                <CardMuralDashboard />
                 <div className="-mt-2.5">
                   <CardCalendario />
                 </div>

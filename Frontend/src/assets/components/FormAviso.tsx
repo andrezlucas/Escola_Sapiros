@@ -9,7 +9,23 @@ function FormAviso() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Input label="Título" {...register("nome", { required: true })} />
 
-      <Input label="Descrição" {...register("descricao", { required: true })} />
+      <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Descrição 
+        </label>
+        <textarea
+          {...register("descricao", {
+            required: "A descrição é obrigatória",
+            minLength: {
+              value: 10,
+              message: "A descrição deve ter pelo menos 10 caracteres",
+            },
+          })}
+          rows={5}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3D7E8F] focus:border-[#3D7E8F] resize-y min-h-[120px]"
+          placeholder="Digite a descrição completa do aviso..."
+        />
+      </div>
 
       <FormSelect
         label="Tipo"

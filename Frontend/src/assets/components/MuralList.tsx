@@ -10,13 +10,11 @@ interface Props {
 export default function MuralLista({ reload }: Props) {
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [avisoVisualizar, setAvisoVisualizar] = useState<Aviso | null>(null);
 
   async function carregarAvisos() {
     try {
       setLoading(true);
-
       const token = localStorage.getItem("token");
 
       const response = await fetch("http://localhost:3000/avisos", {
@@ -46,6 +44,48 @@ export default function MuralLista({ reload }: Props) {
     }
   }
 
+  const handleConfirmarAviso = async (avisoId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Token não encontrado");
+      }
+
+      const response = await fetch(
+        `http://localhost:3000/avisos/${avisoId}/confirmar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `Erro ao confirmar aviso: ${response.status}`
+        );
+      }
+
+      setAvisos((prevAvisos) =>
+        prevAvisos.map((aviso) =>
+          aviso.id === avisoId
+            ? {
+                ...aviso,
+                confirmado: true,
+                confirmadoEm: new Date().toISOString(),
+              }
+            : aviso
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao confirmar aviso:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     carregarAvisos();
   }, [reload]);
@@ -67,6 +107,7 @@ export default function MuralLista({ reload }: Props) {
             aviso={aviso}
             onAtualizar={carregarAvisos}
             onVisualizar={(aviso) => setAvisoVisualizar(aviso)}
+            onConfirmar={handleConfirmarAviso}
           />
         ))}
       </div>

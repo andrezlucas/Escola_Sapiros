@@ -4,6 +4,7 @@ import type { EventInput } from "@fullcalendar/core";
 import CardCalendario from "../components/CardCalendario";
 import { MdEvent } from "react-icons/md";
 import "../css/CalendarioStyle.css";
+import ModalVisualizarAviso from "../components/ModalVisualizarAviso";
 
 interface AvisoBackend {
   id: string;
@@ -27,6 +28,9 @@ export default function CalendarioPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [eventoSelecionado, setEventoSelecionado] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [avisoVisualizar, setAvisoVisualizar] = useState<AvisoBackend | null>(
+    null
+  );
 
   function getCorPorCategoria(categoria: string): string {
     const cores: Record<string, string> = {
@@ -111,13 +115,6 @@ export default function CalendarioPage() {
       const inicioISO = inicioSemana.toISOString();
       const fimISO = fimSemana.toISOString();
 
-      console.log("📅 Buscando avisos de:", {
-        inicioISO,
-        fimISO,
-        inicioLocal: inicioSemana.toLocaleString("pt-BR"),
-        fimLocal: fimSemana.toLocaleString("pt-BR"),
-      });
-
       const response = await fetch(
         `http://localhost:3000/avisos/calendario?inicio=${inicioISO}&fim=${fimISO}`,
         {
@@ -187,11 +184,6 @@ export default function CalendarioPage() {
         (e) => !e.extendedProps?.isAviso
       );
       setEventos([...eventosExistentes, ...eventosConvertidos]);
-
-      console.log(
-        "📅 Total de eventos convertidos:",
-        eventosConvertidos.length
-      );
     } catch (error) {
       console.error("Erro ao carregar avisos do calendário:", error);
     } finally {
@@ -338,6 +330,10 @@ export default function CalendarioPage() {
   const nome = localStorage.getItem("nome");
   const role = localStorage.getItem("role");
 
+  function abrirModalVisualizarAviso(aviso: AvisoBackend) {
+    setAvisoVisualizar(aviso);
+  }
+
   return (
     <div>
       <div className="p-2">
@@ -372,18 +368,6 @@ export default function CalendarioPage() {
                 onClick={proximaSemana}
               >
                 &gt;
-              </button>
-            </div>
-
-            <div>
-              <button
-                onClick={() => {
-                  setEventoSelecionado(null);
-                  setOpen(true);
-                }}
-                className="flex items-center justify-center w-24 h-15 bg-[#1D5D7F] text-white rounded-lg hover:bg-[#164A66]"
-              >
-                <MdEvent size={20} />
               </button>
             </div>
           </header>
@@ -431,14 +415,7 @@ export default function CalendarioPage() {
                         style={{
                           borderLeftColor: getCorPorCategoria(aviso.categoria),
                         }}
-                        onClick={() => {
-                          const eventoCorrespondente = eventos.find(
-                            (e) => e.extendedProps?.avisoId === aviso.id
-                          );
-                          if (eventoCorrespondente) {
-                            handleEventClick(eventoCorrespondente);
-                          }
-                        }}
+                        onClick={() => abrirModalVisualizarAviso(aviso)}
                       >
                         <div className="flex justify-between items-start">
                           <span className="text-xs font-medium text-gray-500">
@@ -456,11 +433,15 @@ export default function CalendarioPage() {
                         </p>
                         <div className="text-xs text-gray-400 mt-2">
                           {formatarDataUTC(aviso.dataInicio)}
-                          {aviso.dataFinal &&
-                            ` - ${formatarDataUTC(aviso.dataFinal)}`}
                         </div>
                       </div>
                     ))}
+                    {avisoVisualizar && (
+                      <ModalVisualizarAviso
+                        aviso={avisoVisualizar}
+                        onClose={() => setAvisoVisualizar(null)}
+                      ></ModalVisualizarAviso>
+                    )}
                   </div>
                 )}
               </div>

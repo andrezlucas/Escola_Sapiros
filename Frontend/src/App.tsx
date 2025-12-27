@@ -1,49 +1,96 @@
-import DashboardCoordenacao from "./assets/pages/DashboardCoordenacao";
-import Login from "./assets/pages/Login";
-import Matricula from "./assets/pages/Matricula";
-import NovaSenha from "./assets/pages/NovaSenha";
-import RedefinirSenha from "./assets/pages/RedefinirSenha";
 import { Routes, Route } from "react-router-dom";
-import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
+import { PrivateRoute } from "./routes/PrivateRoute";
+import EditarDocumento from "./assets/pages/EditarDocumento";
+import Gerenciamento from "./assets/pages/Gerenciamento";
+import Mural from "./assets/pages/Mural";
+import { ToastContainer } from "react-toastify";
 import Calendario from "./assets/pages/Calendario";
 import DashboardAluno from "./assets/pages/DashboardAluno";
-import Gerenciamento from "./assets/pages/Gerenciamento";
-import EditarDocumento from "./assets/pages/EditarDocumento";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import FormTurma from "./assets/components/FormTurma";
+
 import DashboardProfessor from "./assets/pages/DashboardProfessor";
+import Login from "./assets/pages/Login";
+import NovaSenha from "./assets/pages/NovaSenha";
+import RedefinirSenha from "./assets/pages/RedefinirSenha";
+import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
+import DashboardCoordenacao from "./assets/pages/DashboardCoordenacao";
+import NaoAutorizado from "./assets/pages/NaoAutorizado";
 
 function App() {
   return (
     <>
-      <ToastContainer
-        position="bottom-center"
-        autoClose={3000}
-        theme="dark"
-        style={{ zIndex: 99999 }}
-      />
+      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
+
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/nova-senha" element={<NovaSenha />} />
+        <Route path="/senha-bloqueada" element={<SenhaBloqueada />} />
+        <Route path="/nao-autorizado" element={<NaoAutorizado />} />
+
         <Route
           path="/dashboard/coordenacao"
-          element={<DashboardCoordenacao />}
+          element={
+            <PrivateRoute allowedRoles={["coordenacao"]}>
+              <DashboardCoordenacao />
+            </PrivateRoute>
+          }
         />
-        <Route path="/dashboard/aluno" element={<DashboardAluno />} />
-        <Route path="/matricula" element={<Matricula />} />
-        <Route path="/senha-bloqueada" element={<SenhaBloqueada />} />
-        <Route path="/calendario" element={<Calendario />} />
-        <Route path="/gerenciamento" element={<Gerenciamento />} />
+
+        <Route
+          path="/dashboard/aluno"
+          element={
+            <PrivateRoute allowedRoles={["aluno"]}>
+              <DashboardAluno />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard/professor"
+          element={
+            <PrivateRoute allowedRoles={["professor"]}>
+              <DashboardProfessor />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/calendario"
+          element={
+            <PrivateRoute allowedRoles={["coordenacao", "aluno", "professor"]}>
+              <Calendario />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/mural"
+          element={
+            <PrivateRoute allowedRoles={["coordenacao", "aluno", "professor"]}>
+              <Mural />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/gerenciamento"
+          element={
+            <PrivateRoute allowedRoles={["coordenacao"]}>
+              <Gerenciamento />
+            </PrivateRoute>
+          }
+        />
+
         <Route
           path="/alunos/:id/documentos/editar"
-          element={<EditarDocumento />}
+          element={
+            <PrivateRoute allowedRoles={["coordenacao"]}>
+              <EditarDocumento />
+            </PrivateRoute>
+          }
         />
-        <Route path="/dashboard/professor" element={<DashboardProfessor/>}/>
       </Routes>
     </>
   );
 }
-
 export default App;

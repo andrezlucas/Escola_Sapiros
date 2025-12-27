@@ -3,7 +3,8 @@ import SideBarMenu from "../components/SideBarMenu";
 import CardMenuBackground from "../components/CardMenuBackground";
 import CardMenu from "../components/CardMenu";
 import CardMural from "../components/CardMural";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom"; 
 import ImagenDocumentos from "../imagens/imagendocumento.png";
 import ImagenMatricula from "../imagens/imagenmatricula.png";
 import ImagenPortal from "../imagens/imagenPortal.png";
@@ -16,6 +17,28 @@ import Calendario from "./Calendario";
 import { SideBarOptions } from "../components/SideBarOptions";
 import Gerenciamento from "./Gerenciamento";
 import Mural from "./Mural";
+import GraficoDesempenho from "../components/GraficoDeTurma";
+import { toast } from "react-toastify";
+import IndicadorCircular from "../components/IndicadorCircular";
+import CardMuralDashboard from "../components/CardMuralDashboard";
+
+interface TurmaGrafico {
+  turmaId: string;
+  nomeTurma: string;
+  totalAlunos: number;
+  capacidadeMaxima: number;
+}
+
+interface IndicadoresDashboard {
+  taxaOcupacaoGeral: number;
+  totalTurmasAtivas: number;
+  totalAlunos: number;
+}
+
+interface DashboardEstatisticasResponse {
+  graficoAlunosPorTurma: TurmaGrafico[];
+  indicadores: IndicadoresDashboard;
+}
 
 const DocumentosPage = () => (
   <div className="w-full h-full p-8 bg-white rounded-xl shadow-md flex items-center justify-center">
@@ -24,11 +47,53 @@ const DocumentosPage = () => (
 );
 
 function DashboardCoordenacao() {
-  const [currentView, setCurrentView] = useState("dashboard/coordenacao");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentView = searchParams.get("view") || "home";
 
-  const navigateTo = (viewName: string) => {
-    setCurrentView(viewName);
+  const navigateTo = (view: string) => {
+    setSearchParams({ view }, { replace: true });
   };
+
+  const [estatisticas, setEstatisticas] =
+    useState<DashboardEstatisticasResponse | null>(null);
+
+  const [loadingGrafico, setLoadingGrafico] = useState(true);
+
+  useEffect(() => {
+    const carregarEstatisticas = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          toast.error("Usuário não autenticado");
+          return;
+        }
+
+        const response = await fetch(
+          "http://localhost:3000/turmas/dashboard/estatisticas",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Erro ao buscar estatísticas");
+        }
+
+        const json: DashboardEstatisticasResponse = await response.json();
+        setEstatisticas(json);
+      } catch (error) {
+        console.error("Erro dashboard:", error);
+      } finally {
+        setLoadingGrafico(false);
+      }
+    };
+
+    carregarEstatisticas();
+  }, []);
 
   const role = "coordenacao";
   const options = SideBarOptions[role];
@@ -77,7 +142,7 @@ function DashboardCoordenacao() {
   const RelatoriosIcon = (
     <img
       src={ImagenMatricula}
-      alt="Relatorios"
+      alt="Relatórios"
       className="w-20 h-20 object-contain"
     />
   );
@@ -97,18 +162,22 @@ function DashboardCoordenacao() {
         bottomMenuItems={options.bottom}
         activeView={currentView}
       />
+
       <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
         <div className="h-16">
           <HeaderBar />
         </div>
 
         <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
-          {currentView === "dashboard/coordenacao" ? (
+          {currentView === "home" ? (
             <div className="grid grid-cols-5 gap-8 h-full">
               <div className="col-span-3 flex flex-col">
                 <CardMenuBackground>
-                  <CardMenu title="Mural" icon={MuralIcon} 
-                  onClick={() => navigateTo("mural")}/>
+                  <CardMenu
+                    title="Mural"
+                    icon={MuralIcon}
+                    onClick={() => navigateTo("mural")}
+                  />
                   <CardMenu
                     title="Calendário"
                     icon={CalendarioIcon}
@@ -132,16 +201,48 @@ function DashboardCoordenacao() {
                   />
                 </CardMenuBackground>
 
-                <h2 className="font-poppins font-normal text-[24px] leading-9 text-[#3D7E8F] mb-4">
-                  Gráfico de desempenho
+                <h2 className="font-poppins text-[24px] text-[#3D7E8F] mb-4">
+                  Gráfico de Turma
                 </h2>
 
-                <div className="flex-1">
-                  <CardMural type="mini" />
+                <div className="flex-1 w-full rounded-xl bg-white shadow-md">
+                  {loadingGrafico && (
+                    <p className="text-center text-gray-400 p-6">
+                      Carregando gráfico...
+                    </p>
+                  )}
+
+                  {!loadingGrafico && estatisticas && (
+                    <div className="bg-white rounded-xl p-6 shadow-md h-[380px] flex gap-6">
+                      <div className="flex-1">
+                        <GraficoDesempenho
+                          data={estatisticas.graficoAlunosPorTurma}
+                        />
+                      </div>
+
+                      <div className="w-[220px] flex flex-col justify-center space-y-4">
+                        <IndicadorCircular
+                          value={estatisticas.indicadores.taxaOcupacaoGeral}
+                          label="Taxa de ocupação"
+                        />
+                        <IndicadorCircular
+                          value={estatisticas.indicadores.totalTurmasAtivas}
+                          max={estatisticas.indicadores.totalTurmasAtivas}
+                          label="Turmas ativas"
+                        />
+                        <IndicadorCircular
+                          value={estatisticas.indicadores.totalAlunos}
+                          max={estatisticas.indicadores.totalAlunos}
+                          label="Total de alunos"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="col-span-2 flex flex-col space-y-6 h-full">
-                <CardMural type="full" />
+
+              <div className="col-span-2 flex flex-col space-y-14 h-full">
+                <CardMuralDashboard />
                 <div className="-mt-2.5">
                   <CardCalendario />
                 </div>
