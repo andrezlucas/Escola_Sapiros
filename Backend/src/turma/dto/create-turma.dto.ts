@@ -11,7 +11,6 @@ import {
   IsIn,
   Min,
   Max,
-  IsDateString,
 } from 'class-validator';
 
 export class CreateTurmaDto {

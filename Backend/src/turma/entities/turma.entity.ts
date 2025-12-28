@@ -15,11 +15,16 @@ import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Aviso } from '../../avisos/entities/aviso.entity';
 import { Professor } from '../../professor/entities/professor.entity';
+import { Atividade } from '../../atividade/entities/atividade.entity';
 
 @Entity('turmas')
 export class Turma {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+
+  @ManyToMany(() => Atividade, atividade => atividade.turmas)
+  atividades: Atividade[];
 
   // 🔗 Aluno pertence a UMA turma
   @OneToMany(() => Aluno, aluno => aluno.turma)

@@ -14,6 +14,7 @@ import { FrequenciaModule } from './frequencia/frequencia.module';
 import { AvisosModule } from './avisos/avisos.module';
 import { MailModule } from './mail/mail.module';
 import { TurmaModule } from './turma/turma.module';
+import { AtividadeModule } from './atividade/atividade.module';
 
 
 @Module({
@@ -52,6 +53,7 @@ import { TurmaModule } from './turma/turma.module';
     AvisosModule,
     MailModule,
     TurmaModule,
+    AtividadeModule,
    
 
     

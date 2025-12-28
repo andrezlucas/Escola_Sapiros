@@ -13,6 +13,7 @@ import { Nota } from '../../nota/entities/nota.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Professor } from '../../professor/entities/professor.entity';
 import { Habilidade } from '../../disciplina/entities/habilidade.entity';
+import { Atividade } from '../../atividade/entities/atividade.entity';
 
 @Entity('disciplinas')
 export class Disciplina {
@@ -24,7 +25,7 @@ export class Disciplina {
 
   @OneToMany(() => Nota, nota => nota.disciplina)
   notas: Nota[];
-  
+
 
   @ManyToMany(() => Turma, turma => turma.disciplinas)
   turmas: Turma[];
@@ -41,6 +42,9 @@ export class Disciplina {
     cascade: true,
   })
   habilidades: Habilidade[];
+
+  @OneToMany(() => Atividade, atividade => atividade.disciplina)
+  atividades: Atividade[];
 
   @Column({ unique: true, length: 20 })
   codigo_disciplina: string;
