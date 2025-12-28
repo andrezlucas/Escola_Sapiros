@@ -9,6 +9,7 @@ interface Props {
 }
 
 export interface Aviso {
+  confirmado: unknown;
   aluno: any;
   id: string;
   nome: string;
@@ -92,54 +93,16 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
       return;
     }
 
-    // 🔥 CORREÇÃO: Criar data em UTC explícito
-    const criarDataUTC = (dataString: string) => {
-      // Pega apenas a parte da data (YYYY-MM-DD)
-      const [year, month, day] = dataString.split("-");
-      // Cria data em UTC (meia-noite UTC) - método CORRETO
-      const dataUTC = new Date(
-        Date.UTC(
-          parseInt(year),
-          parseInt(month) - 1, // Mês começa em 0
-          parseInt(day),
-          0, // hora 0
-          0, // minuto 0
-          0, // segundo 0
-          0 // milissegundo 0
-        )
-      );
-      return dataUTC;
-    };
-
     const payload: any = {
       nome: data.nome,
       descricao: data.descricao,
       tipo: data.tipo,
       categoria: data.categoria,
-      dataInicio: criarDataUTC(data.dataInicio).toISOString(),
+      dataInicio: data.dataInicio,
     };
-
-    // 🔥 CORREÇÃO PARA DATA FINAL
-    if (data.dataFinal && data.dataFinal.trim() !== "") {
-      try {
-        const dataFinalUTC = criarDataUTC(data.dataFinal);
-        // Para data final, adiciona 23:59:59.999 se for evento de dia inteiro
-        if (data.tipo === "GERAL") {
-          dataFinalUTC.setUTCHours(23, 59, 59, 999);
-        }
-        payload.dataFinal = dataFinalUTC.toISOString();
-      } catch (error) {
-        console.error("Erro ao converter data final:", error);
-      }
+    if (data.dataFinal) {
+      payload.dataFinal = data.dataFinal;
     }
-
-    // Debug
-    console.log("📅 Data início digitada:", data.dataInicio);
-    console.log("📅 Data início UTC:", payload.dataInicio);
-    console.log(
-      "📅 Data início local:",
-      new Date(payload.dataInicio).toLocaleString("pt-BR")
-    );
 
     if (data.tipo === "TURMA") {
       payload.turmaId = data.turmaId;

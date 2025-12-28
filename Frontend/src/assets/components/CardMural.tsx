@@ -17,24 +17,6 @@ const CardMural: React.FC<CardMuralProps> = ({ type, className }) => {
         ${className || ""}
       `}
     >
-      {isFull && (
-        <>
-          <h2 className="text-4xl font-light text-[#3d7e8f] mb-4 text-center">
-            Mural de avisos
-          </h2>
-
-          <div className="w-full h-[calc(100% - 60px)] overflow-y-auto space-y-3">
-            {[1, 2, 3, 4, 5].map((item) => (
-              <div
-                key={item}
-                className="w-full h-10 bg-[#eaf3fa] border border-[#8cb3cd] rounded-lg"
-              >
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
       {!isFull && (
         <div className="w-full h-full flex items-center justify-center"></div>
       )}

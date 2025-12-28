@@ -1,20 +1,12 @@
 import HeaderBar from "../components/HeaderBar";
 import SideBarMenu from "../components/SideBarMenu";
-import CardMenuBackground from "../components/CardMenuBackground";
-import CardMenu from "../components/CardMenu";
 import CardMural from "../components/CardMural";
-import ImagenDocumentos from "../imagens/imagendocumento.png";
-import ImagenMatricula from "../imagens/imagenmatricula.png";
 import ImagenPortal from "../imagens/imagenPortal.png";
-import ImagenMural from "../imagens/imagenmural.png";
-import ImagenPerfil from "../imagens/imagenperfil.png";
-import ImagenConfig from "../imagens/imagenconfig.png";
-import CardCalendario from "../components/CardCalendario";
-import Calendario from "./Calendario";
 import { SideBarOptions } from "../components/SideBarOptions";
-import Mural from "./Mural";
-import CardMuralDashboard from "../components/CardMuralDashboard";
 import { useSearchParams } from "react-router-dom";
+import CardMuralDashboard from "../components/CardMuralDashboard";
+import Calendario from "./Calendario";
+import Mural from "./Mural";
 
 function DashboardAluno() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +18,7 @@ function DashboardAluno() {
 
   const role = "aluno";
   const options = SideBarOptions[role];
+  const nome = localStorage.getItem("nome");
 
   const renderContent = () => {
     switch (currentView) {
@@ -37,45 +30,6 @@ function DashboardAluno() {
         return null;
     }
   };
-
-  const DocumentosIcon = (
-    <img
-      src={ImagenDocumentos}
-      alt="Documentos"
-      className="w-20 h-20 object-contain"
-    />
-  );
-  const MatriculaIcon = (
-    <img
-      src={ImagenPerfil}
-      alt="Matrículas"
-      className="w-20 h-20 object-contain"
-    />
-  );
-  const CalendarioIcon = (
-    <img
-      src={ImagenPortal}
-      alt="Calendário"
-      className="w-20 h-20 object-contain"
-    />
-  );
-  const MuralIcon = (
-    <img src={ImagenMural} alt="Mural" className="w-20 h-20 object-contain" />
-  );
-  const RelatoriosIcon = (
-    <img
-      src={ImagenMatricula}
-      alt="Relatórios"
-      className="w-20 h-20 object-contain"
-    />
-  );
-  const GerenciamentoIcon = (
-    <img
-      src={ImagenConfig}
-      alt="Gerenciamento"
-      className="w-20 h-20 object-contain"
-    />
-  );
 
   return (
     <div className="flex h-screen">
@@ -91,40 +45,40 @@ function DashboardAluno() {
           <HeaderBar />
         </div>
 
-        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
+        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-6 rounded-tl-[30px]">
           {currentView === "home" ? (
-            <div className="grid grid-cols-5 gap-8 h-full">
-              <div className="col-span-3 flex flex-col">
-                <CardMenuBackground>
-                  <CardMenu
-                    title="Mural"
-                    icon={MuralIcon}
-                    onClick={() => navigateTo("mural")}
+            <div className="grid grid-cols-5 gap-6 h-full">
+              <div className="col-span-3 flex flex-col space-y-6">
+                <div className="w-full p-6 bg-white rounded-xl shadow-md flex items-center justify-between border-2 border-[#1D5D7F]">
+                  <div>
+                    <h1 className="text-2xl font-bold text-[#1D5D7F]">
+                      Olá, <span className="text-[#1D5D7F]">{nome}!</span>!
+                    </h1>
+                    <p className="text-[#1D5D7F]">
+                      Aqui está um resumo do seu progresso. Continue assim!
+                    </p>
+                  </div>
+                  <img
+                    src={ImagenPortal}
+                    alt="Ícone do portal"
+                    className="w-20 h-20 object-contain"
                   />
-                  <CardMenu
-                    title="Calendário"
-                    icon={CalendarioIcon}
-                    onClick={() => navigateTo("calendario")}
-                  />
-                  <CardMenu title="Gerenciamento" icon={GerenciamentoIcon} />
-                  <CardMenu title="Documentos" icon={DocumentosIcon} />
-                  <CardMenu title="Relatórios" icon={RelatoriosIcon} />
-                  <CardMenu title="Matrícula" icon={MatriculaIcon} />
-                </CardMenuBackground>
-
-                <h2 className="font-poppins font-normal text-[24px] leading-9 text-[#3D7E8F] mb-4">
-                  DASHBOARD ALUNO
-                </h2>
-
-                <div className="flex-1">
-                  <CardMural type="mini" />
                 </div>
+
+                <CardMural type="full" />
+
+                <CardMural type="mini"></CardMural>
+
+                <CardMural type="full"></CardMural>
               </div>
 
-              <div className="col-span-2 flex flex-col space-y-14 h-full">
-                <CardMuralDashboard />
-                <div className="-mt-2.5">
-                  <CardCalendario />
+              <div className="col-span-2 flex flex-col space-y-6">
+                <div className="h-1/2">
+                  <CardMuralDashboard />
+                </div>
+
+                <div className="h-1/2">
+                  <CardMural type="mini" />
                 </div>
               </div>
             </div>

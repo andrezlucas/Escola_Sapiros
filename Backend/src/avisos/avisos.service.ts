@@ -162,7 +162,9 @@ export class AvisosService {
     return this.avisoRepository.save(aviso);
   }
 
-  async findAll(filters: FilterAvisoDto, user: AnyUser): Promise<Aviso[]> {
+  async findAll(filters: FilterAvisoDto, user: AnyUser): Promise<any[]> {
+    if (!user?.id) throw new ForbiddenException();
+
     const qb = this.avisoRepository
       .createQueryBuilder('a')
       .leftJoinAndSelect('a.usuario', 'usuario')
@@ -178,12 +180,29 @@ export class AvisosService {
       });
 
     const avisos = await qb.getMany();
-    const visiveis: Aviso[] = [];
+
+    const confirmacoes = await this.confirmacaoRepo.find({
+      where: {
+        usuario: { id: user.id },
+      },
+      relations: ['aviso'],
+    });
+
+    const confirmacoesMap = new Map(confirmacoes.map((c) => [c.aviso.id, c]));
+
+    const visiveis: any[] = [];
 
     for (const aviso of avisos) {
       try {
         await this.assertCanRead(aviso, user);
-        visiveis.push(aviso);
+
+        const confirmacao = confirmacoesMap.get(aviso.id);
+
+        visiveis.push({
+          ...aviso,
+          confirmado: !!confirmacao,
+          confirmadoEm: confirmacao?.confirmadoEm ?? null,
+        });
       } catch {}
     }
 
@@ -222,7 +241,12 @@ export class AvisosService {
   async findOne(id: string, user: AnyUser): Promise<Aviso> {
     const aviso = await this.avisoRepository.findOne({
       where: { id },
-      relations: ['usuario', 'turma', 'turma.professor', 'turma.professor.usuario'],
+      relations: [
+        'usuario',
+        'turma',
+        'turma.professor',
+        'turma.professor.usuario',
+      ],
     });
     if (!aviso) throw new NotFoundException();
     await this.assertCanRead(aviso, user);
@@ -237,11 +261,11 @@ export class AvisosService {
 
     const tipoFinal = dto.tipo ?? aviso.tipo;
     const turmaIdFinal =
-      dto.turmaId !== undefined ? dto.turmaId : aviso.turma?.id ?? null;
+      dto.turmaId !== undefined ? dto.turmaId : (aviso.turma?.id ?? null);
     const alunoIdFinal =
       dto.destinatarioAlunoId !== undefined
         ? dto.destinatarioAlunoId
-        : aviso.destinatarioAlunoId ?? null;
+        : (aviso.destinatarioAlunoId ?? null);
 
     await this.validateAvisoByTipo(tipoFinal, turmaIdFinal, alunoIdFinal);
 
@@ -283,7 +307,7 @@ export class AvisosService {
     const avisos = await this.avisoRepository
       .createQueryBuilder('a')
       .where(
-        new Brackets(qb => {
+        new Brackets((qb) => {
           qb.where('a.dataInicio BETWEEN :i AND :f', {
             i: inicio,
             f: fim,

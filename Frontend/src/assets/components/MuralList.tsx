@@ -8,7 +8,11 @@ interface Props {
 }
 
 export default function MuralLista({ reload }: Props) {
-  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [filter, setFilter] = useState<
+    "todos" | "confirmados" | "nao-confirmados"
+  >("todos");
+
+  const [avisos, setAvisos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [avisoVisualizar, setAvisoVisualizar] = useState<Aviso | null>(null);
 
@@ -31,14 +35,14 @@ export default function MuralLista({ reload }: Props) {
 
       const filtrados = data.filter(
         (aviso: Aviso) =>
+          aviso.tipo === "GERAL" ||
           aviso.tipo === "TURMA" ||
-          aviso.tipo === "INDIVIDUAL" ||
-          aviso.tipo === "GERAL"
+          aviso.tipo === "INDIVIDUAL"
       );
 
       setAvisos(filtrados);
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao carregar avisos:", error);
     } finally {
       setLoading(false);
     }
@@ -47,9 +51,7 @@ export default function MuralLista({ reload }: Props) {
   const handleConfirmarAviso = async (avisoId: string) => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Token não encontrado");
-      }
+      if (!token) throw new Error("Token não encontrado");
 
       const response = await fetch(
         `http://localhost:3000/avisos/${avisoId}/confirmar`,
@@ -64,13 +66,11 @@ export default function MuralLista({ reload }: Props) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `Erro ao confirmar aviso: ${response.status}`
-        );
+        throw new Error(errorData.message || "Erro ao confirmar aviso");
       }
 
-      setAvisos((prevAvisos) =>
-        prevAvisos.map((aviso) =>
+      setAvisos((prev) =>
+        prev.map((aviso) =>
           aviso.id === avisoId
             ? {
                 ...aviso,
@@ -90,18 +90,44 @@ export default function MuralLista({ reload }: Props) {
     carregarAvisos();
   }, [reload]);
 
+  const avisosFiltrados = avisos.filter((aviso) => {
+    if (filter === "confirmados") return aviso.confirmado;
+    if (filter === "nao-confirmados") return !aviso.confirmado;
+    return true;
+  });
+
   if (loading) {
     return <p className="text-gray-500">Carregando avisos...</p>;
   }
 
   if (!avisos.length) {
-    return <p className="text-gray-500">Nenhum aviso cadastrado.</p>;
+    return <p className="text-gray-500">Nenhum aviso disponível.</p>;
   }
 
   return (
     <>
+      <div className="flex flex-row gap-4 mb-6">
+        {[
+          { key: "todos", label: "Todos" },
+          { key: "confirmados", label: "Confirmados" },
+          { key: "nao-confirmados", label: "Não confirmados" },
+        ].map((item) => (
+          <button
+            key={item.key}
+            className={`w-40 h-9 px-4 py-2 rounded-lg shadow flex justify-center items-center ${
+              filter === item.key
+                ? "bg-[#1D5D7F] text-white"
+                : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
+            }`}
+            onClick={() => setFilter(item.key as any)}
+          >
+            <span className="text-sm font-bold">{item.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {avisos.map((aviso) => (
+        {avisosFiltrados.map((aviso) => (
           <CardAviso
             key={aviso.id}
             aviso={aviso}

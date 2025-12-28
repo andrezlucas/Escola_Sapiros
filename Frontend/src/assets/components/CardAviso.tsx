@@ -131,25 +131,31 @@ export default function CardAviso({
   const handleConfirmar = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (estaConfirmado || role === "coordenacao") {
+    if (role === "coordenacao") {
       setEditarAberto(true);
       return;
     }
 
+    if (estaConfirmado) return;
+
     try {
       setEstaConfirmando(true);
 
-      if (onConfirmar) {
-        await onConfirmar(aviso.id);
-      } else {
-        const token = localStorage.getItem("token");
-        await fetch(`http://localhost:3000/avisos/${aviso.id}/confirmar`, {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `http://localhost:3000/avisos/${aviso.id}/confirmar`,
+        {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
-        });
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(err || "Erro ao confirmar aviso");
       }
 
       setEstaConfirmado(true);
@@ -205,12 +211,14 @@ export default function CardAviso({
           {aviso.descricao}
         </p>
 
-        {role === "coordenacao" && aviso.tipo === "TURMA" && aviso.turma?.nome_turma && (
-          <p className="text-xs text-gray-700 mt-2">
-            <span className="font-semibold">Turma:</span>{" "}
-            {aviso.turma.nome_turma}
-          </p>
-        )}
+        {role === "coordenacao" &&
+          aviso.tipo === "TURMA" &&
+          aviso.turma?.nome_turma && (
+            <p className="text-xs text-gray-700 mt-2">
+              <span className="font-semibold">Turma:</span>{" "}
+              {aviso.turma.nome_turma}
+            </p>
+          )}
 
         {role === "coordenacao" && aviso.tipo === "INDIVIDUAL" && (
           <p className="text-xs text-gray-700 mt-2">

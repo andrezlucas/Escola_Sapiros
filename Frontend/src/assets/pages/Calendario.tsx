@@ -433,6 +433,9 @@ export default function CalendarioPage() {
                         </p>
                         <div className="text-xs text-gray-400 mt-2">
                           {formatarDataUTC(aviso.dataInicio)}
+                          {aviso.dataFinal && (
+                            <> – {formatarDataUTC(aviso.dataFinal)}</>
+                          )}
                         </div>
                       </div>
                     ))}

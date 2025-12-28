@@ -10,10 +10,9 @@ interface AvisoDashboard {
 }
 
 export default function CardMuralDashboard() {
-  const navigate = useNavigate();
-
   const [avisos, setAvisos] = useState<AvisoDashboard[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function carregarAvisos() {
@@ -48,13 +47,25 @@ export default function CardMuralDashboard() {
 
       <div className="space-y-3">
         {!loading &&
-          avisos.map((aviso) => <ItemAviso key={aviso.id} aviso={aviso} />)}
+          avisos.map((aviso) => (
+            <ItemAviso
+              key={aviso.id}
+              aviso={aviso}
+              onVerMural={() => navigate("/mural")}
+            />
+          ))}
       </div>
     </div>
   );
 }
 
-function ItemAviso({ aviso }: { aviso: AvisoDashboard }) {
+function ItemAviso({
+  aviso,
+  onVerMural,
+}: {
+  aviso: AvisoDashboard;
+  onVerMural: () => void;
+}) {
   const cor = corPorCategoria(aviso.categoria);
 
   const truncarTexto = (texto: string, limite: number) => {
@@ -77,6 +88,7 @@ function ItemAviso({ aviso }: { aviso: AvisoDashboard }) {
         className="h-full w-14 flex items-center justify-center"
         style={{ backgroundColor: cor }}
         aria-label="Ver mural"
+        onClick={onVerMural}
       >
         <FaChevronRight className="text-black text-lg" />
       </button>

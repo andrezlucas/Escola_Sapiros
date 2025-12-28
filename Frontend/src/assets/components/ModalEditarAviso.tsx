@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import FormAviso from "./FormAviso";
 import { toast } from "react-toastify";
 import { FaTrash } from "react-icons/fa";
-import { useRef } from "react";
 
 interface AvisoEditar {
   id: string;
@@ -26,30 +25,12 @@ interface Props {
   onSalvar: () => void;
 }
 
+const converterDataParaInput = (dataISO?: string): string => {
+  if (!dataISO) return "";
+  return dataISO.split("T")[0];
+};
+
 export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
-  const converterDataParaInput = (dataISO?: string): string => {
-    if (!dataISO) return "";
-
-    const data = new Date(dataISO);
-    if (isNaN(data.getTime())) return "";
-
-    const horasUTC = data.getUTCHours();
-    const minutosUTC = data.getUTCMinutes();
-
-    if (horasUTC === 0 && minutosUTC === 0) {
-      const ano = data.getUTCFullYear();
-      const mes = String(data.getUTCMonth() + 1).padStart(2, "0");
-      const dia = String(data.getUTCDate()).padStart(2, "0");
-      return `${ano}-${mes}-${dia}`;
-    }
-
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, "0");
-    const dia = String(data.getDate()).padStart(2, "0");
-
-    return `${ano}-${mes}-${dia}`;
-  };
-
   const methods = useForm({
     defaultValues: {
       nome: aviso.nome,
@@ -121,65 +102,14 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
       return;
     }
 
-    const criarDataUTC = (dataString: string, isEndOfDay = false) => {
-      const [year, month, day] = dataString.split("-");
-
-      if (isEndOfDay) {
-        return new Date(
-          Date.UTC(
-            parseInt(year),
-            parseInt(month) - 1,
-            parseInt(day),
-            23,
-            59,
-            59,
-            999
-          )
-        );
-      } else {
-        return new Date(
-          Date.UTC(
-            parseInt(year),
-            parseInt(month) - 1,
-            parseInt(day),
-            0,
-            0,
-            0,
-            0
-          )
-        );
-      }
-    };
-
-    const isEndOfDayForFinal =
-      data.categoria === "FERIADO" || data.tipo === "GERAL";
-
     const payload: any = {
       nome: data.nome,
       descricao: data.descricao,
       tipo: data.tipo,
       categoria: data.categoria,
-      dataInicio: criarDataUTC(data.dataInicio, false).toISOString(),
+      dataInicio: data.dataInicio,
+      dataFinal: data.dataFinal || null,
     };
-
-    if (data.dataFinal && data.dataFinal.trim() !== "") {
-      try {
-        const dataFinalUTC = criarDataUTC(data.dataFinal, isEndOfDayForFinal);
-        payload.dataFinal = dataFinalUTC.toISOString();
-      } catch (error) {
-        console.error("Erro ao converter data final:", error);
-      }
-    } else {
-      payload.dataFinal = null;
-    }
-
-    console.log("📅 Editando aviso:", {
-      dataInicioInput: data.dataInicio,
-      dataFinalInput: data.dataFinal,
-      dataInicioISO: payload.dataInicio,
-      dataFinalISO: payload.dataFinal,
-      isEndOfDayForFinal,
-    });
 
     if (data.tipo === "TURMA") payload.turmaId = data.turmaId;
     if (data.tipo === "INDIVIDUAL")
@@ -200,11 +130,10 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
         throw new Error(errorData.message || "Erro ao atualizar aviso");
       }
 
-      toast.success("Aviso atualizado");
+      toast.success("Aviso atualizado com sucesso");
       onSalvar();
       onClose();
     } catch (error: any) {
-      console.error("Erro completo:", error);
       toast.error(error.message || "Erro ao atualizar aviso");
     }
   }
@@ -244,18 +173,6 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white w-full max-w-2xl rounded-xl p-6">
         <h2 className="text-xl font-bold text-[#1D5D7F] mb-4">Editar Aviso</h2>
-
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700">
-            <strong>Informação:</strong> Datas salvas:
-            {aviso.dataInicio && (
-              <span> Início: {formatarDataUTC(aviso.dataInicio)}</span>
-            )}
-            {aviso.dataFinal && (
-              <span> - Final: {formatarDataUTC(aviso.dataFinal)}</span>
-            )}
-          </p>
-        </div>
 
         <FormProvider {...methods}>
           <form onSubmit={handleSubmit(handleSalvar)} className="space-y-6">
@@ -306,10 +223,12 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
               </button>
 
               <button
+                type="button"
                 onClick={ExcluirAviso}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
               >
-                <FaTrash className="w-3 h-3" /> Excluir Aviso
+                <FaTrash className="w-3 h-3" />
+                Excluir
               </button>
             </div>
           </form>
@@ -317,16 +236,4 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
       </div>
     </div>
   );
-}
-
-function formatarDataUTC(dataString: string): string {
-  if (!dataString) return "";
-  const date = new Date(dataString);
-  if (isNaN(date.getTime())) return "";
-
-  const dia = date.getUTCDate().toString().padStart(2, "0");
-  const mes = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-  const ano = date.getUTCFullYear();
-
-  return `${dia}/${mes}/${ano}`;
 }
