@@ -8,6 +8,8 @@ import { Formacao } from './entities/formacao.entity';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { UpdateProfessorDto } from './dto/update-professor.dto';
+import { Turma } from '../turma/entities/turma.entity';
+import { Disciplina } from '../disciplina/entities/disciplina.entity';
 
 @Injectable()
 export class ProfessorService {
@@ -16,6 +18,10 @@ export class ProfessorService {
     private readonly professorRepository: Repository<Professor>,
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(Turma)
+    private turmaRepository: Repository<Turma>,
+    @InjectRepository(Disciplina)
+    private disciplinaRepository: Repository<Disciplina>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -155,5 +161,30 @@ export class ProfessorService {
   async remove(id: string): Promise<void> {
     const professor = await this.findOne(id);
     await this.professorRepository.remove(professor);
+  }
+
+    async findTurmas(professorId: string) {
+    return this.turmaRepository
+      .createQueryBuilder('turma')
+      .innerJoin('turma.professores', 'professor', 'professor.id = :id', {
+        id: professorId,
+      })
+      .select(['turma.id', 'turma.nome'])
+      .orderBy('turma.nome', 'ASC')
+      .getMany();
+  }
+
+  async findDisciplinas(professorId: string) {
+    return this.disciplinaRepository
+      .createQueryBuilder('disciplina')
+      .innerJoin(
+        'disciplina.professores',
+        'professor',
+        'professor.id = :id',
+        { id: professorId },
+      )
+      .select(['disciplina.id_disciplina', 'disciplina.nome'])
+      .orderBy('disciplina.nome', 'ASC')
+      .getMany();
   }
 }

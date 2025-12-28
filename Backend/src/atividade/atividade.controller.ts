@@ -1,20 +1,33 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+  UseGuards,
+  ParseUUIDPipe,
+  Req,
+} from '@nestjs/common';
+
 import { AtividadeService } from './atividade.service';
 import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 
+import { Roles } from '../auth/roles/roles.decorator';
+import { RolesGuard } from '../auth/roles/roles.guard';
+import { Role } from '../usuario/entities/usuario.entity';
+
 @Controller('atividades')
+@UseGuards(RolesGuard)
 export class AtividadeController {
   constructor(private readonly atividadeService: AtividadeService) {}
 
   @Post()
-  create(@Body() createAtividadeDto: CreateAtividadeDto) {
-    return this.atividadeService.create(createAtividadeDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.atividadeService.findAll();
+  @Roles(Role.PROFESSOR)
+  create(@Body() dto: CreateAtividadeDto, @Req() req) {
+    return this.atividadeService.create(dto, req.user.id);
   }
 
   @Get(':id')
@@ -22,33 +35,23 @@ export class AtividadeController {
     return this.atividadeService.findOne(id);
   }
 
+  @Get('turma/:turmaId')
+  findByTurma(@Param('turmaId', ParseUUIDPipe) turmaId: string) {
+    return this.atividadeService.findByTurma(turmaId);
+  }
+
   @Put(':id')
+  @Roles(Role.PROFESSOR)
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateAtividadeDto: UpdateAtividadeDto,
+    @Body() dto: UpdateAtividadeDto,
   ) {
-    return this.atividadeService.update(id, updateAtividadeDto);
+    return this.atividadeService.update(id, dto);
   }
 
   @Delete(':id')
+  @Roles(Role.PROFESSOR)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.atividadeService.remove(id);
   }
-
-  // Endpoints para gerenciar questões
-  @Get(':atividadeId/questoes')
-  async findQuestoes(@Param('atividadeId', ParseUUIDPipe) atividadeId: string) {
-    const atividade = await this.atividadeService.findOne(atividadeId);
-    return atividade.questoes;
-  }
-
-  @Get(':atividadeId/questoes/:questaoId')
-  async findQuestao(
-    @Param('atividadeId', ParseUUIDPipe) atividadeId: string,
-    @Param('questaoId', ParseUUIDPipe) questaoId: string,
-  ) {
-    return this.atividadeService.findQuestao(atividadeId, questaoId);
-  }
-
-
 }

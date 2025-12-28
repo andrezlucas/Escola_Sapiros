@@ -94,4 +94,11 @@ export class DisciplinaController {
   ): Promise<void> {
     return this.disciplinaService.removeHabilidade(id, req.user);
   }
+  @Get(':disciplinaId/habilidades')
+  @Roles(Role.PROFESSOR)
+  findHabilidades(
+    @Param('disciplinaId', ParseUUIDPipe) disciplinaId: string,
+  ) {
+    return this.disciplinaService.findHabilidades(disciplinaId);
+  }
 }

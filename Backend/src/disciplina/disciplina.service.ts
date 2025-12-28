@@ -341,4 +341,20 @@ async update(
 
     await this.habilidadeRepository.remove(habilidade);
   }
+
+    async findHabilidades(disciplinaId: string) {
+    const disciplina = await this.disciplinaRepository.findOne({
+      where: { id_disciplina: disciplinaId },
+    });
+
+    if (!disciplina) {
+      throw new NotFoundException('Disciplina não encontrada');
+    }
+
+    return this.habilidadeRepository.find({
+      where: { disciplina: { id_disciplina: disciplinaId } },
+      select: ['id', 'descricao'],
+      order: { descricao: 'ASC' },
+    });
+  }
 }

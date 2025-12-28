@@ -1,4 +1,4 @@
-import {Controller,Get, Post, Body,Patch, Param, Delete,UseGuards, UsePipes,ValidationPipe, ParseUUIDPipe,} from '@nestjs/common';
+import {Controller,Get, Post, Body,Patch, Param, Delete,UseGuards, UsePipes,ValidationPipe, ParseUUIDPipe,Req} from '@nestjs/common';
 import { ProfessorService } from './professor.service';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { UpdateProfessorDto } from './dto/update-professor.dto';
@@ -51,5 +51,16 @@ export class ProfessorController {
   @Delete(':id')
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return await this.professorService.remove(id);
+  }
+    @Get('turmas')
+  @Roles(Role.PROFESSOR)
+  findTurmas(@Req() req) {
+    return this.professorService.findTurmas(req.user.id);
+  }
+
+  @Get('disciplinas')
+  @Roles(Role.PROFESSOR)
+  findDisciplinas(@Req() req) {
+    return this.professorService.findDisciplinas(req.user.id);
   }
 }
