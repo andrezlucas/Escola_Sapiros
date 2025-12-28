@@ -199,7 +199,7 @@ export class DisciplinaService {
     throw new ForbiddenException('Acesso não autorizado');
   }
 
- async update(
+async update(
   id: string,
   updateDisciplinaDto: UpdateDisciplinaDto,
   user: any,
@@ -208,16 +208,62 @@ export class DisciplinaService {
 
   const disciplina = await this.findDisciplinaOrFail(id);
 
-  if (updateDisciplinaDto.nome_disciplina !== undefined) {
-    disciplina.nome_disciplina = updateDisciplinaDto.nome_disciplina;
+  const {
+    nome_disciplina,
+    cargaHoraria,
+    professoresIds,
+    turmasIds,
+  } = updateDisciplinaDto;
+
+  if (nome_disciplina !== undefined) {
+    disciplina.nome_disciplina = nome_disciplina;
   }
 
-  if (updateDisciplinaDto.cargaHoraria !== undefined) {
-    disciplina.cargaHoraria = updateDisciplinaDto.cargaHoraria;
+  if (cargaHoraria !== undefined) {
+    disciplina.cargaHoraria = cargaHoraria;
+  }
+
+  //  Atualiza professores (remove e adiciona vínculos)
+  if (professoresIds !== undefined) {
+    if (professoresIds.length === 0) {
+      disciplina.professores = [];
+    } else {
+      const professores = await this.professorRepository.find({
+        where: { id: In(professoresIds) },
+      });
+
+      if (professores.length !== professoresIds.length) {
+        throw new BadRequestException(
+          'Um ou mais professores não foram encontrados',
+        );
+      }
+
+      disciplina.professores = professores;
+    }
+  }
+
+  //  Atualiza turmas (remove e adiciona vínculos)
+  if (turmasIds !== undefined) {
+    if (turmasIds.length === 0) {
+      disciplina.turmas = [];
+    } else {
+      const turmas = await this.turmaRepository.find({
+        where: { id: In(turmasIds) },
+      });
+
+      if (turmas.length !== turmasIds.length) {
+        throw new BadRequestException(
+          'Uma ou mais turmas não foram encontradas',
+        );
+      }
+
+      disciplina.turmas = turmas;
+    }
   }
 
   return this.disciplinaRepository.save(disciplina);
 }
+
 
 
   async remove(id: string, user: any): Promise<void> {
