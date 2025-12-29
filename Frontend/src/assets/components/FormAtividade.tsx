@@ -5,10 +5,15 @@ import { toast } from "react-toastify";
 
 interface Turma {
   id: string;
-  nome: string;
+  nome_turma: string;
 }
 
 interface Disciplina {
+  id_disciplina: string;
+  nome_disciplina: string;
+}
+
+interface Habilidade {
   id: string;
   nome: string;
 }
@@ -23,7 +28,7 @@ interface Questao {
   id: string;
   enunciado: string;
   alternativas: Alternativa[];
-  habilidades: string[];
+  habilidades: Habilidade[];
 }
 
 interface FormData {
@@ -46,12 +51,15 @@ function FormAtividade() {
     { id: crypto.randomUUID(), texto: "", correta: false },
     { id: crypto.randomUUID(), texto: "", correta: false },
   ]);
-  const [habilidades, setHabilidades] = useState<string[]>([]);
-  const [habilidadeInput, setHabilidadeInput] = useState("");
+  const [habilidades, setHabilidades] = useState<Habilidade[]>([]);
+  const [habilidadesSelecionadas, setHabilidadesSelecionadas] = useState<
+    Habilidade[]
+  >([]);
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
   } = useForm<FormData>({
@@ -62,32 +70,70 @@ function FormAtividade() {
       disciplinaId: "",
     },
   });
+  function authFetch(url: string, options: RequestInit = {}) {
+    const token = localStorage.getItem("token");
+
+    return fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(options.headers || {}),
+      },
+    });
+  }
 
   useEffect(() => {
-    setTimeout(() => {
-      setTurmas([
-        { id: "1", nome: "1º Ano A" },
-        { id: "2", nome: "2º Ano B" },
-      ]);
+    const fetchListas = async () => {
+      setLoadingListas(true);
+      try {
+        const [turmasRes, disciplinasRes] = await Promise.all([
+          authFetch("http://localhost:3000/professores/turmas"),
+          authFetch("http://localhost:3000/professores/disciplinas"),
+        ]);
 
-      setDisciplinas([
-        { id: "1", nome: "História" },
-        { id: "2", nome: "Geografia" },
-      ]);
+        const turmasData = await turmasRes.json();
+        const disciplinasData = await disciplinasRes.json();
 
-      setLoadingListas(false);
-    }, 500);
+        setTurmas(turmasData);
+        setDisciplinas(disciplinasData);
+      } catch (err) {
+        toast.error("Erro ao carregar turmas e disciplinas");
+      } finally {
+        setLoadingListas(false);
+      }
+    };
+
+    fetchListas();
   }, []);
 
-  function adicionarHabilidade() {
-    if (!habilidadeInput.trim()) return;
-    setHabilidades((prev) => [...prev, habilidadeInput]);
-    setHabilidadeInput("");
-  }
+  useEffect(() => {
+    const disciplinaId = watch("disciplinaId");
+    if (!disciplinaId) {
+      setHabilidades([]);
+      return;
+    }
 
-  function removerHabilidade(h: string) {
-    setHabilidades((prev) => prev.filter((x) => x !== h));
-  }
+    const fetchHabilidades = async () => {
+      try {
+        const res = await authFetch(
+          `http://localhost:3000/disciplinas/${disciplinaId}/habilidades`
+        );
+        const data = await res.json();
+
+        setHabilidades(
+          data.map((h: any) => ({
+            id: h.id,
+            nome: h.descricao,
+          }))
+        );
+      } catch {
+        toast.error("Erro ao carregar habilidades");
+      }
+    };
+
+    fetchHabilidades();
+  }, [watch("disciplinaId")]);
 
   function atualizarAlternativa(
     id: string,
@@ -95,12 +141,7 @@ function FormAtividade() {
     valor: string | boolean
   ) {
     setAlternativas((prev) =>
-      prev.map((alt) => {
-        if (alt.id === id) {
-          return { ...alt, [campo]: valor };
-        }
-        return alt;
-      })
+      prev.map((alt) => (alt.id === id ? { ...alt, [campo]: valor } : alt))
     );
   }
 
@@ -114,6 +155,22 @@ function FormAtividade() {
   function removerAlternativa(id: string) {
     if (alternativas.length <= 2) return;
     setAlternativas((prev) => prev.filter((alt) => alt.id !== id));
+  }
+
+  function adicionarHabilidadePorSelect(habilidadeId: string) {
+    const habilidade = habilidades.find((h) => h.id === habilidadeId);
+    if (!habilidade) return;
+
+    const jaExiste = habilidadesSelecionadas.some(
+      (h) => h.id === habilidade.id
+    );
+    if (jaExiste) return;
+
+    setHabilidadesSelecionadas((prev) => [...prev, habilidade]);
+  }
+
+  function removerHabilidade(h: Habilidade) {
+    setHabilidadesSelecionadas((prev) => prev.filter((x) => x.id !== h.id));
   }
 
   function adicionarQuestao() {
@@ -140,7 +197,7 @@ function FormAtividade() {
         id: crypto.randomUUID(),
         enunciado,
         alternativas: [...alternativas],
-        habilidades,
+        habilidades: [...habilidadesSelecionadas],
       },
     ]);
 
@@ -151,10 +208,10 @@ function FormAtividade() {
       { id: crypto.randomUUID(), texto: "", correta: false },
       { id: crypto.randomUUID(), texto: "", correta: false },
     ]);
-    setHabilidades([]);
+    setHabilidadesSelecionadas([]);
   }
 
-  function onSubmit(data: FormData) {
+  async function onSubmit(data: FormData) {
     if (questoes.length === 0) {
       toast.error("Adicione pelo menos uma questão");
       return;
@@ -163,22 +220,27 @@ function FormAtividade() {
     const payload = {
       ...data,
       dataCriacao: new Date().toISOString(),
-      questoes,
+      questoes: questoes.map((q) => ({
+        enunciado: q.enunciado,
+        alternativas: q.alternativas.map((a) => ({
+          texto: a.texto,
+          correta: a.correta,
+        })),
+        habilidades: q.habilidades.map((h) => h.id),
+      })),
     };
 
-    console.log("Payload da atividade:", payload);
-    toast.success("Atividade criada com sucesso");
-
-    reset();
-    setQuestoes([]);
-    setEnunciado("");
-    setAlternativas([
-      { id: crypto.randomUUID(), texto: "", correta: false },
-      { id: crypto.randomUUID(), texto: "", correta: false },
-      { id: crypto.randomUUID(), texto: "", correta: false },
-      { id: crypto.randomUUID(), texto: "", correta: false },
-    ]);
-    setHabilidades([]);
+    try {
+      const res = await authFetch("http://localhost:3000/atividades", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Erro ao criar atividade");
+      toast.success("Atividade criada com sucesso!");
+      handleCancelar();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   }
 
   function handleCancelar() {
@@ -191,7 +253,7 @@ function FormAtividade() {
       { id: crypto.randomUUID(), texto: "", correta: false },
       { id: crypto.randomUUID(), texto: "", correta: false },
     ]);
-    setHabilidades([]);
+    setHabilidadesSelecionadas([]);
   }
 
   return (
@@ -246,7 +308,7 @@ function FormAtividade() {
                     Disciplina
                   </label>
                   <select
-                    className="input  w-full  border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base placeholder-gray-500"
+                    className="input w-full border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base placeholder-gray-500"
                     {...register("disciplinaId", {
                       required: "Selecione uma disciplina",
                     })}
@@ -254,8 +316,8 @@ function FormAtividade() {
                   >
                     <option value="">Selecione a disciplina</option>
                     {disciplinas.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.nome}
+                      <option key={d.id_disciplina} value={d.id_disciplina}>
+                        {d.nome_disciplina}
                       </option>
                     ))}
                   </select>
@@ -271,7 +333,7 @@ function FormAtividade() {
                     Turma
                   </label>
                   <select
-                    className="input w-full w-full border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base placeholder-gray-500"
+                    className="input w-full border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base placeholder-gray-500"
                     {...register("turmaId", {
                       required: "Selecione uma turma",
                     })}
@@ -280,7 +342,7 @@ function FormAtividade() {
                     <option value="">Selecione a turma</option>
                     {turmas.map((t) => (
                       <option key={t.id} value={t.id}>
-                        {t.nome}
+                        {t.nome_turma}
                       </option>
                     ))}
                   </select>
@@ -301,7 +363,7 @@ function FormAtividade() {
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Enunciado da questão 
+                Enunciado da questão
               </label>
               <textarea
                 className="input h-24 w-full border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base placeholder-gray-500"
@@ -309,106 +371,95 @@ function FormAtividade() {
                 value={enunciado}
                 onChange={(e) => setEnunciado(e.target.value)}
               />
-
-              <label className="block text-sm font-medium mt-4 mb-2">
-                Alternativas 
-              </label>
-              <div className="space-y-3">
-                {alternativas.map((alternativa, index) => (
-                  <div key={alternativa.id} className="flex items-center gap-3">
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="correta"
-                        checked={alternativa.correta}
-                        onChange={(e) =>
-                          atualizarAlternativa(
-                            alternativa.id,
-                            "correta",
-                            e.target.checked
-                          )
-                        }
-                        className="mr-2 "
-                      />
-                      <span className="font-medium">
-                        {String.fromCharCode(65 + index)}.
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      className="input flex-1"
-                      placeholder={`Alternativa ${String.fromCharCode(
-                        65 + index
-                      )}`}
-                      value={alternativa.texto}
-                      onChange={(e) =>
-                        atualizarAlternativa(
-                          alternativa.id,
-                          "texto",
-                          e.target.value
-                        )
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removerAlternativa(alternativa.id)}
-                      className="text-red-500 hover:text-red-700 px-2 py-1"
-                      disabled={alternativas.length <= 2}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={adicionarAlternativa}
-                className="mt-3 px-4 py-2 border border-[#1D5D7F] text-[#1D5D7F] rounded-lg hover:bg-[#1D5D7F] hover:text-white transition"
-              >
-                + Adicionar Alternativa
-              </button>
             </div>
 
-            <div className="mb-4">
+            <label className="block text-sm font-medium mt-4 mb-2">
+              Alternativas
+            </label>
+            <div className="space-y-3">
+              {alternativas.map((alt, index) => (
+                <div key={alt.id} className="flex items-center gap-3">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      name="correta"
+                      checked={alt.correta}
+                      onChange={(e) =>
+                        atualizarAlternativa(
+                          alt.id,
+                          "correta",
+                          e.target.checked
+                        )
+                      }
+                      className="mr-2 "
+                    />
+                    <span className="font-medium">
+                      {String.fromCharCode(65 + index)}.
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    className="input flex-1"
+                    placeholder={`Alternativa ${String.fromCharCode(
+                      65 + index
+                    )}`}
+                    value={alt.texto}
+                    onChange={(e) =>
+                      atualizarAlternativa(alt.id, "texto", e.target.value)
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removerAlternativa(alt.id)}
+                    className="text-red-500 hover:text-red-700 px-2 py-1"
+                    disabled={alternativas.length <= 2}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={adicionarAlternativa}
+              className="mt-3 px-4 py-2 border border-[#1D5D7F] text-[#1D5D7F] rounded-lg hover:bg-[#1D5D7F] hover:text-white transition"
+            >
+              + Adicionar Alternativa
+            </button>
+
+            <div className="mb-4 mt-4">
               <label className="block text-sm font-medium mb-2">
                 Habilidades/Competências
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {habilidades.map((h) => (
+                {habilidadesSelecionadas.map((h) => (
                   <span
-                    key={h}
+                    key={h.id}
                     className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm cursor-pointer flex items-center gap-1"
                     onClick={() => removerHabilidade(h)}
                   >
-                    {h} <span className="text-red-500">✕</span>
+                    {h.nome} <span className="text-red-500">✕</span>
                   </span>
                 ))}
               </div>
 
-              <div className="flex gap-2">
-                <input
-                  className="input flex-1 w-full border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base placeholder-gray-500"
-                  placeholder=" Ex: Análise Crítica, Pesquisa Histórica"
-                  value={habilidadeInput}
-                  onChange={(e) => setHabilidadeInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      adicionarHabilidade();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-[#1D5D7F] text-white rounded-lg"
-                  onClick={adicionarHabilidade}
-                >
-                  +
-                </button>
-              </div>
+              {/* SELECT */}
+              <select
+                className="input w-full border border-gray-200 rounded-lg bg-blue-50"
+                onChange={(e) => {
+                  adicionarHabilidadePorSelect(e.target.value);
+                  e.target.value = "";
+                }}
+              >
+                <option value="">Selecionar habilidade</option>
+                {habilidades.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.nome}
+                  </option>
+                ))}
+              </select>
             </div>
-
             <button
               type="button"
               className="w-full px-4 py-3 bg-[#1D5D7F] text-white rounded-lg font-medium"
@@ -451,7 +502,7 @@ function FormAtividade() {
                                 : "bg-gray-100"
                             }`}
                           >
-                            {String.fromCharCode(65 + idx)}. {alt.texto}
+                            {String.fromCharCode(65 + idx)}. {alt.texto}{" "}
                             {alt.correta && <span className="ml-2">✓</span>}
                           </span>
                         </div>
@@ -461,10 +512,10 @@ function FormAtividade() {
                     <div className="flex gap-2 mt-3">
                       {q.habilidades.map((h) => (
                         <span
-                          key={h}
+                          key={h.id}
                           className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
                         >
-                          {h}
+                          {h.nome}
                         </span>
                       ))}
                     </div>

@@ -22,16 +22,15 @@ export class Turma {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-
-  @ManyToMany(() => Atividade, atividade => atividade.turmas)
+  @ManyToMany(() => Atividade, (atividade) => atividade.turmas)
   atividades: Atividade[];
 
   // 🔗 Aluno pertence a UMA turma
-  @OneToMany(() => Aluno, aluno => aluno.turma)
+  @OneToMany(() => Aluno, (aluno) => aluno.turma)
   alunos: Aluno[];
 
   // 📚 Turma pode ter várias disciplinas
-  @ManyToMany(() => Disciplina, disciplina => disciplina.turmas)
+  @ManyToMany(() => Disciplina, (disciplina) => disciplina.turmas)
   @JoinTable({
     name: 'turma_disciplinas',
     joinColumn: { name: 'turma_id', referencedColumnName: 'id' },
@@ -43,11 +42,11 @@ export class Turma {
   disciplinas: Disciplina[];
 
   // 📢 Avisos da turma
-  @OneToMany(() => Aviso, aviso => aviso.turma)
+  @OneToMany(() => Aviso, (aviso) => aviso.turma)
   avisos: Aviso[];
 
   // 👨‍🏫 Professor responsável (opcional)
-  @ManyToOne(() => Professor, professor => professor.turmas, {
+  @ManyToOne(() => Professor, (professor) => professor.turmas, {
     nullable: true,
     onDelete: 'SET NULL',
   })

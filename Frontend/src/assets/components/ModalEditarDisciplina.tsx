@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { toast } from "react-toastify";
-import { FaPlus, FaTrash, FaBook } from "react-icons/fa";
+import { FaPlus, FaTrash } from "react-icons/fa";
 import { Input } from "./Input";
 
 interface Turma {
@@ -56,6 +56,10 @@ export default function ModalEditarDisciplina({
   const token = localStorage.getItem("token");
   const habilidades = watch("habilidades") || [];
 
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [professores, setProfessores] = useState<Professor[]>([]);
+  const [loading, setLoading] = useState({ turmas: false, professores: false });
+
   useEffect(() => {
     if (!aberto) return;
 
@@ -71,7 +75,40 @@ export default function ModalEditarDisciplina({
           descricao: h.descricao,
         })) || [],
     });
+
+    fetchTurmas();
+    fetchProfessores();
   }, [aberto, disciplina, reset]);
+
+  async function fetchTurmas() {
+    try {
+      setLoading((prev) => ({ ...prev, turmas: true }));
+      const res = await fetch("http://localhost:3000/turmas", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      setTurmas(await res.json());
+    } catch {
+      toast.error("Erro ao carregar lista de turmas");
+    } finally {
+      setLoading((prev) => ({ ...prev, turmas: false }));
+    }
+  }
+
+  async function fetchProfessores() {
+    try {
+      setLoading((prev) => ({ ...prev, professores: true }));
+      const res = await fetch("http://localhost:3000/professores", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      setProfessores(await res.json());
+    } catch {
+      toast.error("Erro ao carregar lista de professores");
+    } finally {
+      setLoading((prev) => ({ ...prev, professores: false }));
+    }
+  }
 
   function adicionarHabilidade() {
     setValue("habilidades", [...habilidades, { nome: "", descricao: "" }]);
@@ -93,9 +130,7 @@ export default function ModalEditarDisciplina({
         `http://localhost:3000/disciplinas/habilidades/${habilidade.id}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -189,9 +224,7 @@ export default function ModalEditarDisciplina({
         `http://localhost:3000/disciplinas/${disciplina.id_disciplina}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -214,7 +247,6 @@ export default function ModalEditarDisciplina({
         <div className="flex justify-between mb-4">
           <div>
             <h2 className="text-xl font-bold">Editar Disciplina</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600"></div>
           </div>
           <button onClick={onClose}>✕</button>
         </div>
@@ -230,13 +262,72 @@ export default function ModalEditarDisciplina({
                 {...register("nome_disciplina", { required: true })}
                 placeholder="Nome"
               />
+
+              <Input
+                label={""}
+                type="number"
+                {...register("cargaHoraria", { required: true })}
+              />
             </div>
 
-            <Input
-              label={""}
-              type="number"
-              {...register("cargaHoraria", { required: true })}
-            />
+            <div>
+              <span className="block text-sm mb-1 font-medium">Turmas</span>
+              {turmas.map((t) => {
+                const checked = watch("turmasIds")?.includes(t.id) || false;
+                return (
+                  <label key={t.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      value={t.id}
+                      checked={checked}
+                      onChange={(e) => {
+                        const current = watch("turmasIds") || [];
+                        if (e.target.checked) {
+                          setValue("turmasIds", [...current, t.id]);
+                        } else {
+                          setValue(
+                            "turmasIds",
+                            current.filter((id) => id !== t.id)
+                          );
+                        }
+                      }}
+                    />
+                    {t.nome_turma}
+                  </label>
+                );
+              })}
+            </div>
+
+            <div>
+              <span className="block text-sm mb-1 font-medium">
+                Professores
+              </span>
+              {professores.map((p) => {
+                const checked =
+                  watch("professoresIds")?.includes(p.id) || false;
+                return (
+                  <label key={p.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      value={p.id}
+                      checked={checked}
+                      onChange={(e) => {
+                        const current = watch("professoresIds") || [];
+                        if (e.target.checked) {
+                          setValue("professoresIds", [...current, p.id]);
+                        } else {
+                          setValue(
+                            "professoresIds",
+                            current.filter((id) => id !== p.id)
+                          );
+                        }
+                      }}
+                    />
+                    {p.usuario.nome}
+                  </label>
+                );
+              })}
+            </div>
 
             <div>
               <div className="flex justify-between mb-2">

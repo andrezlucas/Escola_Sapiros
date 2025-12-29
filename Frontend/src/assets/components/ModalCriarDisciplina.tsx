@@ -200,6 +200,36 @@ export default function ModalCriarDisciplina({
             </div>
 
             <div>
+              <label className="block text-sm mb-1">Turmas</label>
+              <select
+                multiple
+                {...register("turmasIds")}
+                className="w-full border rounded p-2"
+              >
+                {turmas.map((turma) => (
+                  <option key={turma.id} value={turma.id}>
+                    {turma.nome_turma}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm mb-1">Professores</label>
+              <select
+                multiple
+                {...register("professoresIds")}
+                className="w-full border rounded p-2"
+              >
+                {professores.map((prof) => (
+                  <option key={prof.id} value={prof.id}>
+                    {prof.usuario.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm mb-1">Habilidades</label>
 
               <div className="flex flex-wrap gap-2 mb-2">

@@ -166,11 +166,11 @@ export class ProfessorService {
     async findTurmas(professorId: string) {
     return this.turmaRepository
       .createQueryBuilder('turma')
-      .innerJoin('turma.professores', 'professor', 'professor.id = :id', {
+      .innerJoin('turma.professor', 'professor', 'professor.id = :id', {
         id: professorId,
       })
-      .select(['turma.id', 'turma.nome'])
-      .orderBy('turma.nome', 'ASC')
+      .select(['turma.id', 'turma.nome_turma'])
+      .orderBy('turma.nome_turma', 'ASC')
       .getMany();
   }
 
@@ -183,8 +183,8 @@ export class ProfessorService {
         'professor.id = :id',
         { id: professorId },
       )
-      .select(['disciplina.id_disciplina', 'disciplina.nome'])
-      .orderBy('disciplina.nome', 'ASC')
+      .select(['disciplina.id_disciplina', 'disciplina.nome_disciplina'])
+      .orderBy('disciplina.nome_disciplina', 'ASC')
       .getMany();
   }
 }
