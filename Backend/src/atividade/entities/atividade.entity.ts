@@ -13,7 +13,6 @@ import {
 } from 'typeorm';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Turma } from '../../turma/entities/turma.entity';
-import { Habilidade } from '../../disciplina/entities/habilidade.entity';
 import { Questao } from './questao.entity';
 import { Professor } from '../../professor/entities/professor.entity';
 
@@ -61,16 +60,10 @@ export class Atividade {
   })
   turmas: Turma[];
 
-  @OneToMany(() => Questao, questao => questao.atividade, { cascade: true })
-  questoes: Questao[];
-
-  @ManyToMany(() => Habilidade)
-  @JoinTable({
-    name: 'atividades_habilidades',
-    joinColumn: { name: 'atividade_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'habilidade_id' },
+  @OneToMany(() => Questao, questao => questao.atividade, {
+    cascade: true,
   })
-  habilidades: Habilidade[];
+  questoes: Questao[];
 
   @CreateDateColumn({ name: 'criado_em' })
   criadoem: Date;
@@ -78,6 +71,5 @@ export class Atividade {
   @UpdateDateColumn({ name: 'atualizado_em' })
   atualizadoem: Date;
 }
-
 
 

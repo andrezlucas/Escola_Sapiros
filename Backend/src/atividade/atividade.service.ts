@@ -20,17 +20,22 @@ import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 export class AtividadeService {
   constructor(
     @InjectRepository(Atividade)
-    private atividadeRepository: Repository<Atividade>,
+    private readonly atividadeRepository: Repository<Atividade>,
+
     @InjectRepository(Questao)
-    private questaoRepository: Repository<Questao>,
+    private readonly questaoRepository: Repository<Questao>,
+
     @InjectRepository(Alternativa)
-    private alternativaRepository: Repository<Alternativa>,
+    private readonly alternativaRepository: Repository<Alternativa>,
+
     @InjectRepository(Disciplina)
-    private disciplinaRepository: Repository<Disciplina>,
+    private readonly disciplinaRepository: Repository<Disciplina>,
+
     @InjectRepository(Turma)
-    private turmaRepository: Repository<Turma>,
+    private readonly turmaRepository: Repository<Turma>,
+
     @InjectRepository(Habilidade)
-    private habilidadeRepository: Repository<Habilidade>,
+    private readonly habilidadeRepository: Repository<Habilidade>,
   ) {}
 
   async create(dto: CreateAtividadeDto, professorId: string) {
@@ -53,14 +58,10 @@ export class AtividadeService {
     });
 
     if (turmas.length !== dto.turmaIds.length) {
-      throw new ForbiddenException('Uma ou mais turmas não pertencem ao professor');
+      throw new ForbiddenException(
+        'Uma ou mais turmas não pertencem ao professor',
+      );
     }
-
-    const habilidades = dto.habilidadesIds?.length
-      ? await this.habilidadeRepository.find({
-          where: { id: In(dto.habilidadesIds) },
-        })
-      : [];
 
     const atividade = this.atividadeRepository.create({
       titulo: dto.titulo,
@@ -70,31 +71,39 @@ export class AtividadeService {
       ativa: dto.ativa ?? true,
       disciplina,
       turmas,
-      habilidades,
     });
 
     const atividadeSalva = await this.atividadeRepository.save(atividade);
 
     for (const questaoDto of dto.questoes) {
+      const habilidades = questaoDto.habilidadesIds?.length
+        ? await this.habilidadeRepository.find({
+            where: { id: In(questaoDto.habilidadesIds) },
+          })
+        : [];
+
       const questao = this.questaoRepository.create({
         enunciado: questaoDto.enunciado,
-        valor: questaoDto.valor,
         tipo: questaoDto.tipo,
+        valor: questaoDto.valor,
         atividade: atividadeSalva,
+        habilidades,
       });
 
       const questaoSalva = await this.questaoRepository.save(questao);
 
-      const alternativas = questaoDto.alternativas.map((alt, index) =>
-        this.alternativaRepository.create({
-          texto: alt.texto,
-          correta: alt.correta,
-          letra: alt.letra ?? String.fromCharCode(65 + index),
-          questao: questaoSalva,
-        }),
-      );
+      if (questaoDto.alternativas?.length) {
+        const alternativas = questaoDto.alternativas.map((alt, index) =>
+          this.alternativaRepository.create({
+            texto: alt.texto,
+            correta: alt.correta,
+            letra: alt.letra ?? String.fromCharCode(65 + index),
+            questao: questaoSalva,
+          }),
+        );
 
-      await this.alternativaRepository.save(alternativas);
+        await this.alternativaRepository.save(alternativas);
+      }
     }
 
     return this.findOne(atividadeSalva.id);
@@ -104,11 +113,11 @@ export class AtividadeService {
     const atividade = await this.atividadeRepository.findOne({
       where: { id },
       relations: [
-        'questoes',
-        'questoes.alternativas',
         'disciplina',
         'turmas',
-        'habilidades',
+        'questoes',
+        'questoes.alternativas',
+        'questoes.habilidades',
       ],
     });
 
@@ -122,9 +131,13 @@ export class AtividadeService {
   async findByTurma(turmaId: string) {
     return this.atividadeRepository
       .createQueryBuilder('atividade')
-      .innerJoin('atividade.turmas', 'turma', 'turma.id = :turmaId', { turmaId })
+      .innerJoin('atividade.turmas', 'turma', 'turma.id = :turmaId', {
+        turmaId,
+      })
       .leftJoinAndSelect('atividade.disciplina', 'disciplina')
       .leftJoinAndSelect('atividade.questoes', 'questoes')
+      .leftJoinAndSelect('questoes.alternativas', 'alternativas')
+      .leftJoinAndSelect('questoes.habilidades', 'habilidades')
       .orderBy('atividade.dataEntrega', 'ASC')
       .getMany();
   }
@@ -138,6 +151,6 @@ export class AtividadeService {
   async remove(id: string) {
     const atividade = await this.findOne(id);
     await this.atividadeRepository.remove(atividade);
-    return { message: 'Atividade removida' };
+    return { message: 'Atividade removida com sucesso' };
   }
 }
