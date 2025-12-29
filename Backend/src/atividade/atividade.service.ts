@@ -12,6 +12,10 @@ import { Alternativa } from './entities/alternativa.entity';
 import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Turma } from '../turma/entities/turma.entity';
 import { Habilidade } from '../disciplina/entities/habilidade.entity';
+import { Aluno } from '../aluno/entities/aluno.entity';
+import { Entrega } from './entities/entrega.entity';
+import { RespostaQuestao } from './entities/resposta-questao.entity';
+import { CriarEntregaDto } from './dto/criar-entrega.dto';
 
 import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
@@ -158,4 +162,121 @@ export class AtividadeService {
     await this.atividadeRepository.remove(atividade);
     return { message: 'Atividade removida com sucesso' };
   }
+  async responderAtividade(dto: CriarEntregaDto, usuarioId: string) {
+  const aluno = await this.dataSource.getRepository(Aluno).findOne({
+    where: { usuario: { id: usuarioId } },
+    relations: ['turma'],
+  });
+
+  if (!aluno) {
+    throw new ForbiddenException('Usuário não é um aluno cadastrado');
+  }
+
+  const atividade = await this.atividadeRepository.findOne({
+    where: { id: dto.atividadeId },
+    relations: ['questoes', 'questoes.alternativas', 'turmas'],
+  });
+
+  if (!atividade) {
+    throw new NotFoundException('Atividade não encontrada');
+  }
+
+  const alunoNaTurma = atividade.turmas.some(t => t.id === aluno.turma?.id);
+  if (!alunoNaTurma) {
+    throw new ForbiddenException('Você não tem permissão para responder esta atividade');
+  }
+
+  const entregaExistente = await this.dataSource.getRepository(Entrega).findOne({
+    where: { aluno: { id: aluno.id }, atividade: { id: atividade.id } }
+  });
+  if (entregaExistente) {
+    throw new ForbiddenException('Atividade já respondida anteriormente');
+  }
+
+  return this.dataSource.transaction(async (manager) => {
+    const entrega = manager.create(Entrega, {
+      aluno,
+      atividade,
+      notaFinal: 0,
+    });
+
+    const entregaSalva = await manager.save(entrega);
+    let notaAcumulada = 0;
+
+    for (const respDto of dto.respostas) {
+      const questao = atividade.questoes.find(q => q.id === respDto.questaoId);
+      if (!questao) continue;
+
+      let notaQuestao = 0;
+
+      if (questao.tipo === 'MULTIPLA_ESCOLHA' && respDto.alternativaId) {
+        const correta = questao.alternativas.find(a => a.correta);
+        if (correta && correta.id === respDto.alternativaId) {
+          notaQuestao = Number(questao.valor);
+        }
+      }
+
+      const resposta = manager.create(RespostaQuestao, {
+        entrega: entregaSalva,
+        questao,
+        alternativaEscolhida: respDto.alternativaId ? { id: respDto.alternativaId } : undefined,
+        textoResposta: respDto.textoResposta,
+        notaAtribuida: notaQuestao,
+      });
+
+      await manager.save(resposta);
+      notaAcumulada += notaQuestao;
+    }
+
+    entregaSalva.notaFinal = notaAcumulada;
+    return await manager.save(entregaSalva);
+  });
+  
+  
 }
+async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
+    const atividade = await this.atividadeRepository.findOne({
+      where: { id: atividadeId, professor: { id: professorId } }
+    });
+
+    if (!atividade) {
+      throw new ForbiddenException('Atividade não encontrada ou não pertence a este professor');
+    }
+
+    return this.dataSource.getRepository(Entrega).find({
+      where: { atividade: { id: atividadeId } },
+      relations: ['aluno', 'aluno.usuario', 'respostas', 'respostas.questao'],
+      order: { dataEntrega: 'DESC' }
+    });
+  }
+
+  async corrigirQuestaoDissertativa(entregaId: string, respostaId: string, nota: number, professorId: string) {
+    const entrega = await this.dataSource.getRepository(Entrega).findOne({
+      where: { id: entregaId, atividade: { professor: { id: professorId } } },
+      relations: ['respostas']
+    });
+
+    if (!entrega) {
+      throw new ForbiddenException('Entrega não encontrada ou sem permissão de acesso');
+    }
+
+    const resposta = entrega.respostas.find(r => r.id === respostaId);
+    if (!resposta) {
+      throw new NotFoundException('Resposta não encontrada nesta entrega');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      resposta.notaAtribuida = nota;
+      await manager.save(resposta);
+
+      const todasRespostas = await manager.find(RespostaQuestao, {
+        where: { entrega: { id: entregaId } }
+      });
+
+      const novaNotaFinal = todasRespostas.reduce((acc, curr) => acc + Number(curr.notaAtribuida), 0);
+      
+      await manager.update(Entrega, entregaId, { notaFinal: novaNotaFinal });
+
+      return { message: 'Nota atualizada com sucesso', notaFinal: novaNotaFinal };
+    });
+  }}

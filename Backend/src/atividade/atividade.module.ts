@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Res } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Atividade } from './entities/atividade.entity';
@@ -10,6 +10,8 @@ import { Habilidade } from '../disciplina/entities/habilidade.entity';
 
 import { AtividadeService } from './atividade.service';
 import { AtividadeController } from './atividade.controller';
+import { Entrega } from './entities/entrega.entity';
+import { RespostaQuestao } from './entities/resposta-questao.entity';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { AtividadeController } from './atividade.controller';
       Questao,
       Alternativa,
       Disciplina,
+      Entrega,
+      RespostaQuestao,
       Turma,
       Habilidade,
     ]),

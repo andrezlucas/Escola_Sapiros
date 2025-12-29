@@ -14,6 +14,7 @@ import {
 import { AtividadeService } from './atividade.service';
 import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
+import { CriarEntregaDto } from './dto/criar-entrega.dto';
 
 import { Roles } from '../auth/roles/roles.decorator';
 import { RolesGuard } from '../auth/roles/roles.guard';
@@ -54,5 +55,30 @@ export class AtividadeController {
   @Roles(Role.PROFESSOR)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.atividadeService.remove(id);
+  }
+
+@Post('responder')
+@Roles(Role.ALUNO)
+responder(@Body() dto: CriarEntregaDto, @Req() req) {
+  return this.atividadeService.responderAtividade(dto, req.user.id);
+}
+@Get(':id/entregas')
+  @Roles(Role.PROFESSOR)
+  listarEntregas(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req
+  ) {
+    return this.atividadeService.listarEntregasPorAtividade(id, req.user.id);
+  }
+
+  @Put('entrega/:entregaId/resposta/:respostaId/corrigir')
+  @Roles(Role.PROFESSOR)
+  corrigirQuestao(
+    @Param('entregaId', ParseUUIDPipe) entregaId: string,
+    @Param('respostaId', ParseUUIDPipe) respostaId: string,
+    @Body('nota') nota: number,
+    @Req() req
+  ) {
+    return this.atividadeService.corrigirQuestaoDissertativa(entregaId, respostaId, nota, req.user.id);
   }
 }
