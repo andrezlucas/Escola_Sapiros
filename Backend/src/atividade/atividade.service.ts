@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 
 import { Atividade } from './entities/atividade.entity';
 import { Questao } from './entities/questao.entity';
@@ -21,21 +21,17 @@ export class AtividadeService {
   constructor(
     @InjectRepository(Atividade)
     private readonly atividadeRepository: Repository<Atividade>,
-
     @InjectRepository(Questao)
     private readonly questaoRepository: Repository<Questao>,
-
     @InjectRepository(Alternativa)
     private readonly alternativaRepository: Repository<Alternativa>,
-
     @InjectRepository(Disciplina)
     private readonly disciplinaRepository: Repository<Disciplina>,
-
     @InjectRepository(Turma)
     private readonly turmaRepository: Repository<Turma>,
-
     @InjectRepository(Habilidade)
     private readonly habilidadeRepository: Repository<Habilidade>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(dto: CreateAtividadeDto, professorId: string) {
@@ -58,55 +54,66 @@ export class AtividadeService {
     });
 
     if (turmas.length !== dto.turmaIds.length) {
-      throw new ForbiddenException(
-        'Uma ou mais turmas não pertencem ao professor',
-      );
+      throw new ForbiddenException('Uma ou mais turmas não pertencem ao professor');
     }
 
-    const atividade = this.atividadeRepository.create({
-      titulo: dto.titulo,
-      descricao: dto.descricao,
-      dataEntrega: new Date(dto.dataEntrega),
-      valor: dto.valor,
-      ativa: dto.ativa ?? true,
-      disciplina,
-      turmas,
-    });
-
-    const atividadeSalva = await this.atividadeRepository.save(atividade);
-
-    for (const questaoDto of dto.questoes) {
-      const habilidades = questaoDto.habilidadesIds?.length
-        ? await this.habilidadeRepository.find({
-            where: { id: In(questaoDto.habilidadesIds) },
-          })
-        : [];
-
-      const questao = this.questaoRepository.create({
-        enunciado: questaoDto.enunciado,
-        tipo: questaoDto.tipo,
-        valor: questaoDto.valor,
-        atividade: atividadeSalva,
-        habilidades,
+    return this.dataSource.transaction(async (manager) => {
+      const atividade = manager.create(Atividade, {
+        titulo: dto.titulo,
+        descricao: dto.descricao,
+        dataEntrega: new Date(dto.dataEntrega),
+        valor: dto.valor,
+        ativa: dto.ativa ?? true,
+        disciplina,
+        turmas,
+        professor: { id: professorId },
       });
 
-      const questaoSalva = await this.questaoRepository.save(questao);
+      const atividadeSalva = await manager.save(atividade);
 
-      if (questaoDto.alternativas?.length) {
-        const alternativas = questaoDto.alternativas.map((alt, index) =>
-          this.alternativaRepository.create({
-            texto: alt.texto,
-            correta: alt.correta,
-            letra: alt.letra ?? String.fromCharCode(65 + index),
-            questao: questaoSalva,
-          }),
-        );
+      if (dto.questoes?.length) {
+        for (const questaoDto of dto.questoes) {
+          const habilidades = questaoDto.habilidadesIds?.length
+            ? await manager.find(Habilidade, {
+                where: { id: In(questaoDto.habilidadesIds) },
+              })
+            : [];
 
-        await this.alternativaRepository.save(alternativas);
+          const questao = manager.create(Questao, {
+            enunciado: questaoDto.enunciado,
+            tipo: questaoDto.tipo,
+            valor: questaoDto.valor,
+            atividade: atividadeSalva,
+            habilidades,
+          });
+
+          const questaoSalva = await manager.save(questao);
+
+          if (questaoDto.tipo !== 'DISSERTATIVA' && questaoDto.alternativas?.length) {
+            const alternativas = questaoDto.alternativas.map((alt, index) =>
+              manager.create(Alternativa, {
+                texto: alt.texto,
+                correta: alt.correta,
+                letra: alt.letra ?? String.fromCharCode(65 + index),
+                questao: questaoSalva,
+              }),
+            );
+            await manager.save(alternativas);
+          }
+        }
       }
-    }
 
-    return this.findOne(atividadeSalva.id);
+      return manager.findOne(Atividade, {
+        where: { id: atividadeSalva.id },
+        relations: [
+          'disciplina',
+          'turmas',
+          'questoes',
+          'questoes.alternativas',
+          'questoes.habilidades',
+        ],
+      });
+    });
   }
 
   async findOne(id: string) {
@@ -131,9 +138,7 @@ export class AtividadeService {
   async findByTurma(turmaId: string) {
     return this.atividadeRepository
       .createQueryBuilder('atividade')
-      .innerJoin('atividade.turmas', 'turma', 'turma.id = :turmaId', {
-        turmaId,
-      })
+      .innerJoin('atividade.turmas', 'turma', 'turma.id = :turmaId', { turmaId })
       .leftJoinAndSelect('atividade.disciplina', 'disciplina')
       .leftJoinAndSelect('atividade.questoes', 'questoes')
       .leftJoinAndSelect('questoes.alternativas', 'alternativas')

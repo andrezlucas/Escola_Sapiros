@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   IsUUID,
   Min,
@@ -27,11 +28,12 @@ export class CreateQuestaoDto {
 
   @IsArray()
   @IsUUID(undefined, { each: true })
-  @IsNotEmpty()
-  habilidadesIds: string[];
+  @IsOptional()
+  habilidadesIds?: string[];
 
   @IsArray()
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CreateAlternativaDto)
-  alternativas: CreateAlternativaDto[];
+  alternativas?: CreateAlternativaDto[];
 }

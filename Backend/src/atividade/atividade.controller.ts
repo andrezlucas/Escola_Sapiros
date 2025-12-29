@@ -18,9 +18,10 @@ import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 import { Roles } from '../auth/roles/roles.decorator';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Role } from '../usuario/entities/usuario.entity';
+import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 
 @Controller('atividades')
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard) // O JwtAuthGuard PRECISA vir primeiro para preencher o req.user
 export class AtividadeController {
   constructor(private readonly atividadeService: AtividadeService) {}
 
