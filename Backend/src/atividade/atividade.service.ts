@@ -139,17 +139,19 @@ export class AtividadeService {
     return atividade;
   }
 
-  async findByTurma(turmaId: string) {
-    return this.atividadeRepository
-      .createQueryBuilder('atividade')
-      .innerJoin('atividade.turmas', 'turma', 'turma.id = :turmaId', { turmaId })
-      .leftJoinAndSelect('atividade.disciplina', 'disciplina')
-      .leftJoinAndSelect('atividade.questoes', 'questoes')
-      .leftJoinAndSelect('questoes.alternativas', 'alternativas')
-      .leftJoinAndSelect('questoes.habilidades', 'habilidades')
-      .orderBy('atividade.dataEntrega', 'ASC')
-      .getMany();
-  }
+ async findByTurma(turmaId: string) {
+  return this.atividadeRepository
+    .createQueryBuilder('atividade')
+    .innerJoin('atividade.turmas', 'turma')
+    .where('turma.id = :turmaId', { turmaId })
+    .leftJoinAndSelect('atividade.disciplina', 'disciplina')
+    .leftJoinAndSelect('atividade.questoes', 'questoes')
+    .leftJoinAndSelect('questoes.alternativas', 'alternativas')
+    .leftJoinAndSelect('questoes.habilidades', 'habilidades')
+    .andWhere('atividade.ativa = :ativa', { ativa: true })
+    .orderBy('atividade.dataEntrega', 'ASC')
+    .getMany();
+}
 
   async update(id: string, dto: UpdateAtividadeDto) {
     const atividade = await this.findOne(id);
@@ -293,36 +295,41 @@ async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
 
     
   }
-  async listarStatusPorAluno(usuarioId: string) {
-    const aluno = await this.dataSource.getRepository(Aluno).findOne({
-      where: { usuario: { id: usuarioId } },
-      relations: ['turma'],
-    });
+async listarStatusPorAluno(usuarioId: string) {
+  const aluno = await this.buscarTurmaDoAluno(usuarioId);
 
-    if (!aluno || !aluno.turma) {
-      throw new ForbiddenException('Aluno não vinculado a uma turma');
-    }
-
-    const atividades = await this.findByTurma(aluno.turma.id);
-
-    const entregas = await this.dataSource.getRepository(Entrega).find({
-      where: { aluno: { id: aluno.id } },
-      relations: ['atividade'],
-    });
-
-    const idsRespondidos = entregas.map(e => e.atividade.id);
-
-    return atividades.map(atividade => {
-      const entrega = entregas.find(e => e.atividade.id === atividade.id);
-      return {
-        id: atividade.id,
-        titulo: atividade.titulo,
-        disciplina: atividade.disciplina.nome_disciplina,
-        descricao: atividade.descricao,
-        dataEntrega: atividade.dataEntrega,
-        status: entrega ? 'Entregue' : 'Pendente',
-        nota: entrega ? entrega.notaFinal : null
-      };
-    });
+  if (!aluno.turma) {
+    throw new ForbiddenException('Aluno não vinculado a uma turma');
   }
+
+  const atividades = await this.findByTurma(aluno.turma.id);
+
+  const entregas = await this.dataSource.getRepository(Entrega).find({
+    where: { aluno: { id: aluno.id } },
+    relations: ['atividade'],
+  });
+
+  const idsRespondidos = entregas.map(e => e.atividade.id);
+
+  return atividades.map(atividade => {
+    const entrega = entregas.find(e => e.atividade.id === atividade.id);
+    return {
+      id: atividade.id,
+      titulo: atividade.titulo,
+      disciplina: atividade.disciplina.nome_disciplina,
+      descricao: atividade.descricao,
+      dataEntrega: atividade.dataEntrega,
+      status: entrega ? 'Entregue' : 'Pendente',
+      nota: entrega ? entrega.notaFinal : null
+    };
+  });
+}
+async buscarTurmaDoAluno(usuarioId: string) {
+  const aluno = await this.dataSource.getRepository(Aluno).findOne({
+    where: { usuario: { id: usuarioId } },
+    relations: ['turma'],
+  });
+  if (!aluno) throw new NotFoundException('Aluno não encontrado');
+  return aluno;
+}
 }

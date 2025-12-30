@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Req,
   Patch,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { AtividadeService } from './atividade.service';
@@ -39,7 +40,18 @@ export class AtividadeController {
   }
 
   @Get('turma/:turmaId')
-  findByTurma(@Param('turmaId', ParseUUIDPipe) turmaId: string) {
+  @Roles(Role.ALUNO, Role.PROFESSOR)
+  async findByTurma(
+    @Param('turmaId', ParseUUIDPipe) turmaId: string, 
+    @Req() req
+  ) {
+    if (req.user.role === Role.ALUNO) {
+      const aluno = await this.atividadeService.buscarTurmaDoAluno(req.user.id);
+      if (aluno.turma?.id !== turmaId) {
+        throw new ForbiddenException('Você só pode visualizar atividades da sua própria turma');
+      }
+    }
+    
     return this.atividadeService.findByTurma(turmaId);
   }
 
