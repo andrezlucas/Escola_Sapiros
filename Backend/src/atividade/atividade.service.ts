@@ -156,6 +156,17 @@ export class AtividadeService {
     Object.assign(atividade, dto);
     return this.atividadeRepository.save(atividade);
   }
+  async partialUpdate(id: string, dto: UpdateAtividadeDto) {
+    const atividade = await this.atividadeRepository.findOne({ where: { id } });
+    if (!atividade) {
+      throw new NotFoundException('Atividade não encontrada');
+    }
+    const atividadeAtualizada = this.atividadeRepository.merge(atividade, dto);
+    if (dto.dataEntrega) {
+      atividadeAtualizada.dataEntrega = new Date(dto.dataEntrega);
+    }
+    return await this.atividadeRepository.save(atividadeAtualizada);
+  }
 
   async remove(id: string) {
     const atividade = await this.findOne(id);

@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseUUIDPipe,
   Req,
+  Patch,
 } from '@nestjs/common';
 
 import { AtividadeService } from './atividade.service';
@@ -49,6 +50,14 @@ export class AtividadeController {
     @Body() dto: UpdateAtividadeDto,
   ) {
     return this.atividadeService.update(id, dto);
+  }
+  @Patch(':id')
+  @Roles(Role.PROFESSOR)
+  partialUpdate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateAtividadeDto,
+  ) {
+    return this.atividadeService.partialUpdate(id, dto);
   }
 
   @Delete(':id')
