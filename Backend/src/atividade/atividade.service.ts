@@ -258,7 +258,7 @@ async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
 
     return this.dataSource.getRepository(Entrega).find({
       where: { atividade: { id: atividadeId } },
-      relations: ['aluno', 'aluno.usuario', 'respostas', 'respostas.questao'],
+      relations: ['aluno', 'aluno.usuario', 'respostas', 'respostas.questao','respostas.questao.alternativas', 'respostas.alternativaEscolhida'],
       order: { dataEntrega: 'DESC' }
     });
   }

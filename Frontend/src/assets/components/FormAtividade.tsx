@@ -41,7 +41,12 @@ interface FormData {
   dataEntrega: string;
 }
 
-function FormAtividade({ atividadeId }: { atividadeId?: string }) {
+interface FormAtividadeProps {
+  atividadeId?: string;
+  onSubmitCallback?: (atividadeAtualizada: any) => void;
+}
+
+function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [questoes, setQuestoes] = useState<Questao[]>([]);
@@ -284,7 +289,7 @@ function FormAtividade({ atividadeId }: { atividadeId?: string }) {
     const payload = {
       titulo: data.titulo,
       descricao: data.descricao,
-      dataEntrega: data.dataEntrega,
+      dataEntrega: data.dataEntrega + "T00:00",
       disciplinaId: data.disciplinaId,
       turmaIds: [data.turmaId],
       questoes: questoes.map((q) => ({
@@ -315,7 +320,8 @@ function FormAtividade({ atividadeId }: { atividadeId?: string }) {
       });
 
       if (!res.ok) throw new Error("Erro ao salvar atividade");
-
+      const dataAtualizada = await res.json();
+      if (onSubmitCallback) onSubmitCallback(dataAtualizada);
       toast.success(
         atividadeId
           ? "Atividade atualizada com sucesso!"

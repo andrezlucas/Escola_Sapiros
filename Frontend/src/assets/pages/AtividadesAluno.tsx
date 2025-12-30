@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ResponderAtividade from "./ResponderAtividade";
+import { toast } from "react-toastify";
 
 interface AtividadeAluno {
   id: string;
@@ -38,7 +39,7 @@ function MinhasAtividades() {
         setAtividades(normalizado);
       })
       .catch(() => {
-        alert("Erro ao carregar atividades");
+        toast.error("Erro ao carregar atividades");
       });
   }, [turmaId]);
 

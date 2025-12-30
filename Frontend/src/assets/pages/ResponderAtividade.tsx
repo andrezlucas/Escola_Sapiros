@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 interface Props {
   atividadeId: string;
   onClose: () => void;
+  onRespostaEnviada?: (entrega: any) => void;
 }
 
 interface Alternativa {
@@ -33,7 +33,11 @@ interface RespostaAluno {
   textoResposta?: string;
 }
 
-export default function ResponderAtividade({ atividadeId, onClose }: Props) {
+export default function ResponderAtividade({
+  atividadeId,
+  onClose,
+  onRespostaEnviada,
+}: Props) {
   const [atividade, setAtividade] = useState<Atividade | null>(null);
   const [respostas, setRespostas] = useState<RespostaAluno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,21 +46,20 @@ export default function ResponderAtividade({ atividadeId, onClose }: Props) {
     async function fetchAtividade() {
       try {
         const token = localStorage.getItem("token");
-
         const res = await fetch(
           `http://localhost:3000/atividades/${atividadeId}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          throw new Error("Erro ao carregar atividade");
+        }
 
         const data = await res.json();
         setAtividade(data);
-      } catch {
+      } catch (err) {
         toast.error("Não foi possível carregar a atividade");
       } finally {
         setLoading(false);
@@ -83,11 +86,7 @@ export default function ResponderAtividade({ atividadeId, onClose }: Props) {
 
     try {
       const token = localStorage.getItem("token");
-
-      const payload = {
-        atividadeId: atividade.id,
-        respostas,
-      };
+      const payload = { atividadeId: atividade.id, respostas };
 
       const res = await fetch("http://localhost:3000/atividades/responder", {
         method: "POST",
@@ -98,10 +97,21 @@ export default function ResponderAtividade({ atividadeId, onClose }: Props) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Erro ao enviar atividade");
+      }
+
+      const entrega = await res.json();
 
       toast.success("Atividade enviada com sucesso!");
-    } catch {
+
+      if (onRespostaEnviada) {
+        onRespostaEnviada(entrega);
+      }
+
+      onClose();
+    } catch (err) {
       toast.error("Erro ao enviar atividade");
     }
   }
@@ -123,11 +133,9 @@ export default function ResponderAtividade({ atividadeId, onClose }: Props) {
           <h1 className="text-xl font-semibold text-gray-800">
             {atividade.titulo}
           </h1>
-
           <p className="text-sm text-gray-600">
             Responda todas as questões abaixo para completar a atividade.
           </p>
-
           <p className="text-sm">
             <strong>Data de entrega:</strong>{" "}
             {new Date(atividade.dataEntrega).toLocaleDateString()}

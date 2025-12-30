@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ListAtividades from "../components/ListAtividades";
 
 function Materiais() {
   const [etapa, setEtapa] = useState<String>("minhasatividades");
@@ -29,7 +30,9 @@ function Materiais() {
           <span className="text-sm font-bold">Meus Materiais</span>
         </button>
       </div>
-      <div className="flex flex-col gap-4"></div>
+      <div className="flex flex-col gap-4">
+        {etapa === "minhasatividades" && <ListAtividades />}
+      </div>
     </div>
   );
 }

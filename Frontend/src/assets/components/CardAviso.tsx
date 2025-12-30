@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ModalEditarAviso from "./ModalEditarAviso";
 import type { Aviso } from "./ModalCriarAviso";
+import { toast } from "react-toastify";
 
 interface Props {
   aviso: Aviso & {
@@ -162,7 +163,7 @@ export default function CardAviso({
       onAtualizar();
     } catch (error) {
       console.error("Erro ao confirmar aviso:", error);
-      alert("Erro ao confirmar aviso. Tente novamente.");
+      toast.error("Erro ao confirmar aviso. Tente novamente.");
     } finally {
       setEstaConfirmando(false);
     }
