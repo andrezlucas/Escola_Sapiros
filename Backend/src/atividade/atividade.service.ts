@@ -120,6 +120,14 @@ export class AtividadeService {
     });
   }
 
+  async findAllByProfessor(professorId: string) {
+    return this.atividadeRepository.find({
+      where: { professor: { id: professorId } },
+      relations: ['disciplina', 'turmas', 'questoes'],
+      order: { criadoem: 'DESC' } as any,
+    });
+  }
+
   async findOne(id: string) {
     const atividade = await this.atividadeRepository.findOne({
       where: { id },
@@ -139,34 +147,49 @@ export class AtividadeService {
     return atividade;
   }
 
- async findByTurma(turmaId: string) {
-  return this.atividadeRepository
-    .createQueryBuilder('atividade')
-    .innerJoin('atividade.turmas', 'turma')
-    .where('turma.id = :turmaId', { turmaId })
-    .leftJoinAndSelect('atividade.disciplina', 'disciplina')
-    .leftJoinAndSelect('atividade.questoes', 'questoes')
-    .leftJoinAndSelect('questoes.alternativas', 'alternativas')
-    .leftJoinAndSelect('questoes.habilidades', 'habilidades')
-    .andWhere('atividade.ativa = :ativa', { ativa: true })
-    .orderBy('atividade.dataEntrega', 'ASC')
-    .getMany();
-}
+  async findByTurma(turmaId: string) {
+    return this.atividadeRepository
+      .createQueryBuilder('atividade')
+      .innerJoin('atividade.turmas', 'turma')
+      .where('turma.id = :turmaId', { turmaId })
+      .leftJoinAndSelect('atividade.disciplina', 'disciplina')
+      .leftJoinAndSelect('atividade.questoes', 'questoes')
+      .leftJoinAndSelect('questoes.alternativas', 'alternativas')
+      .leftJoinAndSelect('questoes.habilidades', 'habilidades')
+      .andWhere('atividade.ativa = :ativa', { ativa: true })
+      .orderBy('atividade.dataEntrega', 'ASC')
+      .getMany();
+  }
 
   async update(id: string, dto: UpdateAtividadeDto) {
     const atividade = await this.findOne(id);
     Object.assign(atividade, dto);
     return this.atividadeRepository.save(atividade);
   }
+
   async partialUpdate(id: string, dto: UpdateAtividadeDto) {
-    const atividade = await this.atividadeRepository.findOne({ where: { id } });
+    const atividade = await this.atividadeRepository.findOne({
+      where: { id },
+      relations: ['questoes'],
+    });
+
     if (!atividade) {
       throw new NotFoundException('Atividade não encontrada');
     }
+
     const atividadeAtualizada = this.atividadeRepository.merge(atividade, dto);
+
     if (dto.dataEntrega) {
       atividadeAtualizada.dataEntrega = new Date(dto.dataEntrega);
     }
+
+    if (atividadeAtualizada.questoes) {
+      atividadeAtualizada.questoes = atividadeAtualizada.questoes.map((q) => {
+        q.atividade = { id } as any;
+        return q;
+      });
+    }
+
     return await this.atividadeRepository.save(atividadeAtualizada);
   }
 
@@ -175,81 +198,80 @@ export class AtividadeService {
     await this.atividadeRepository.remove(atividade);
     return { message: 'Atividade removida com sucesso' };
   }
+
   async responderAtividade(dto: CriarEntregaDto, usuarioId: string) {
-  const aluno = await this.dataSource.getRepository(Aluno).findOne({
-    where: { usuario: { id: usuarioId } },
-    relations: ['turma'],
-  });
+    const aluno = await this.buscarTurmaDoAluno(usuarioId);
 
-  if (!aluno) {
-    throw new ForbiddenException('Usuário não é um aluno cadastrado');
-  }
-
-  const atividade = await this.atividadeRepository.findOne({
-    where: { id: dto.atividadeId },
-    relations: ['questoes', 'questoes.alternativas', 'turmas'],
-  });
-
-  if (!atividade) {
-    throw new NotFoundException('Atividade não encontrada');
-  }
-
-  const alunoNaTurma = atividade.turmas.some(t => t.id === aluno.turma?.id);
-  if (!alunoNaTurma) {
-    throw new ForbiddenException('Você não tem permissão para responder esta atividade');
-  }
-
-  const entregaExistente = await this.dataSource.getRepository(Entrega).findOne({
-    where: { aluno: { id: aluno.id }, atividade: { id: atividade.id } }
-  });
-  if (entregaExistente) {
-    throw new ForbiddenException('Atividade já respondida anteriormente');
-  }
-
-  return this.dataSource.transaction(async (manager) => {
-    const entrega = manager.create(Entrega, {
-      aluno,
-      atividade,
-      notaFinal: 0,
+    const atividade = await this.atividadeRepository.findOne({
+      where: { id: dto.atividadeId },
+      relations: ['questoes', 'questoes.alternativas', 'turmas'],
     });
 
-    const entregaSalva = await manager.save(entrega);
-    let notaAcumulada = 0;
-
-    for (const respDto of dto.respostas) {
-      const questao = atividade.questoes.find(q => q.id === respDto.questaoId);
-      if (!questao) continue;
-
-      let notaQuestao = 0;
-
-      if (questao.tipo === 'MULTIPLA_ESCOLHA' && respDto.alternativaId) {
-        const correta = questao.alternativas.find(a => a.correta);
-        if (correta && correta.id === respDto.alternativaId) {
-          notaQuestao = Number(questao.valor);
-        }
-      }
-
-      const resposta = manager.create(RespostaQuestao, {
-        entrega: entregaSalva,
-        questao,
-        alternativaEscolhida: respDto.alternativaId ? { id: respDto.alternativaId } : undefined,
-        textoResposta: respDto.textoResposta,
-        notaAtribuida: notaQuestao,
-      });
-
-      await manager.save(resposta);
-      notaAcumulada += notaQuestao;
+    if (!atividade) {
+      throw new NotFoundException('Atividade não encontrada');
     }
 
-    entregaSalva.notaFinal = notaAcumulada;
-    return await manager.save(entregaSalva);
-  });
-  
-  
-}
-async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
+    const agora = new Date();
+    const dataLimite = new Date(atividade.dataEntrega);
+    if (agora > dataLimite) {
+      throw new ForbiddenException('O prazo para entrega desta atividade expirou');
+    }
+
+    const alunoNaTurma = atividade.turmas.some((t) => t.id === aluno.turma?.id);
+    if (!alunoNaTurma) {
+      throw new ForbiddenException('Você não tem permissão para responder esta atividade');
+    }
+
+    const entregaExistente = await this.dataSource.getRepository(Entrega).findOne({
+      where: { aluno: { id: aluno.id }, atividade: { id: atividade.id } },
+    });
+    if (entregaExistente) {
+      throw new ForbiddenException('Atividade já respondida anteriormente');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const entrega = manager.create(Entrega, {
+        aluno,
+        atividade,
+        notaFinal: 0,
+      });
+
+      const entregaSalva = await manager.save(entrega);
+      let notaAcumulada = 0;
+
+      for (const respDto of dto.respostas) {
+        const questao = atividade.questoes.find((q) => q.id === respDto.questaoId);
+        if (!questao) continue;
+
+        let notaQuestao = 0;
+
+        if (questao.tipo === 'MULTIPLA_ESCOLHA' && respDto.alternativaId) {
+          const correta = questao.alternativas.find((a) => a.correta);
+          if (correta && correta.id === respDto.alternativaId) {
+            notaQuestao = Number(questao.valor);
+          }
+        }
+
+        const resposta = manager.create(RespostaQuestao, {
+          entrega: entregaSalva,
+          questao,
+          alternativaEscolhida: respDto.alternativaId ? { id: respDto.alternativaId } : undefined,
+          textoResposta: respDto.textoResposta,
+          notaAtribuida: notaQuestao,
+        });
+
+        await manager.save(resposta);
+        notaAcumulada += notaQuestao;
+      }
+
+      entregaSalva.notaFinal = notaAcumulada;
+      return await manager.save(entregaSalva);
+    });
+  }
+
+  async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
     const atividade = await this.atividadeRepository.findOne({
-      where: { id: atividadeId, professor: { id: professorId } }
+      where: { id: atividadeId, professor: { id: professorId } },
     });
 
     if (!atividade) {
@@ -258,22 +280,34 @@ async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
 
     return this.dataSource.getRepository(Entrega).find({
       where: { atividade: { id: atividadeId } },
-      relations: ['aluno', 'aluno.usuario', 'respostas', 'respostas.questao','respostas.questao.alternativas', 'respostas.alternativaEscolhida'],
-      order: { dataEntrega: 'DESC' }
+      relations: [
+        'aluno',
+        'aluno.usuario',
+        'respostas',
+        'respostas.questao',
+        'respostas.questao.alternativas',
+        'respostas.alternativaEscolhida',
+      ],
+      order: { dataEntrega: 'DESC' } as any,
     });
   }
 
-  async corrigirQuestaoDissertativa(entregaId: string, respostaId: string, nota: number, professorId: string) {
+  async corrigirQuestaoDissertativa(
+    entregaId: string,
+    respostaId: string,
+    nota: number,
+    professorId: string,
+  ) {
     const entrega = await this.dataSource.getRepository(Entrega).findOne({
       where: { id: entregaId, atividade: { professor: { id: professorId } } },
-      relations: ['respostas']
+      relations: ['respostas'],
     });
 
     if (!entrega) {
       throw new ForbiddenException('Entrega não encontrada ou sem permissão de acesso');
     }
 
-    const resposta = entrega.respostas.find(r => r.id === respostaId);
+    const resposta = entrega.respostas.find((r) => r.id === respostaId);
     if (!resposta) {
       throw new NotFoundException('Resposta não encontrada nesta entrega');
     }
@@ -283,53 +317,73 @@ async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
       await manager.save(resposta);
 
       const todasRespostas = await manager.find(RespostaQuestao, {
-        where: { entrega: { id: entregaId } }
+        where: { entrega: { id: entregaId } },
       });
 
-      const novaNotaFinal = todasRespostas.reduce((acc, curr) => acc + Number(curr.notaAtribuida), 0);
-      
+      const novaNotaFinal = todasRespostas.reduce(
+        (acc, curr) => acc + Number(curr.notaAtribuida),
+        0,
+      );
+
       await manager.update(Entrega, entregaId, { notaFinal: novaNotaFinal });
 
       return { message: 'Nota atualizada com sucesso', notaFinal: novaNotaFinal };
     });
-
-    
-  }
-async listarStatusPorAluno(usuarioId: string) {
-  const aluno = await this.buscarTurmaDoAluno(usuarioId);
-
-  if (!aluno.turma) {
-    throw new ForbiddenException('Aluno não vinculado a uma turma');
   }
 
-  const atividades = await this.findByTurma(aluno.turma.id);
+  async listarStatusPorAluno(usuarioId: string) {
+    const aluno = await this.buscarTurmaDoAluno(usuarioId);
 
-  const entregas = await this.dataSource.getRepository(Entrega).find({
-    where: { aluno: { id: aluno.id } },
-    relations: ['atividade'],
-  });
+    if (!aluno.turma) {
+      throw new ForbiddenException('Aluno não vinculado a uma turma');
+    }
 
-  const idsRespondidos = entregas.map(e => e.atividade.id);
+    const atividades = await this.findByTurma(aluno.turma.id);
 
-  return atividades.map(atividade => {
-    const entrega = entregas.find(e => e.atividade.id === atividade.id);
-    return {
-      id: atividade.id,
-      titulo: atividade.titulo,
-      disciplina: atividade.disciplina.nome_disciplina,
-      descricao: atividade.descricao,
-      dataEntrega: atividade.dataEntrega,
-      status: entrega ? 'Entregue' : 'Pendente',
-      nota: entrega ? entrega.notaFinal : null
-    };
+    const entregas = await this.dataSource.getRepository(Entrega).find({
+      where: { aluno: { id: aluno.id } },
+      relations: ['atividade'],
+    });
+
+    return atividades.map((atividade) => {
+      const entrega = entregas.find((e) => e.atividade.id === atividade.id);
+      return {
+        id: atividade.id,
+        titulo: atividade.titulo,
+        disciplina: atividade.disciplina.nome_disciplina,
+        descricao: atividade.descricao,
+        dataEntrega: atividade.dataEntrega,
+        status: entrega ? 'Entregue' : 'Pendente',
+        nota: entrega ? entrega.notaFinal : null,
+      };
+    });
+  }
+
+  async buscarTurmaDoAluno(usuarioId: string) {
+    const aluno = await this.dataSource.getRepository(Aluno).findOne({
+      where: { usuario: { id: usuarioId } },
+      relations: ['turma'],
+    });
+    if (!aluno) throw new NotFoundException('Aluno não encontrado');
+    return aluno;
+  }
+  async listarTodasEntregasDoProfessor(professorId: string) {
+  return this.dataSource.getRepository(Entrega).find({
+    where: {
+      atividade: {
+        professor: { id: professorId }
+      }
+    },
+    relations: [
+      'aluno',
+      'aluno.usuario',
+      'aluno.turma',
+      'atividade',
+      'atividade.disciplina'
+    ],
+    order: {
+      dataEntrega: 'DESC'
+    } as any
   });
-}
-async buscarTurmaDoAluno(usuarioId: string) {
-  const aluno = await this.dataSource.getRepository(Aluno).findOne({
-    where: { usuario: { id: usuarioId } },
-    relations: ['turma'],
-  });
-  if (!aluno) throw new NotFoundException('Aluno não encontrado');
-  return aluno;
 }
 }
