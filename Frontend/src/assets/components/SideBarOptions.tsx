@@ -60,7 +60,7 @@ export const SideBarOptions = {
       {
         icon: HiOutlineClipboardDocumentList,
         label: "Atividades",
-        viewName: "atividades",
+        viewName: "atividadesAluno",
       },
       {
         icon: FaRegFolderOpen,

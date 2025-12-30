@@ -14,6 +14,7 @@ import RedefinirSenha from "./assets/pages/RedefinirSenha";
 import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
 import DashboardCoordenacao from "./assets/pages/DashboardCoordenacao";
 import NaoAutorizado from "./assets/pages/NaoAutorizado";
+import ResponderAtividade from "./assets/pages/ResponderAtividade";
 
 function App() {
   return (
@@ -89,6 +90,8 @@ function App() {
             </PrivateRoute>
           }
         />
+
+        
       </Routes>
     </>
   );

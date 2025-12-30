@@ -27,6 +27,8 @@ interface Alternativa {
 interface Questao {
   id: string;
   enunciado: string;
+  tipo: "MULTIPLA_ESCOLHA" | "DISSERTATIVA" | "VERDADEIRO_FALSO";
+  valor: number;
   alternativas: Alternativa[];
   habilidades: Habilidade[];
 }
@@ -36,9 +38,10 @@ interface FormData {
   descricao: string;
   turmaId: string;
   disciplinaId: string;
+  dataEntrega: string;
 }
 
-function FormAtividade() {
+function FormAtividade({ atividadeId }: { atividadeId?: string }) {
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [questoes, setQuestoes] = useState<Questao[]>([]);
@@ -55,6 +58,11 @@ function FormAtividade() {
   const [habilidadesSelecionadas, setHabilidadesSelecionadas] = useState<
     Habilidade[]
   >([]);
+  const [tipoQuestao, setTipoQuestao] = useState<
+    "MULTIPLA_ESCOLHA" | "DISSERTATIVA" | "VERDADEIRO_FALSO"
+  >("MULTIPLA_ESCOLHA");
+
+  const [valorQuestao, setValorQuestao] = useState<number>(1);
 
   const {
     register,
@@ -82,6 +90,42 @@ function FormAtividade() {
       },
     });
   }
+
+  useEffect(() => {
+    if (!atividadeId) return;
+
+    const fetchAtividade = async () => {
+      try {
+        const res = await authFetch(
+          `http://localhost:3000/atividades/${atividadeId}`
+        );
+        const data = await res.json();
+
+        reset({
+          titulo: data.titulo,
+          descricao: data.descricao,
+          disciplinaId: data.disciplina.id_disciplina,
+          turmaId: data.turmas[0]?.id,
+          dataEntrega: data.dataEntrega?.slice(0, 10),
+        });
+
+        setQuestoes(
+          data.questoes.map((q: any) => ({
+            id: q.id,
+            enunciado: q.enunciado,
+            tipo: q.tipo,
+            valor: Number(q.valor),
+            alternativas: q.alternativas ?? [],
+            habilidades: q.habilidades ?? [],
+          }))
+        );
+      } catch {
+        toast.error("Erro ao carregar atividade");
+      }
+    };
+
+    fetchAtividade();
+  }, [atividadeId]);
 
   useEffect(() => {
     const fetchListas = async () => {
@@ -124,7 +168,7 @@ function FormAtividade() {
         setHabilidades(
           data.map((h: any) => ({
             id: h.id,
-            nome: h.descricao,
+            nome: h.nome,
           }))
         );
       } catch {
@@ -134,6 +178,19 @@ function FormAtividade() {
 
     fetchHabilidades();
   }, [watch("disciplinaId")]);
+
+  useEffect(() => {
+    if (tipoQuestao === "VERDADEIRO_FALSO") {
+      setAlternativas([
+        { id: crypto.randomUUID(), texto: "Verdadeiro", correta: false },
+        { id: crypto.randomUUID(), texto: "Falso", correta: false },
+      ]);
+    }
+
+    if (tipoQuestao === "DISSERTATIVA") {
+      setAlternativas([]);
+    }
+  }, [tipoQuestao]);
 
   function atualizarAlternativa(
     id: string,
@@ -174,20 +231,24 @@ function FormAtividade() {
   }
 
   function adicionarQuestao() {
+    if (tipoQuestao !== "DISSERTATIVA") {
+      const alternativasInvalidas = alternativas.some(
+        (alt) => !alt.texto.trim()
+      );
+      if (alternativasInvalidas) {
+        toast.error("Preencha todas as alternativas");
+        return;
+      }
+
+      const temCorreta = alternativas.some((alt) => alt.correta);
+      if (!temCorreta) {
+        toast.error("Selecione pelo menos uma alternativa como correta");
+        return;
+      }
+    }
+
     if (!enunciado.trim()) {
       toast.error("Digite o enunciado da questão");
-      return;
-    }
-
-    const alternativasInvalidas = alternativas.some((alt) => !alt.texto.trim());
-    if (alternativasInvalidas) {
-      toast.error("Preencha todas as alternativas");
-      return;
-    }
-
-    const temCorreta = alternativas.some((alt) => alt.correta);
-    if (!temCorreta) {
-      toast.error("Selecione pelo menos uma alternativa como correta");
       return;
     }
 
@@ -196,11 +257,14 @@ function FormAtividade() {
       {
         id: crypto.randomUUID(),
         enunciado,
-        alternativas: [...alternativas],
+        tipo: tipoQuestao,
+        valor: valorQuestao,
+        alternativas: tipoQuestao !== "DISSERTATIVA" ? [...alternativas] : [],
         habilidades: [...habilidadesSelecionadas],
       },
     ]);
-
+    setTipoQuestao("MULTIPLA_ESCOLHA");
+    setValorQuestao(1);
     setEnunciado("");
     setAlternativas([
       { id: crypto.randomUUID(), texto: "", correta: false },
@@ -218,25 +282,46 @@ function FormAtividade() {
     }
 
     const payload = {
-      ...data,
-      dataCriacao: new Date().toISOString(),
+      titulo: data.titulo,
+      descricao: data.descricao,
+      dataEntrega: data.dataEntrega,
+      disciplinaId: data.disciplinaId,
+      turmaIds: [data.turmaId],
       questoes: questoes.map((q) => ({
         enunciado: q.enunciado,
-        alternativas: q.alternativas.map((a) => ({
-          texto: a.texto,
-          correta: a.correta,
-        })),
-        habilidades: q.habilidades.map((h) => h.id),
+        tipo: q.tipo,
+        valor: q.valor,
+        habilidadesIds: q.habilidades.map((h) => h.id),
+        alternativas:
+          q.tipo !== "DISSERTATIVA"
+            ? q.alternativas.map((a) => ({
+                texto: a.texto,
+                correta: a.correta,
+              }))
+            : undefined,
       })),
     };
 
+    const url = atividadeId
+      ? `http://localhost:3000/atividades/${atividadeId}`
+      : "http://localhost:3000/atividades";
+
+    const method = atividadeId ? "PATCH" : "POST";
+
     try {
-      const res = await authFetch("http://localhost:3000/atividades", {
-        method: "POST",
+      const res = await authFetch(url, {
+        method,
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Erro ao criar atividade");
-      toast.success("Atividade criada com sucesso!");
+
+      if (!res.ok) throw new Error("Erro ao salvar atividade");
+
+      toast.success(
+        atividadeId
+          ? "Atividade atualizada com sucesso!"
+          : "Atividade criada com sucesso!"
+      );
+
       handleCancelar();
     } catch (err: any) {
       toast.error(err.message);
@@ -259,7 +344,9 @@ function FormAtividade() {
   return (
     <div className=" w-full h-full  mx-auto">
       <div className="border rounded-xl p-6 flex flex-col gap-6 mb-12">
-        <h1 className="text-2xl font-bold mb-2">Criar Nova Atividade</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          {atividadeId ? "Editar Atividade" : "Criar Nova Atividade"}
+        </h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
           <section>
@@ -300,6 +387,17 @@ function FormAtividade() {
                     {errors.descricao.message}
                   </span>
                 )}
+              </div>
+
+              <div>
+                <Input
+                  label={""}
+                  type="date"
+                  {...register("dataEntrega", {
+                    required: "A Data de entrega é obrigatória",
+                  })}
+                ></Input>
+                {errors.dataEntrega?.message}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -358,8 +456,29 @@ function FormAtividade() {
 
           <section>
             <h2 className="font-semibold mb-2">
-              Adicionar Questão (Múltipla Escolha)
+              Adicionar Questão ({tipoQuestao.replace("_", " ")})
             </h2>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Tipo da Questão
+              </label>
+              <select
+                className="input w-full border border-gray-200 rounded-lg bg-blue-50"
+                value={tipoQuestao}
+                onChange={(e) =>
+                  setTipoQuestao(
+                    e.target.value as
+                      | "MULTIPLA_ESCOLHA"
+                      | "DISSERTATIVA"
+                      | "VERDADEIRO_FALSO"
+                  )
+                }
+              >
+                <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
+                <option value="VERDADEIRO_FALSO">Verdadeiro / Falso</option>
+                <option value="DISSERTATIVA">Dissertativa</option>
+              </select>
+            </div>
 
             <div>
               <label className="block text-sm font-medium mb-2">
@@ -377,56 +496,59 @@ function FormAtividade() {
               Alternativas
             </label>
             <div className="space-y-3">
-              {alternativas.map((alt, index) => (
-                <div key={alt.id} className="flex items-center gap-3">
-                  <div className="flex items-center">
+              {tipoQuestao !== "DISSERTATIVA" &&
+                alternativas.map((alt, index) => (
+                  <div key={alt.id} className="flex items-center gap-3">
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="correta"
+                        checked={alt.correta}
+                        onChange={(e) =>
+                          atualizarAlternativa(
+                            alt.id,
+                            "correta",
+                            e.target.checked
+                          )
+                        }
+                        className="mr-2 "
+                      />
+                      <span className="font-medium">
+                        {String.fromCharCode(65 + index)}.
+                      </span>
+                    </div>
                     <input
-                      type="radio"
-                      name="correta"
-                      checked={alt.correta}
+                      type="text"
+                      className="input flex-1"
+                      placeholder={`Alternativa ${String.fromCharCode(
+                        65 + index
+                      )}`}
+                      value={alt.texto}
                       onChange={(e) =>
-                        atualizarAlternativa(
-                          alt.id,
-                          "correta",
-                          e.target.checked
-                        )
+                        atualizarAlternativa(alt.id, "texto", e.target.value)
                       }
-                      className="mr-2 "
                     />
-                    <span className="font-medium">
-                      {String.fromCharCode(65 + index)}.
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removerAlternativa(alt.id)}
+                      className="text-red-500 hover:text-red-700 px-2 py-1"
+                      disabled={alternativas.length <= 2}
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <input
-                    type="text"
-                    className="input flex-1"
-                    placeholder={`Alternativa ${String.fromCharCode(
-                      65 + index
-                    )}`}
-                    value={alt.texto}
-                    onChange={(e) =>
-                      atualizarAlternativa(alt.id, "texto", e.target.value)
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removerAlternativa(alt.id)}
-                    className="text-red-500 hover:text-red-700 px-2 py-1"
-                    disabled={alternativas.length <= 2}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                ))}
             </div>
 
-            <button
-              type="button"
-              onClick={adicionarAlternativa}
-              className="mt-3 px-4 py-2 border border-[#1D5D7F] text-[#1D5D7F] rounded-lg hover:bg-[#1D5D7F] hover:text-white transition"
-            >
-              + Adicionar Alternativa
-            </button>
+            {tipoQuestao !== "DISSERTATIVA" && (
+              <button
+                type="button"
+                onClick={adicionarAlternativa}
+                className="mt-3 px-4 py-2 border border-[#1D5D7F] text-[#1D5D7F] rounded-lg hover:bg-[#1D5D7F] hover:text-white transition"
+              >
+                + Adicionar Alternativa
+              </button>
+            )}
 
             <div className="mb-4 mt-4">
               <label className="block text-sm font-medium mb-2">
@@ -444,7 +566,6 @@ function FormAtividade() {
                 ))}
               </div>
 
-              {/* SELECT */}
               <select
                 className="input w-full border border-gray-200 rounded-lg bg-blue-50"
                 onChange={(e) => {
@@ -544,7 +665,7 @@ function FormAtividade() {
               type="submit"
               className="px-6 py-2 bg-[#1D5D7F] text-white rounded-lg hover:bg-[#164a66] transition font-medium"
             >
-              Criar Atividade
+              {atividadeId ? "Salvar Alterações" : "Criar Atividade"}
             </button>
           </div>
         </form>
