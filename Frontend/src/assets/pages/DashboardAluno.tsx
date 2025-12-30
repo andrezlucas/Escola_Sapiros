@@ -7,6 +7,8 @@ import { useSearchParams } from "react-router-dom";
 import CardMuralDashboard from "../components/CardMuralDashboard";
 import Calendario from "./Calendario";
 import Mural from "./Mural";
+import Atividades from "./Atividades";
+import AtividadesAluno from "./AtividadesAluno";
 
 function DashboardAluno() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +28,8 @@ function DashboardAluno() {
         return <Calendario />;
       case "mural":
         return <Mural />;
+      case "atividadesAluno":
+        return <AtividadesAluno />;
       default:
         return null;
     }
@@ -45,7 +49,7 @@ function DashboardAluno() {
           <HeaderBar />
         </div>
 
-        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-6 rounded-tl-[30px]">
+        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
           {currentView === "home" ? (
             <div className="grid grid-cols-5 gap-6 h-full">
               <div className="col-span-3 flex flex-col space-y-6">

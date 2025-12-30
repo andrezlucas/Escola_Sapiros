@@ -86,6 +86,9 @@ function FormLogin() {
       localStorage.setItem("token", result.token);
       localStorage.setItem("role", result.usuario.role);
       localStorage.setItem("nome", result.usuario.nome);
+      if (result.usuario.role === "aluno" && result.usuario.turmaId) {
+        localStorage.setItem("turmaId", result.usuario.turmaId);
+      }
 
       const token = localStorage.getItem("token");
       console.log(token);
