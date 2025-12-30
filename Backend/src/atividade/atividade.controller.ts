@@ -90,4 +90,10 @@ responder(@Body() dto: CriarEntregaDto, @Req() req) {
   ) {
     return this.atividadeService.corrigirQuestaoDissertativa(entregaId, respostaId, nota, req.user.id);
   }
+
+  @Get('meu-status')
+  @Roles(Role.ALUNO)
+  buscarStatusAtividades(@Req() req) {
+    return this.atividadeService.listarStatusPorAluno(req.user.id);
+}
 }

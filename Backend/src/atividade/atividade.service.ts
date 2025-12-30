@@ -290,4 +290,39 @@ async listarEntregasPorAtividade(atividadeId: string, professorId: string) {
 
       return { message: 'Nota atualizada com sucesso', notaFinal: novaNotaFinal };
     });
-  }}
+
+    
+  }
+  async listarStatusPorAluno(usuarioId: string) {
+    const aluno = await this.dataSource.getRepository(Aluno).findOne({
+      where: { usuario: { id: usuarioId } },
+      relations: ['turma'],
+    });
+
+    if (!aluno || !aluno.turma) {
+      throw new ForbiddenException('Aluno não vinculado a uma turma');
+    }
+
+    const atividades = await this.findByTurma(aluno.turma.id);
+
+    const entregas = await this.dataSource.getRepository(Entrega).find({
+      where: { aluno: { id: aluno.id } },
+      relations: ['atividade'],
+    });
+
+    const idsRespondidos = entregas.map(e => e.atividade.id);
+
+    return atividades.map(atividade => {
+      const entrega = entregas.find(e => e.atividade.id === atividade.id);
+      return {
+        id: atividade.id,
+        titulo: atividade.titulo,
+        disciplina: atividade.disciplina.nome_disciplina,
+        descricao: atividade.descricao,
+        dataEntrega: atividade.dataEntrega,
+        status: entrega ? 'Entregue' : 'Pendente',
+        nota: entrega ? entrega.notaFinal : null
+      };
+    });
+  }
+}
