@@ -22,75 +22,86 @@ export class AuthService {
     private readonly tokenRepository: Repository<ResetPasswordToken>,
   ) {}
 
-  async login(dto: any) {
-    const identificador: string = dto.identificador;
+async login(dto: any) {
+  const identificador: string = dto.identificador;
 
-    if (!identificador) {
-      throw new UnauthorizedException('Identificador é obrigatório');
-    }
-
-    let usuario: Usuario | null = null;
-
-    const aluno = await this.alunoRepository.findOne({
-      where: {matriculaAluno : identificador },
-      relations: ['usuario'],
-    });
-
-    if (aluno) {
-      usuario = aluno.usuario;
-    } else {
-      usuario = await this.usuarioService.findByCpfOrEmail(identificador);
-    }
-
-    if (!usuario) {
-      throw new UnauthorizedException('Usuário não encontrado');
-    }
-
-    const senhaValida = await bcrypt.compare(dto.senha, usuario.senha);
-    if (!senhaValida) {
-      throw new UnauthorizedException('Senha incorreta');
-    }
-    
-    if (usuario.isBlocked) {
-      throw new UnauthorizedException(
-        'Conta temporariamente bloqueada. Complete o cadastro de documentos para liberar o acesso.',
-      );
-    }
-
-    const senhaPadrao = 'Sapiros@123';
-    const isSenhaPadrao = await bcrypt.compare(senhaPadrao, usuario.senha);
-
-    if (isSenhaPadrao) {
-      try {
-        await this.requestPasswordReset(usuario.email);
-      } catch (err) {
-        console.error('Erro ao enviar email de redefinição:', err.message);
-      }
-
-      throw new UnauthorizedException(
-        'Senha temporária detectada. Enviamos um email para redefinição.'
-      );
-    }
-
-    if (usuario.senhaExpiraEm && new Date() > new Date(usuario.senhaExpiraEm)) {
-      throw new UnauthorizedException('A senha expirou. Redefina sua senha.');
-    }
-
-    const payload = {
-      sub: usuario.id,
-      role: usuario.role,
-      senhaExpiraEm: usuario.senhaExpiraEm,
-    };
-
-    return {
-      usuario: {
-        id: usuario.id,
-        nome: usuario.nome,
-        role: usuario.role,
-      },
-      token: this.jwtService.sign(payload),
-    };
+  if (!identificador) {
+    throw new UnauthorizedException('Identificador é obrigatório');
   }
+
+  let usuario: Usuario | null = null;
+  let turmaId: string | null = null;
+
+  const aluno = await this.alunoRepository.findOne({
+    where: { matriculaAluno: identificador },
+    relations: ['usuario', 'turma'],
+  });
+
+  if (aluno) {
+    usuario = aluno.usuario;
+    turmaId = aluno.turma?.id || null;
+  } else {
+    usuario = await this.usuarioService.findByCpfOrEmail(identificador);
+    if (usuario) {
+      const alunoRelacionado = await this.alunoRepository.findOne({
+        where: { usuario: { id: usuario.id } },
+        relations: ['turma'],
+      });
+      turmaId = alunoRelacionado?.turma?.id || null;
+    }
+  }
+
+  if (!usuario) {
+    throw new UnauthorizedException('Usuário não encontrado');
+  }
+
+  const senhaValida = await bcrypt.compare(dto.senha, usuario.senha);
+  if (!senhaValida) {
+    throw new UnauthorizedException('Senha incorreta');
+  }
+  
+  if (usuario.isBlocked) {
+    throw new UnauthorizedException(
+      'Conta temporariamente bloqueada. Complete o cadastro de documentos para liberar o acesso.',
+    );
+  }
+
+  const senhaPadrao = 'Sapiros@123';
+  const isSenhaPadrao = await bcrypt.compare(senhaPadrao, usuario.senha);
+
+  if (isSenhaPadrao) {
+    try {
+      await this.requestPasswordReset(usuario.email);
+    } catch (err) {
+      console.error('Erro ao enviar email de redefinição:', err.message);
+    }
+
+    throw new UnauthorizedException(
+      'Senha temporária detectada. Enviamos um email para redefinição.'
+    );
+  }
+
+  if (usuario.senhaExpiraEm && new Date() > new Date(usuario.senhaExpiraEm)) {
+    throw new UnauthorizedException('A senha expirou. Redefina sua senha.');
+  }
+
+  const payload = {
+    sub: usuario.id,
+    role: usuario.role,
+    turmaId: turmaId,
+    senhaExpiraEm: usuario.senhaExpiraEm,
+  };
+
+  return {
+    usuario: {
+      id: usuario.id,
+      nome: usuario.nome,
+      role: usuario.role,
+      turmaId: turmaId,
+    },
+    token: this.jwtService.sign(payload),
+  };
+}
 
 
   async requestPasswordReset(email: string) {
