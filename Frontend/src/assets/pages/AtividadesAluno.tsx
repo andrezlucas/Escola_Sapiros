@@ -15,8 +15,10 @@ interface AtividadeAluno {
 function MinhasAtividades() {
   const [atividades, setAtividades] = useState<AtividadeAluno[]>([]);
   const [atividadeAberta, setAtividadeAberta] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"Todos" | "PENDENTE" | "ENTREGUE" | "EXPIRADO">("Todos");
-  
+  const [filter, setFilter] = useState<
+    "Todos" | "PENDENTE" | "ENTREGUE" | "EXPIRADO"
+  >("Todos");
+
   const turmaId = localStorage.getItem("turmaId");
   const token = localStorage.getItem("token");
 
@@ -50,33 +52,45 @@ function MinhasAtividades() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-[#1D5D7F]">Minhas Atividades</h1>
         <p className="text-gray-600">
-          Veja e gerencie todas as suas atividades pendentes, entregues ou expiradas.
+          Veja e gerencie todas as suas atividades pendentes, entregues ou
+          expiradas.
         </p>
 
         <div className="flex flex-wrap gap-3 mb-4">
-          {(["Todos", "PENDENTE", "ENTREGUE", "EXPIRADO"] as const).map((tipo) => (
-            <button
-              key={tipo}
-              onClick={() => setFilter(tipo)}
-              className={`px-6 h-9 rounded-lg font-bold transition-all ${
-                filter === tipo
-                  ? "bg-[#1D5D7F] text-white shadow-lg"
-                  : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F] hover:bg-blue-50"
-              }`}
-            >
-              {tipo === "PENDENTE" ? "Pendentes" : 
-               tipo === "ENTREGUE" ? "Entregues" : 
-               tipo === "EXPIRADO" ? "Expiradas" : "Todas"}
-            </button>
-          ))}
+          {(["Todos", "PENDENTE", "ENTREGUE", "EXPIRADO"] as const).map(
+            (tipo) => (
+              <button
+                key={tipo}
+                onClick={() => setFilter(tipo)}
+                className={`px-6 h-9 rounded-lg font-bold transition-all ${
+                  filter === tipo
+                    ? "bg-[#1D5D7F] text-white shadow-lg"
+                    : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F] hover:bg-blue-50"
+                }`}
+              >
+                {tipo === "PENDENTE"
+                  ? "Pendentes"
+                  : tipo === "ENTREGUE"
+                  ? "Entregues"
+                  : tipo === "EXPIRADO"
+                  ? "Expiradas"
+                  : "Todas"}
+              </button>
+            )
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4">
           {atividadesFiltradas.map((a) => (
-            <div key={a.id} className="border rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <div
+              key={a.id}
+              className="border rounded-lg p-5 bg-white shadow-sm hover:shadow-md transition-shadow"
+            >
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="font-bold text-lg text-gray-800">{a.titulo}</h2>
+                  <h2 className="font-bold text-lg text-gray-800">
+                    {a.titulo}
+                  </h2>
                   <p className="text-sm font-medium text-[#1D5D7F]">
                     {a.disciplina}
                   </p>
@@ -91,17 +105,23 @@ function MinhasAtividades() {
                       : "bg-orange-100 text-orange-700 border border-orange-200"
                   }`}
                 >
-                  {a.status === "EXPIRADO" ? "Prazo Vencido" : a.status.toLowerCase()}
+                  {a.status === "EXPIRADO"
+                    ? "Prazo Vencido"
+                    : a.status.toLowerCase()}
                 </span>
               </div>
 
-              <p className="text-sm text-gray-600 mt-3 line-clamp-2">{a.descricao}</p>
+              <p className="text-sm text-gray-600 mt-3 line-clamp-2">
+                {a.descricao}
+              </p>
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 pt-4 border-t border-gray-100 gap-3">
                 <div className="text-sm">
                   <span className="text-gray-500">Data Limite:</span>{" "}
                   <strong className="text-gray-700">
-                    {new Date(a.dataEntrega).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                    {new Date(a.dataEntrega).toLocaleDateString("pt-BR", {
+                      timeZone: "UTC",
+                    })}
                   </strong>
                 </div>
 
@@ -145,6 +165,13 @@ function MinhasAtividades() {
         <ResponderAtividade
           atividadeId={atividadeAberta}
           onClose={() => setAtividadeAberta(null)}
+          onRespostaEnviada={() => {
+            setAtividades((prev) =>
+              prev.map((a) =>
+                a.id === atividadeAberta ? { ...a, status: "ENTREGUE" } : a
+              )
+            );
+          }}
         />
       )}
     </div>
