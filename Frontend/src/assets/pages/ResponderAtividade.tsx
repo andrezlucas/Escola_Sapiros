@@ -53,13 +53,23 @@ export default function ResponderAtividade({
           }
         );
 
-        if (!res.ok) {
-          throw new Error("Erro ao carregar atividade");
-        }
+        if (!res.ok) throw new Error("Erro ao carregar atividade");
+        
         const data = await res.json();
+
+        // Validação de segurança no Frontend: Bloqueia se o prazo expirou
+        const agora = new Date();
+        const dataLimite = new Date(data.dataEntrega);
+        if (agora > dataLimite) {
+          toast.error("Esta atividade expirou e não aceita mais respostas.");
+          onClose();
+          return;
+        }
+
         setAtividade(data);
       } catch (err) {
         toast.error("Não foi possível carregar a atividade");
+        onClose();
       } finally {
         setLoading(false);
       }
@@ -97,10 +107,10 @@ export default function ResponderAtividade({
       });
 
       if (res.status === 403) {
-          toast.error("O prazo para entrega desta atividade expirou");
-          onClose();
-          return;
-        }
+        toast.error("O prazo para entrega desta atividade expirou.");
+        onClose();
+        return;
+      }
 
       if (!res.ok) {
         const err = await res.json();
@@ -108,71 +118,57 @@ export default function ResponderAtividade({
       }
 
       const entrega = await res.json();
-
       toast.success("Atividade enviada com sucesso!");
 
-      if (onRespostaEnviada) {
-        onRespostaEnviada(entrega);
-      }
-
+      if (onRespostaEnviada) onRespostaEnviada(entrega);
       onClose();
-    } catch (err) {
-      toast.error("Erro ao enviar atividade");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao enviar atividade");
     }
   }
 
-  if (loading) return <p className="text-center py-10">Carregando...</p>;
-  if (!atividade)
-    return <p className="text-center py-10">Atividade não encontrada</p>;
+  if (loading) return <p className="text-center py-10">Carregando questões...</p>;
+  if (!atividade) return null;
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white w-full max-w-2xl rounded-xl p-6 max-h-[80vh] overflow-auto"
+        className="bg-white w-full max-w-2xl rounded-xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b pb-4 space-y-2">
-          <h1 className="text-xl font-semibold text-gray-800">
-            {atividade.titulo}
-          </h1>
-          <p className="text-sm text-gray-600">
-            Responda todas as questões abaixo para completar a atividade.
-          </p>
-          <p className="text-sm">
-            <strong>Data de entrega:</strong>{" "}
-            {new Date(atividade.dataEntrega).toLocaleDateString()}
-          </p>
+        <div className="border-b pb-4 mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">{atividade.titulo}</h1>
+          <p className="text-sm text-gray-600 mt-1">{atividade.descricao}</p>
+          <div className="flex items-center gap-2 mt-3 text-sm font-semibold text-[#1D5D7F]">
+            <span>Prazo final:</span>
+            <span>{new Date(atividade.dataEntrega).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+          </div>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-8">
           {atividade.questoes.map((q, index) => (
-            <div key={q.id} className="border rounded-lg p-5 space-y-4">
-              <h3 className="font-medium text-gray-800">
+            <div key={q.id} className="space-y-4">
+              <h3 className="font-bold text-gray-800 leading-tight">
                 {index + 1}. {q.enunciado}
               </h3>
 
-              {(q.tipo === "MULTIPLA_ESCOLHA" ||
-                q.tipo === "VERDADEIRO_FALSO") && (
-                <div className="space-y-2">
+              {(q.tipo === "MULTIPLA_ESCOLHA" || q.tipo === "VERDADEIRO_FALSO") && (
+                <div className="grid gap-2">
                   {q.alternativas.map((alt) => (
                     <label
                       key={alt.id}
-                      className="flex items-center gap-2 border rounded-md px-3 py-2 cursor-pointer hover:bg-gray-50"
+                      className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-blue-50 has-[:checked]:bg-blue-50 has-[:checked]:border-[#1D5D7F]"
                     >
                       <input
                         type="radio"
                         name={q.id}
-                        onChange={() =>
-                          salvarResposta({
-                            questaoId: q.id,
-                            alternativaId: alt.id,
-                          })
-                        }
+                        className="w-4 h-4 text-[#1D5D7F]"
+                        onChange={() => salvarResposta({ questaoId: q.id, alternativaId: alt.id })}
                       />
-                      <span>{alt.texto}</span>
+                      <span className="text-gray-700">{alt.texto}</span>
                     </label>
                   ))}
                 </div>
@@ -180,32 +176,27 @@ export default function ResponderAtividade({
 
               {q.tipo === "DISSERTATIVA" && (
                 <textarea
-                  className="w-full border rounded-md p-3 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
-                  placeholder="Digite sua resposta..."
-                  onChange={(e) =>
-                    salvarResposta({
-                      questaoId: q.id,
-                      textoResposta: e.target.value,
-                    })
-                  }
+                  className="w-full border rounded-lg p-4 h-32 resize-none focus:ring-2 focus:ring-[#1D5D7F] focus:outline-none text-gray-700"
+                  placeholder="Escreva sua resposta aqui..."
+                  onChange={(e) => salvarResposta({ questaoId: q.id, textoResposta: e.target.value })}
                 />
               )}
             </div>
           ))}
         </div>
 
-        <div className="flex justify-center pt-6">
+        <div className="flex justify-end gap-3 pt-8 mt-8 border-t">
           <button
             onClick={onClose}
-            className="px-6 py-2 border rounded-md hover:bg-gray-100"
+            className="px-6 py-2.5 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={enviarAtividade}
-            className="px-8 py-2 bg-[#1D5D7F] text-white rounded-md font-medium hover:bg-[#164a66]"
+            className="px-8 py-2.5 bg-[#1D5D7F] text-white rounded-lg font-bold hover:bg-[#164a66] shadow-md transition-all active:scale-95"
           >
-            Enviar Respostas
+            Finalizar e Enviar
           </button>
         </div>
       </div>

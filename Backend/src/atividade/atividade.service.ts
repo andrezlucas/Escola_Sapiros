@@ -16,9 +16,14 @@ import { Aluno } from '../aluno/entities/aluno.entity';
 import { Entrega } from './entities/entrega.entity';
 import { RespostaQuestao } from './entities/resposta-questao.entity';
 import { CriarEntregaDto } from './dto/criar-entrega.dto';
-
 import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
+
+export enum StatusAtividade {
+  PENDENTE = 'PENDENTE',
+  ENTREGUE = 'ENTREGUE',
+  EXPIRADO = 'EXPIRADO',
+}
 
 @Injectable()
 export class AtividadeService {
@@ -167,31 +172,32 @@ export class AtividadeService {
     return this.atividadeRepository.save(atividade);
   }
 
-async partialUpdate(id: string, dto: UpdateAtividadeDto) {
-  const atividade = await this.atividadeRepository.findOne({
-    where: { id },
-    relations: ['questoes', 'questoes.alternativas'],
-  });
+  async partialUpdate(id: string, dto: UpdateAtividadeDto) {
+    const atividade = await this.atividadeRepository.findOne({
+      where: { id },
+      relations: ['questoes', 'questoes.alternativas'],
+    });
 
-  if (!atividade) {
-    throw new NotFoundException('Atividade não encontrada');
+    if (!atividade) {
+      throw new NotFoundException('Atividade não encontrada');
+    }
+
+    this.atividadeRepository.merge(atividade, dto);
+
+    if (dto.dataEntrega) {
+      atividade.dataEntrega = new Date(dto.dataEntrega);
+    }
+
+    if (atividade.questoes) {
+      atividade.questoes = atividade.questoes.map((q) => ({
+        ...q,
+        atividade: { id } as any,
+      }));
+    }
+
+    return await this.atividadeRepository.save(atividade);
   }
 
-  this.atividadeRepository.merge(atividade, dto);
-
-  if (dto.dataEntrega) {
-    atividade.dataEntrega = new Date(dto.dataEntrega);
-  }
-
-  if (atividade.questoes) {
-    atividade.questoes = atividade.questoes.map((q) => ({
-      ...q,
-      atividade: { id } as any,
-    }));
-  }
-
-  return await this.atividadeRepository.save(atividade);
-}
   async remove(id: string) {
     const atividade = await this.findOne(id);
     await this.atividadeRepository.remove(atividade);
@@ -344,15 +350,29 @@ async partialUpdate(id: string, dto: UpdateAtividadeDto) {
       relations: ['atividade'],
     });
 
+    const agora = new Date();
+
     return atividades.map((atividade) => {
       const entrega = entregas.find((e) => e.atividade.id === atividade.id);
+      const dataLimite = new Date(atividade.dataEntrega);
+      
+      let status: StatusAtividade;
+
+      if (entrega) {
+        status = StatusAtividade.ENTREGUE;
+      } else if (agora > dataLimite) {
+        status = StatusAtividade.EXPIRADO;
+      } else {
+        status = StatusAtividade.PENDENTE;
+      }
+
       return {
         id: atividade.id,
         titulo: atividade.titulo,
         disciplina: atividade.disciplina.nome_disciplina,
         descricao: atividade.descricao,
         dataEntrega: atividade.dataEntrega,
-        status: entrega ? 'Entregue' : 'Pendente',
+        status: status,
         nota: entrega ? entrega.notaFinal : null,
       };
     });
@@ -366,23 +386,24 @@ async partialUpdate(id: string, dto: UpdateAtividadeDto) {
     if (!aluno) throw new NotFoundException('Aluno não encontrado');
     return aluno;
   }
+
   async listarTodasEntregasDoProfessor(professorId: string) {
-  return this.dataSource.getRepository(Entrega).find({
-    where: {
-      atividade: {
-        professor: { id: professorId }
-      }
-    },
-    relations: [
-      'aluno',
-      'aluno.usuario',
-      'aluno.turma',
-      'atividade',
-      'atividade.disciplina'
-    ],
-    order: {
-      dataEntrega: 'DESC'
-    } as any
-  });
-}
+    return this.dataSource.getRepository(Entrega).find({
+      where: {
+        atividade: {
+          professor: { id: professorId }
+        }
+      },
+      relations: [
+        'aluno',
+        'aluno.usuario',
+        'aluno.turma',
+        'atividade',
+        'atividade.disciplina'
+      ],
+      order: {
+        dataEntrega: 'DESC'
+      } as any
+    });
+  }
 }
