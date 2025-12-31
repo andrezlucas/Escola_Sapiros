@@ -42,5 +42,9 @@ export class CreateAvisoDto {
   @IsUUID('4')
   @IsOptional()
   destinatarioAlunoId?: string;
+
+  @IsUUID('4')
+  @IsOptional()
+  destinatarioProfessorId?: string;
 }
 

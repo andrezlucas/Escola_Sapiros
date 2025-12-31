@@ -9,11 +9,13 @@ import {
 } from 'typeorm';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';
+import { Professor } from '../../professor/entities/professor.entity';
 
 export enum TipoAviso {
   GERAL = 'GERAL',
   TURMA = 'TURMA',
   INDIVIDUAL = 'INDIVIDUAL',
+  PROFESSOR = 'PROFESSOR',
 }
 
 export enum CategoriaAviso {
@@ -65,6 +67,9 @@ export class Aviso {
 
   @Column({ name: 'destinatario_aluno_id', type: 'uuid', nullable: true })
   destinatarioAlunoId?: string | null;
+
+  @Column({ name: 'destinatario_professor_id', type: 'uuid', nullable: true })
+  destinatarioProfessorId?: string | null;
 
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;

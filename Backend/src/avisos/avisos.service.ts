@@ -15,6 +15,7 @@ import { FilterCalendarioDto } from './dto/filter-calendario.dto';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { Turma } from '../turma/entities/turma.entity';
 import { Aluno } from '../aluno/entities/aluno.entity';
+import { Professor } from '../professor/entities/professor.entity';
 
 type AnyUser = Partial<Usuario> & { id?: string; role?: Role };
 
@@ -31,6 +32,8 @@ export class AvisosService {
     private readonly turmaRepository: Repository<Turma>,
     @InjectRepository(Aluno)
     private readonly alunoRepository: Repository<Aluno>,
+    @InjectRepository(Professor)
+  private readonly professorRepository: Repository<Professor>,
   ) {}
 
   private async findUsuarioOrFail(id: string) {
@@ -61,6 +64,23 @@ export class AvisosService {
     });
   }
 
+  private async findProfessorOrFail(id: string) {
+  const professor = await this.professorRepository.findOne({
+    where: { id },
+    relations: ['usuario', 'turmas'],
+  });
+  if (!professor) throw new NotFoundException('Professor não encontrado');
+  return professor;
+}
+private async findProfessorByUsuarioId(usuarioId: string) {
+  const professor = await this.professorRepository.findOne({
+    where: { usuario: { id: usuarioId } },
+    relations: ['usuario', 'turmas'],
+  });
+  if (!professor) throw new NotFoundException('Professor não encontrado para este usuário');
+  return professor;
+}
+
   private parseDateOrThrow(value?: string | Date): Date {
     if (!value) throw new BadRequestException();
     if (value instanceof Date) {
@@ -85,6 +105,7 @@ export class AvisosService {
     tipo: TipoAviso,
     turmaId?: string | null,
     destinatarioAlunoId?: string | null,
+    destinatarioProfessorId?: string | null,
   ) {
     if (tipo === TipoAviso.GERAL) {
       if (turmaId || destinatarioAlunoId) throw new BadRequestException();
@@ -98,6 +119,11 @@ export class AvisosService {
     if (tipo === TipoAviso.INDIVIDUAL) {
       if (!destinatarioAlunoId || turmaId) throw new BadRequestException();
       await this.findAlunoOrFail(destinatarioAlunoId);
+    }
+
+    if (tipo === TipoAviso.PROFESSOR) {
+    if (!destinatarioProfessorId || turmaId || destinatarioAlunoId)throw new BadRequestException()
+    await this.findProfessorOrFail(destinatarioProfessorId);
     }
   }
 
@@ -130,6 +156,12 @@ export class AvisosService {
 
       throw new ForbiddenException();
     }
+    if (aviso.tipo === TipoAviso.PROFESSOR) {
+  if (user.role === Role.COORDENACAO) return;
+  if (user.role === Role.PROFESSOR && aviso.destinatarioProfessorId === user.id) return;
+  throw new ForbiddenException();
+}
+
   }
 
   async create(dto: CreateAvisoDto, user: AnyUser): Promise<Aviso> {
@@ -141,6 +173,7 @@ export class AvisosService {
       tipoFinal,
       dto.turmaId ?? null,
       dto.destinatarioAlunoId ?? null,
+      dto.destinatarioProfessorId ?? null,
     );
 
     const autor = await this.findUsuarioOrFail(user.id!);
@@ -157,6 +190,7 @@ export class AvisosService {
       usuario: autor,
       turma: dto.turmaId ? await this.findTurmaOrFail(dto.turmaId) : null,
       destinatarioAlunoId: dto.destinatarioAlunoId ?? null,
+      destinatarioProfessorId: dto.destinatarioProfessorId ?? null,
     });
 
     return this.avisoRepository.save(aviso);
