@@ -11,7 +11,7 @@ export default function ModalRespostasAluno({
   atividade,
   onClose,
 }: ModalProps) {
-  const [abertos, setAbertos] = useState<string[]>([])
+  const [abertos, setAbertos] = useState<string[]>([]);
 
   const corrigirResposta = async (
     entregaId: string,
@@ -144,17 +144,18 @@ export default function ModalRespostasAluno({
                             <li
                               key={alt.id}
                               className={`${
-                                alternativaEscolhida?.id === alt.id
-                                  ? acertou
-                                    ? "text-green-600 font-bold"
-                                    : "text-red-600 font-bold"
+                                alt.correta
+                                  ? "text-green-600 font-bold"
+                                  : alternativaEscolhida?.id === alt.id
+                                  ? "text-red-600 font-bold"
                                   : ""
                               }`}
                             >
-                              {alt.letra}. {alt.texto}{" "}
+                              {alt.letra}. {alt.texto}
+                              {alt.correta && " (Resposta correta)"}
                               {alternativaEscolhida?.id === alt.id &&
-                                acertou !== undefined &&
-                                (acertou ? " Certo" : " Errado")}
+                                !alt.correta &&
+                                " (Marcada pelo aluno)"}
                             </li>
                           ))}
                           <p>

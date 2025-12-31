@@ -58,7 +58,7 @@ export default function ListAtividades() {
     if (!turmaId) return [];
     try {
       const res = await fetch(
-        `http://localhost:3000/atividades/turma/${turmaId}`,
+        `http://localhost:3000/atividades/professor/minhas-atividades`,
         {
           headers: {
             "Content-Type": "application/json",

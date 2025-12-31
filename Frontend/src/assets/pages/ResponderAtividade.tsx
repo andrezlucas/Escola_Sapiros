@@ -56,7 +56,6 @@ export default function ResponderAtividade({
         if (!res.ok) {
           throw new Error("Erro ao carregar atividade");
         }
-
         const data = await res.json();
         setAtividade(data);
       } catch (err) {
@@ -96,6 +95,12 @@ export default function ResponderAtividade({
         },
         body: JSON.stringify(payload),
       });
+
+      if (res.status === 403) {
+          toast.error("O prazo para entrega desta atividade expirou");
+          onClose();
+          return;
+        }
 
       if (!res.ok) {
         const err = await res.json();

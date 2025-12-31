@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Input } from "./Input";
 import { toast } from "react-toastify";
@@ -95,12 +95,36 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
       },
     });
   }
+  const carregouRef = useRef(false);
 
   useEffect(() => {
     if (!atividadeId) return;
+    if (carregouRef.current) return;
 
     const fetchAtividade = async () => {
       try {
+        reset({
+          titulo: "",
+          descricao: "",
+          turmaId: "",
+          disciplinaId: "",
+          dataEntrega: "",
+        });
+
+        setQuestoes([]);
+        setEnunciado("");
+        setTipoQuestao("MULTIPLA_ESCOLHA");
+        setValorQuestao(1);
+
+        setAlternativas([
+          { id: crypto.randomUUID(), texto: "", correta: false },
+          { id: crypto.randomUUID(), texto: "", correta: false },
+          { id: crypto.randomUUID(), texto: "", correta: false },
+          { id: crypto.randomUUID(), texto: "", correta: false },
+        ]);
+
+        setHabilidadesSelecionadas([]);
+
         const res = await authFetch(
           `http://localhost:3000/atividades/${atividadeId}`
         );
@@ -128,7 +152,7 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
         toast.error("Erro ao carregar atividade");
       }
     };
-
+    carregouRef.current = true;
     fetchAtividade();
   }, [atividadeId]);
 

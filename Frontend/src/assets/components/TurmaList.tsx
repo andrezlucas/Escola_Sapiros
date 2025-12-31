@@ -21,13 +21,12 @@ interface Disciplina {
   nome: string;
 }
 
-// Mude "turno: string" para "turno: "MANHÃ" | "TARDE" | "NOITE""
 interface Turma {
   id: string;
   nome_turma: string;
   ano_letivo: string;
   capacidade_maxima: number;
-  turno: "MANHÃ" | "TARDE" | "NOITE"; // Corrigido aqui
+  turno: "MANHÃ" | "TARDE" | "NOITE";
   ativa: boolean;
   professor?: Professor;
   alunos: Aluno[];
@@ -55,10 +54,9 @@ export default function TurmaList() {
       if (!res.ok) throw new Error("Erro ao buscar turmas");
       const data = await res.json();
 
-      // Garantir que o turno tenha o tipo correto
       const turmasFormatadas: Turma[] = data.map((turma: any) => ({
         ...turma,
-        // Converter para maiúsculas e garantir que seja um dos valores permitidos
+
         turno: (turma.turno?.toUpperCase() === "TARDE"
           ? "TARDE"
           : turma.turno?.toUpperCase() === "NOITE"
@@ -66,7 +64,6 @@ export default function TurmaList() {
           : "MANHÃ") as "MANHÃ" | "TARDE" | "NOITE",
       }));
 
-      
       setTurmas(turmasFormatadas);
     } catch (err) {
       console.error("Erro ao buscar turmas", err);
