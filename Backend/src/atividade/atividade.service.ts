@@ -167,31 +167,26 @@ export class AtividadeService {
     return this.atividadeRepository.save(atividade);
   }
 
-  async partialUpdate(id: string, dto: UpdateAtividadeDto) {
-    const atividade = await this.atividadeRepository.findOne({
-      where: { id },
-      relations: ['questoes'],
-    });
-
-    if (!atividade) {
-      throw new NotFoundException('Atividade não encontrada');
-    }
-
-    const atividadeAtualizada = this.atividadeRepository.merge(atividade, dto);
-
-    if (dto.dataEntrega) {
-      atividadeAtualizada.dataEntrega = new Date(dto.dataEntrega);
-    }
-
-    if (atividadeAtualizada.questoes) {
-      atividadeAtualizada.questoes = atividadeAtualizada.questoes.map((q) => {
-        q.atividade = { id } as any;
-        return q;
-      });
-    }
-
-    return await this.atividadeRepository.save(atividadeAtualizada);
+async partialUpdate(id: string, dto: UpdateAtividadeDto) {
+  const atividade = await this.atividadeRepository.findOne({
+    where: { id },
+    relations: ['questoes', 'questoes.alternativas'],
+  });
+  if (!atividade) {
+    throw new NotFoundException('Atividade não encontrada');
   }
+  if (dto.questoes) {
+    dto.questoes = dto.questoes.map((qDto: any) => ({
+      ...qDto,
+      atividade: { id },
+    }));
+  }
+  this.atividadeRepository.merge(atividade, dto);
+  if (dto.dataEntrega) {
+    atividade.dataEntrega = new Date(dto.dataEntrega);
+  }
+  return await this.atividadeRepository.save(atividade);
+}
 
   async remove(id: string) {
     const atividade = await this.findOne(id);
