@@ -172,22 +172,26 @@ async partialUpdate(id: string, dto: UpdateAtividadeDto) {
     where: { id },
     relations: ['questoes', 'questoes.alternativas'],
   });
+
   if (!atividade) {
     throw new NotFoundException('Atividade não encontrada');
   }
-  if (dto.questoes) {
-    dto.questoes = dto.questoes.map((qDto: any) => ({
-      ...qDto,
-      atividade: { id },
-    }));
-  }
+
   this.atividadeRepository.merge(atividade, dto);
+
   if (dto.dataEntrega) {
     atividade.dataEntrega = new Date(dto.dataEntrega);
   }
+
+  if (atividade.questoes) {
+    atividade.questoes = atividade.questoes.map((q) => ({
+      ...q,
+      atividade: { id } as any,
+    }));
+  }
+
   return await this.atividadeRepository.save(atividade);
 }
-
   async remove(id: string) {
     const atividade = await this.findOne(id);
     await this.atividadeRepository.remove(atividade);

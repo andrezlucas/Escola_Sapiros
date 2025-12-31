@@ -304,59 +304,63 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
     setHabilidadesSelecionadas([]);
   }
 
-  async function onSubmit(data: FormData) {
-    if (questoes.length === 0) {
-      toast.error("Adicione pelo menos uma questão");
-      return;
-    }
-
-    const payload = {
-      titulo: data.titulo,
-      descricao: data.descricao,
-      dataEntrega: data.dataEntrega + "T00:00",
-      disciplinaId: data.disciplinaId,
-      turmaIds: [data.turmaId],
-      questoes: questoes.map((q) => ({
-        enunciado: q.enunciado,
-        tipo: q.tipo,
-        valor: q.valor,
-        habilidadesIds: q.habilidades.map((h) => h.id),
-        alternativas:
-          q.tipo !== "DISSERTATIVA"
-            ? q.alternativas.map((a) => ({
-                texto: a.texto,
-                correta: a.correta,
-              }))
-            : undefined,
-      })),
-    };
-
-    const url = atividadeId
-      ? `http://localhost:3000/atividades/${atividadeId}`
-      : "http://localhost:3000/atividades";
-
-    const method = atividadeId ? "PATCH" : "POST";
-
-    try {
-      const res = await authFetch(url, {
-        method,
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Erro ao salvar atividade");
-      const dataAtualizada = await res.json();
-      if (onSubmitCallback) onSubmitCallback(dataAtualizada);
-      toast.success(
-        atividadeId
-          ? "Atividade atualizada com sucesso!"
-          : "Atividade criada com sucesso!"
-      );
-
-      handleCancelar();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+async function onSubmit(data: FormData) {
+  if (questoes.length === 0) {
+    toast.error("Adicione pelo menos uma questão");
+    return;
   }
+
+  const payload = {
+    titulo: data.titulo,
+    descricao: data.descricao,
+    dataEntrega: data.dataEntrega + "T00:00",
+    disciplinaId: data.disciplinaId,
+    turmaIds: [data.turmaId],
+    questoes: questoes.map((q) => ({
+      id: q.id, 
+      enunciado: q.enunciado,
+      tipo: q.tipo,
+      valor: q.valor,
+      habilidadesIds: q.habilidades.map((h) => h.id),
+      alternativas:
+        q.tipo !== "DISSERTATIVA"
+          ? q.alternativas.map((a) => ({
+              id: a.id,
+              texto: a.texto,
+              correta: a.correta,
+            }))
+          : undefined,
+    })),
+  };
+
+  const url = atividadeId
+    ? `http://localhost:3000/atividades/${atividadeId}`
+    : "http://localhost:3000/atividades";
+
+  const method = atividadeId ? "PATCH" : "POST";
+
+  try {
+    const res = await authFetch(url, {
+      method,
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error("Erro ao salvar atividade");
+    
+    const dataAtualizada = await res.json();
+    if (onSubmitCallback) onSubmitCallback(dataAtualizada);
+    
+    toast.success(
+      atividadeId
+        ? "Atividade atualizada com sucesso!"
+        : "Atividade criada com sucesso!"
+    );
+
+    handleCancelar();
+  } catch (err: any) {
+    toast.error(err.message);
+  }
+}
 
   function handleCancelar() {
     reset();
