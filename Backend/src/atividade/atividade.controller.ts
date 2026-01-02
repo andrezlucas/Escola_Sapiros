@@ -132,4 +132,19 @@ export class AtividadeController {
   gerarQuestoesIa(@Body() dto: GerarQuestoesIaDto, @Req() req) {
     return this.atividadeService.gerarQuestoesComIa(dto, req.user.id);
   }
+
+@Delete(':atividadeId/questoes/:questaoId')
+@Roles(Role.PROFESSOR)
+removerQuestao(
+  @Param('atividadeId', ParseUUIDPipe) atividadeId: string,
+  @Param('questaoId', ParseUUIDPipe) questaoId: string,
+  @Req() req,
+) {
+  return this.atividadeService.removerQuestao(
+    atividadeId,
+    questaoId,
+    req.user.id,
+  );
+}
+
 }

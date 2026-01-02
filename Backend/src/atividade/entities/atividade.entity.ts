@@ -6,9 +6,9 @@ import {
   UpdateDateColumn,
   ManyToOne,
   ManyToMany,
-  JoinTable,
   OneToMany,
   JoinColumn,
+  JoinTable,
   VersionColumn,
 } from 'typeorm';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
@@ -62,6 +62,7 @@ export class Atividade {
 
   @OneToMany(() => Questao, questao => questao.atividade, {
     cascade: true,
+    orphanedRowAction: 'delete',
   })
   questoes: Questao[];
 

@@ -40,6 +40,7 @@ export class Questao {
 
   @OneToMany(() => Alternativa, alternativa => alternativa.questao, {
     cascade: true,
+    orphanedRowAction: 'delete',
   })
   alternativas: Alternativa[];
 

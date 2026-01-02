@@ -181,31 +181,25 @@ export class AtividadeService {
     return this.atividadeRepository.save(atividade);
   }
 
-  async partialUpdate(id: string, dto: UpdateAtividadeDto) {
-    const atividade = await this.atividadeRepository.findOne({
-      where: { id },
-      relations: ['questoes', 'questoes.alternativas'],
-    });
+async partialUpdate(id: string, dto: UpdateAtividadeDto) {
+  const atividade = await this.atividadeRepository.findOne({
+    where: { id },
+  });
 
-    if (!atividade) {
-      throw new NotFoundException('Atividade não encontrada');
-    }
-
-    this.atividadeRepository.merge(atividade, dto);
-
-    if (dto.dataEntrega) {
-      atividade.dataEntrega = new Date(dto.dataEntrega);
-    }
-
-    if (atividade.questoes) {
-      atividade.questoes = atividade.questoes.map((q) => ({
-        ...q,
-        atividade: { id } as any,
-      }));
-    }
-
-    return await this.atividadeRepository.save(atividade);
+  if (!atividade) {
+    throw new NotFoundException('Atividade não encontrada');
   }
+
+  if (dto.dataEntrega) {
+    dto.dataEntrega = new Date(dto.dataEntrega as any);
+  }
+
+  const { questoes, ...dadosAtividade } = dto;
+
+  this.atividadeRepository.merge(atividade, dadosAtividade);
+
+  return this.atividadeRepository.save(atividade);
+}
 
   async remove(id: string) {
     const atividade = await this.findOne(id);
@@ -472,4 +466,32 @@ export class AtividadeService {
       } as any,
     });
   }
+ async removerQuestao(
+  atividadeId: string,
+  questaoId: string,
+  professorId: string,
+) {
+  const atividade = await this.atividadeRepository.findOne({
+    where: {
+      id: atividadeId,
+      professor: { id: professorId },
+    },
+    relations: ['questoes'],
+  });
+
+  if (!atividade) {
+    throw new ForbiddenException('Atividade não encontrada');
+  }
+
+  const questao = atividade.questoes.find(q => q.id === questaoId);
+
+  if (!questao) {
+    throw new NotFoundException('Questão não encontrada');
+  }
+
+  await this.questaoRepository.remove(questao);
+
+  return { message: 'Questão removida com sucesso' };
+}
+
 }
