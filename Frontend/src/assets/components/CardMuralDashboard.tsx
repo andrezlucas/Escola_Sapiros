@@ -9,10 +9,15 @@ interface AvisoDashboard {
   categoria?: string;
 }
 
-export default function CardMuralDashboard() {
+interface CardMuralDashboardProps {
+  onVerMural: () => void;
+}
+
+export default function CardMuralDashboard({
+  onVerMural,
+}: CardMuralDashboardProps) {
   const [avisos, setAvisos] = useState<AvisoDashboard[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     async function carregarAvisos() {
@@ -51,7 +56,7 @@ export default function CardMuralDashboard() {
             <ItemAviso
               key={aviso.id}
               aviso={aviso}
-              onVerMural={() => navigate("/mural")}
+              onVerMural={onVerMural}
             />
           ))}
       </div>

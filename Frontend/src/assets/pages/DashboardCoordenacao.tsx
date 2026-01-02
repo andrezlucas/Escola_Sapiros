@@ -242,7 +242,7 @@ function DashboardCoordenacao() {
               </div>
 
               <div className="col-span-2 flex flex-col space-y-14 h-full">
-                <CardMuralDashboard />
+                <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
                 <div className="-mt-2.5">
                   <CardCalendario />
                 </div>

@@ -22,6 +22,8 @@ import { Roles } from '../auth/roles/roles.decorator';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Role } from '../usuario/entities/usuario.entity';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
+import { GerarQuestoesIaDto } from './dto/gerar-questoes-ia.dto';
+
 
 @Controller('atividades')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -123,5 +125,11 @@ export class AtividadeController {
   @Roles(Role.PROFESSOR)
   listarTodasEntregas(@Req() req) {
     return this.atividadeService.listarTodasEntregasDoProfessor(req.user.id);
-}
+  }
+
+  @Post('gerar-questoes-ia')
+  @Roles(Role.PROFESSOR)
+  gerarQuestoesIa(@Body() dto: GerarQuestoesIaDto, @Req() req) {
+    return this.atividadeService.gerarQuestoesComIa(dto, req.user.id);
+  }
 }

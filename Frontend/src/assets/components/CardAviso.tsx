@@ -106,6 +106,7 @@ export default function CardAviso({
   const [editarAberto, setEditarAberto] = useState(false);
   const [avisoSelecionado, setAvisoSelecionado] = useState<Aviso | null>(null);
   const [nomeAluno, setNomeAluno] = useState<string | null>(null);
+  const [nomeProfessor, setNomeProfessor] = useState<string | null>(null);
   const [estaConfirmando, setEstaConfirmando] = useState(false);
   const [estaConfirmado, setEstaConfirmado] = useState(
     aviso.confirmado || false
@@ -115,7 +116,13 @@ export default function CardAviso({
   const categoria = getCategoriaConfig(aviso.categoria);
 
   useEffect(() => {
-    if (aviso.tipo === "INDIVIDUAL" && aviso.destinatarioAlunoId) {
+    setNomeAluno(null)
+    setNomeProfessor(null)
+    if (
+      aviso.tipo === "INDIVIDUAL" &&
+      aviso.destinatarioAlunoId &&
+      aviso.destinatarioAlunoId !== ""
+    ) {
       fetch(`http://localhost:3000/alunos/${aviso.destinatarioAlunoId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -126,6 +133,26 @@ export default function CardAviso({
           setNomeAluno(data.usuario?.nome ?? "Aluno não informado");
         })
         .catch(() => setNomeAluno("Aluno não informado"));
+    }
+
+    if (
+      aviso.tipo === "INDIVIDUAL" &&
+      aviso.destinatarioProfessorId &&
+      aviso.destinatarioProfessorId !== ""
+    ) {
+      fetch(
+        `http://localhost:3000/professores/${aviso.destinatarioProfessorId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          setNomeProfessor(data.usuario?.nome ?? "Professor não informado");
+        })
+        .catch(() => setNomeProfessor("Professor não informado"));
     }
   }, [aviso]);
 
@@ -223,10 +250,18 @@ export default function CardAviso({
 
         {role === "coordenacao" && aviso.tipo === "INDIVIDUAL" && (
           <p className="text-xs text-gray-700 mt-2">
-            <span className="font-semibold">Aluno:</span>{" "}
-            {nomeAluno || "Carregando..."}
+            <span className="font-semibold">Aluno:</span> {""}
+            {nomeAluno ?? "Carregando..."}
           </p>
         )}
+
+        {role === "coordenacao" &&
+          aviso.tipo === "INDIVIDUAL" &&
+          aviso.destinatarioProfessorId && (
+            <p className="text-xs text-gray-700 mt-2">
+              <span className="font-semibold">Professor:</span> {nomeProfessor}
+            </p>
+          )}
 
         <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
           <span className="text-xs text-gray-500"></span>

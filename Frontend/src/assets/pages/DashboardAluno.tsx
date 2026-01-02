@@ -9,6 +9,7 @@ import Calendario from "./Calendario";
 import Mural from "./Mural";
 import Atividades from "./Atividades";
 import AtividadesAluno from "./AtividadesAluno";
+import CardAtividadesAluno from "../components/CardAtividadesAluno";
 
 function DashboardAluno() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -78,11 +79,11 @@ function DashboardAluno() {
 
               <div className="col-span-2 flex flex-col space-y-6">
                 <div className="h-1/2">
-                  <CardMuralDashboard />
+                  <CardMuralDashboard onVerMural={()=> navigateTo("mural")} />
                 </div>
 
                 <div className="h-1/2">
-                  <CardMural type="mini" />
+                  <CardAtividadesAluno type={"mini"} />
                 </div>
               </div>
             </div>

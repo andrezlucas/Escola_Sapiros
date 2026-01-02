@@ -33,7 +33,7 @@ export class AvisosService {
     @InjectRepository(Aluno)
     private readonly alunoRepository: Repository<Aluno>,
     @InjectRepository(Professor)
-  private readonly professorRepository: Repository<Professor>,
+    private readonly professorRepository: Repository<Professor>,
   ) {}
 
   private async findUsuarioOrFail(id: string) {
@@ -65,21 +65,22 @@ export class AvisosService {
   }
 
   private async findProfessorOrFail(id: string) {
-  const professor = await this.professorRepository.findOne({
-    where: { id },
-    relations: ['usuario', 'turmas'],
-  });
-  if (!professor) throw new NotFoundException('Professor não encontrado');
-  return professor;
-}
-private async findProfessorByUsuarioId(usuarioId: string) {
-  const professor = await this.professorRepository.findOne({
-    where: { usuario: { id: usuarioId } },
-    relations: ['usuario', 'turmas'],
-  });
-  if (!professor) throw new NotFoundException('Professor não encontrado para este usuário');
-  return professor;
-}
+    const professor = await this.professorRepository.findOne({
+      where: { id },
+      relations: ['usuario', 'turmas'],
+    });
+    if (!professor) throw new NotFoundException('Professor não encontrado');
+    return professor;
+  }
+  private async findProfessorByUsuarioId(usuarioId: string) {
+    const professor = await this.professorRepository.findOne({
+      where: { usuario: { id: usuarioId } },
+      relations: ['usuario', 'turmas'],
+    });
+    if (!professor)
+      throw new NotFoundException('Professor não encontrado para este usuário');
+    return professor;
+  }
 
   private parseDateOrThrow(value?: string | Date): Date {
     if (!value) throw new BadRequestException();
@@ -117,13 +118,19 @@ private async findProfessorByUsuarioId(usuarioId: string) {
     }
 
     if (tipo === TipoAviso.INDIVIDUAL) {
-      if (!destinatarioAlunoId || turmaId) throw new BadRequestException();
-      await this.findAlunoOrFail(destinatarioAlunoId);
-    }
+      if (turmaId) throw new BadRequestException();
 
-    if (tipo === TipoAviso.PROFESSOR) {
-    if (!destinatarioProfessorId || turmaId || destinatarioAlunoId)throw new BadRequestException()
-    await this.findProfessorOrFail(destinatarioProfessorId);
+      if (!destinatarioAlunoId && !destinatarioProfessorId) {
+        throw new BadRequestException('Informe um aluno ou um professor');
+      }
+
+      if (destinatarioAlunoId) {
+        await this.findAlunoOrFail(destinatarioAlunoId);
+      }
+
+      if (destinatarioProfessorId) {
+        await this.findProfessorOrFail(destinatarioProfessorId);
+      }
     }
   }
 
@@ -135,8 +142,15 @@ private async findProfessorByUsuarioId(usuarioId: string) {
     if (aviso.tipo === TipoAviso.INDIVIDUAL) {
       if (user.role === Role.COORDENACAO) return;
       if (aviso.usuario.id === user.id) return;
-      const aluno = await this.findAlunoByUsuarioId(user.id);
-      if (aluno?.id === aviso.destinatarioAlunoId) return;
+      if (user.role === Role.ALUNO) {
+        const aluno = await this.findAlunoByUsuarioId(user.id);
+        if (aluno?.id === aviso.destinatarioAlunoId) return;
+      }
+      if (user.role === Role.PROFESSOR) {
+        const professor = await this.findProfessorByUsuarioId(user.id);
+        if (professor?.id === aviso.destinatarioProfessorId) return;
+      }
+
       throw new ForbiddenException();
     }
 
@@ -157,11 +171,14 @@ private async findProfessorByUsuarioId(usuarioId: string) {
       throw new ForbiddenException();
     }
     if (aviso.tipo === TipoAviso.PROFESSOR) {
-  if (user.role === Role.COORDENACAO) return;
-  if (user.role === Role.PROFESSOR && aviso.destinatarioProfessorId === user.id) return;
-  throw new ForbiddenException();
-}
-
+      if (user.role === Role.COORDENACAO) return;
+      if (
+        user.role === Role.PROFESSOR &&
+        aviso.destinatarioProfessorId === user.id
+      )
+        return;
+      throw new ForbiddenException();
+    }
   }
 
   async create(dto: CreateAvisoDto, user: AnyUser): Promise<Aviso> {

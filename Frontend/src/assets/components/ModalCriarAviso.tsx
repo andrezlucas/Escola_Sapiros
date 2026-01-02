@@ -14,7 +14,7 @@ export interface Aviso {
   id: string;
   nome: string;
   descricao: string;
-  tipo: "GERAL" | "TURMA" | "INDIVIDUAL";
+  tipo: "GERAL" | "TURMA" | "INDIVIDUAL" | "PROFESSOR";
   categoria:
     | "ACADEMICO"
     | "SECRETARIA"
@@ -27,6 +27,7 @@ export interface Aviso {
     nome_turma: string;
   } | null;
   destinatarioAlunoId?: string;
+  destinatarioProfessorId: string;
 }
 
 export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
@@ -34,7 +35,8 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
     defaultValues: {
       tipo: "GERAL",
       turmaId: "",
-      destinatarioAlunoId: "",
+      destinatarioAlunoId: undefined,
+      destinatarioProfessorId: undefined,
       categoria: "ACADEMICO",
     },
   });
@@ -44,17 +46,20 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
 
   const [turmas, setTurmas] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
+  const [professor, setProfessor] = useState<any[]>([]);
 
   const token = localStorage.getItem("token");
 
   useEffect(() => {
     if (tipo === "GERAL") {
       setValue("turmaId", "");
-      setValue("destinatarioAlunoId", "");
+      setValue("destinatarioAlunoId", undefined);
+      setValue("destinatarioProfessorId", undefined);
     }
 
     if (tipo === "TURMA") {
-      setValue("destinatarioAlunoId", "");
+      setValue("destinatarioAlunoId", undefined);
+      setValue("destinatarioProfessorId", undefined);
     }
 
     if (tipo === "INDIVIDUAL") {
@@ -80,6 +85,15 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
           setAlunos(Array.isArray(res) ? res : res.data ?? []);
         });
     }
+    if (tipo === "INDIVIDUAL") {
+      fetch("http://localhost:3000/professores", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          setProfessor(Array.isArray(res) ? res : res.data ?? []);
+        });
+    }
   }, [tipo, token]);
 
   async function handleSalvar(data: any) {
@@ -88,8 +102,12 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
       return;
     }
 
-    if (data.tipo === "INDIVIDUAL" && !data.destinatarioAlunoId) {
-      toast.error("Selecione um aluno");
+    if (
+      data.tipo === "INDIVIDUAL" &&
+      !data.destinatarioAlunoId &&
+      !data.destinatarioProfessorId
+    ) {
+      toast.error("Selecione um aluno ou um Professor");
       return;
     }
 
@@ -109,7 +127,18 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
     }
 
     if (data.tipo === "INDIVIDUAL") {
-      payload.destinatarioAlunoId = data.destinatarioAlunoId;
+      payload.destinatarioAlunoId =
+        data.destinatarioAlunoId?.trim() || undefined;
+
+      payload.destinatarioProfessorId =
+        data.destinatarioProfessorId?.trim() || undefined;
+    }
+    if (payload.destinatarioAlunoId === "") {
+      delete payload.destinatarioAlunoId;
+    }
+
+    if (payload.destinatarioProfessorId === "") {
+      delete payload.destinatarioProfessorId;
     }
 
     try {
@@ -160,17 +189,31 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
             )}
 
             {tipo === "INDIVIDUAL" && (
-              <select
-                {...register("destinatarioAlunoId")}
-                className="w-full border rounded-lg px-3 py-2"
-              >
-                <option value="">Selecione o aluno</option>
-                {alunos.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.usuario?.nome || a.nome}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  {...register("destinatarioAlunoId")}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  <option value="">Selecione o aluno (opcional)</option>
+                  {alunos.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.usuario?.nome || a.nome}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  {...register("destinatarioProfessorId")}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  <option value="">Selecione o professor (opcional)</option>
+                  {professor.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.usuario?.nome || p.nome}
+                    </option>
+                  ))}
+                </select>
+              </>
             )}
 
             <div className="flex justify-end gap-3">

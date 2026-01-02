@@ -18,6 +18,9 @@ import { RespostaQuestao } from './entities/resposta-questao.entity';
 import { CriarEntregaDto } from './dto/criar-entrega.dto';
 import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
+import { IaQuestoesService } from 'src/ia/ia-questoes.service';
+import { GerarQuestoesIaDto } from './dto/gerar-questoes-ia.dto';
+import { UpdateAlternativaDto } from './dto/update-alternativa.dto';
 
 export enum StatusAtividade {
   PENDENTE = 'PENDENTE',
@@ -41,6 +44,7 @@ export class AtividadeService {
     @InjectRepository(Habilidade)
     private readonly habilidadeRepository: Repository<Habilidade>,
     private readonly dataSource: DataSource,
+    private readonly iaQuestoesService: IaQuestoesService,
   ) {}
 
   async create(dto: CreateAtividadeDto, professorId: string) {
@@ -63,7 +67,9 @@ export class AtividadeService {
     });
 
     if (turmas.length !== dto.turmaIds.length) {
-      throw new ForbiddenException('Uma ou mais turmas não pertencem ao professor');
+      throw new ForbiddenException(
+        'Uma ou mais turmas não pertencem ao professor',
+      );
     }
 
     return this.dataSource.transaction(async (manager) => {
@@ -98,7 +104,10 @@ export class AtividadeService {
 
           const questaoSalva = await manager.save(questao);
 
-          if (questaoDto.tipo !== 'DISSERTATIVA' && questaoDto.alternativas?.length) {
+          if (
+            questaoDto.tipo !== 'DISSERTATIVA' &&
+            questaoDto.alternativas?.length
+          ) {
             const alternativas = questaoDto.alternativas.map((alt, index) =>
               manager.create(Alternativa, {
                 texto: alt.texto,
@@ -219,17 +228,23 @@ export class AtividadeService {
     const agora = new Date();
     const dataLimite = new Date(atividade.dataEntrega);
     if (agora > dataLimite) {
-      throw new ForbiddenException('O prazo para entrega desta atividade expirou');
+      throw new ForbiddenException(
+        'O prazo para entrega desta atividade expirou',
+      );
     }
 
     const alunoNaTurma = atividade.turmas.some((t) => t.id === aluno.turma?.id);
     if (!alunoNaTurma) {
-      throw new ForbiddenException('Você não tem permissão para responder esta atividade');
+      throw new ForbiddenException(
+        'Você não tem permissão para responder esta atividade',
+      );
     }
 
-    const entregaExistente = await this.dataSource.getRepository(Entrega).findOne({
-      where: { aluno: { id: aluno.id }, atividade: { id: atividade.id } },
-    });
+    const entregaExistente = await this.dataSource
+      .getRepository(Entrega)
+      .findOne({
+        where: { aluno: { id: aluno.id }, atividade: { id: atividade.id } },
+      });
     if (entregaExistente) {
       throw new ForbiddenException('Atividade já respondida anteriormente');
     }
@@ -245,7 +260,9 @@ export class AtividadeService {
       let notaAcumulada = 0;
 
       for (const respDto of dto.respostas) {
-        const questao = atividade.questoes.find((q) => q.id === respDto.questaoId);
+        const questao = atividade.questoes.find(
+          (q) => q.id === respDto.questaoId,
+        );
         if (!questao) continue;
 
         let notaQuestao = 0;
@@ -260,7 +277,9 @@ export class AtividadeService {
         const resposta = manager.create(RespostaQuestao, {
           entrega: entregaSalva,
           questao,
-          alternativaEscolhida: respDto.alternativaId ? { id: respDto.alternativaId } : undefined,
+          alternativaEscolhida: respDto.alternativaId
+            ? { id: respDto.alternativaId }
+            : undefined,
           textoResposta: respDto.textoResposta,
           notaAtribuida: notaQuestao,
         });
@@ -280,7 +299,9 @@ export class AtividadeService {
     });
 
     if (!atividade) {
-      throw new ForbiddenException('Atividade não encontrada ou não pertence a este professor');
+      throw new ForbiddenException(
+        'Atividade não encontrada ou não pertence a este professor',
+      );
     }
 
     return this.dataSource.getRepository(Entrega).find({
@@ -309,7 +330,9 @@ export class AtividadeService {
     });
 
     if (!entrega) {
-      throw new ForbiddenException('Entrega não encontrada ou sem permissão de acesso');
+      throw new ForbiddenException(
+        'Entrega não encontrada ou sem permissão de acesso',
+      );
     }
 
     const resposta = entrega.respostas.find((r) => r.id === respostaId);
@@ -332,7 +355,10 @@ export class AtividadeService {
 
       await manager.update(Entrega, entregaId, { notaFinal: novaNotaFinal });
 
-      return { message: 'Nota atualizada com sucesso', notaFinal: novaNotaFinal };
+      return {
+        message: 'Nota atualizada com sucesso',
+        notaFinal: novaNotaFinal,
+      };
     });
   }
 
@@ -355,7 +381,7 @@ export class AtividadeService {
     return atividades.map((atividade) => {
       const entrega = entregas.find((e) => e.atividade.id === atividade.id);
       const dataLimite = new Date(atividade.dataEntrega);
-      
+
       let status: StatusAtividade;
 
       if (entrega) {
@@ -387,23 +413,63 @@ export class AtividadeService {
     return aluno;
   }
 
+  async gerarQuestoesComIa(dto: GerarQuestoesIaDto, professorId: string) {
+    const disciplina = await this.disciplinaRepository.findOne({
+      where: {
+        id_disciplina: dto.disciplinaId,
+        professores: { id: professorId },
+      },
+    });
+
+    if (!disciplina) {
+      throw new ForbiddenException('Disciplina não pertence ao professor');
+    }
+
+    const habilidades = dto.habilidadesIds?.length
+      ? await this.habilidadeRepository.find({
+          where: { id: In(dto.habilidadesIds) },
+        })
+      : [];
+
+    const resultado = await this.iaQuestoesService.gerarQuestoes({
+      disciplina: disciplina.nome_disciplina,
+      tema: dto.tema,
+      habilidades,
+      quantidade: dto.quantidade,
+      tipos: dto.tipos,
+    });
+
+    return {
+      questoes: resultado.questoes.map((q) => ({
+        enunciado: q.enunciado,
+        tipo: q.tipo,
+        valor: q.valor ?? 1,
+        alternativas: q.alternativas ?? [],
+        habilidades: habilidades.map((h) => ({
+          id: h.id,
+          nome: h.nome,
+        })),
+      })),
+    };
+  }
+
   async listarTodasEntregasDoProfessor(professorId: string) {
     return this.dataSource.getRepository(Entrega).find({
       where: {
         atividade: {
-          professor: { id: professorId }
-        }
+          professor: { id: professorId },
+        },
       },
       relations: [
         'aluno',
         'aluno.usuario',
         'aluno.turma',
         'atividade',
-        'atividade.disciplina'
+        'atividade.disciplina',
       ],
       order: {
-        dataEntrega: 'DESC'
-      } as any
+        dataEntrega: 'DESC',
+      } as any,
     });
   }
 }

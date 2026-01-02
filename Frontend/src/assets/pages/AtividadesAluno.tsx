@@ -106,7 +106,7 @@ function MinhasAtividades() {
                   }`}
                 >
                   {a.status === "EXPIRADO"
-                    ? "Prazo Vencido"
+                    ? "Expirado"
                     : a.status.toLowerCase()}
                 </span>
               </div>

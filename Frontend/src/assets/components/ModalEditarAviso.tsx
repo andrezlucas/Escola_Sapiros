@@ -8,7 +8,7 @@ interface AvisoEditar {
   id: string;
   nome: string;
   descricao: string;
-  tipo: "GERAL" | "TURMA" | "INDIVIDUAL";
+  tipo: "GERAL" | "TURMA" | "INDIVIDUAL" | "PROFESSOR";
   categoria: string;
   dataInicio?: string;
   dataFinal?: string;

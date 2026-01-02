@@ -7,23 +7,19 @@ interface Turma {
   id: string;
   nome_turma: string;
 }
-
 interface Disciplina {
   id_disciplina: string;
   nome_disciplina: string;
 }
-
 interface Habilidade {
   id: string;
   nome: string;
 }
-
 interface Alternativa {
   id: string;
   texto: string;
   correta: boolean;
 }
-
 interface Questao {
   id: string;
   enunciado: string;
@@ -66,8 +62,14 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
   const [tipoQuestao, setTipoQuestao] = useState<
     "MULTIPLA_ESCOLHA" | "DISSERTATIVA" | "VERDADEIRO_FALSO"
   >("MULTIPLA_ESCOLHA");
-
   const [valorQuestao, setValorQuestao] = useState<number>(1);
+
+  const [temaIA, setTemaIA] = useState("");
+  const [quantidadeIA, setQuantidadeIA] = useState(1);
+  const [loadingIA, setLoadingIA] = useState(false);
+  const [tipoQuestaoIA, setTipoQuestaoIA] = useState<
+    "MULTIPLA_ESCOLHA" | "DISSERTATIVA" | "VERDADEIRO_FALSO"
+  >("MULTIPLA_ESCOLHA");
 
   const {
     register,
@@ -76,16 +78,11 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
     formState: { errors },
     reset,
   } = useForm<FormData>({
-    defaultValues: {
-      titulo: "",
-      descricao: "",
-      turmaId: "",
-      disciplinaId: "",
-    },
+    defaultValues: { titulo: "", descricao: "", turmaId: "", disciplinaId: "" },
   });
+
   function authFetch(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem("token");
-
     return fetch(url, {
       ...options,
       headers: {
@@ -95,11 +92,12 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
       },
     });
   }
+
   const carregouRef = useRef(false);
 
   useEffect(() => {
-    if (!atividadeId) return;
-    if (carregouRef.current) return;
+    if (!atividadeId || carregouRef.current) return;
+    carregouRef.current = true;
 
     const fetchAtividade = async () => {
       try {
@@ -110,19 +108,16 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
           disciplinaId: "",
           dataEntrega: "",
         });
-
         setQuestoes([]);
         setEnunciado("");
         setTipoQuestao("MULTIPLA_ESCOLHA");
         setValorQuestao(1);
-
         setAlternativas([
           { id: crypto.randomUUID(), texto: "", correta: false },
           { id: crypto.randomUUID(), texto: "", correta: false },
           { id: crypto.randomUUID(), texto: "", correta: false },
           { id: crypto.randomUUID(), texto: "", correta: false },
         ]);
-
         setHabilidadesSelecionadas([]);
 
         const res = await authFetch(
@@ -152,7 +147,6 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
         toast.error("Erro ao carregar atividade");
       }
     };
-    carregouRef.current = true;
     fetchAtividade();
   }, [atividadeId]);
 
@@ -164,28 +158,20 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
           authFetch("http://localhost:3000/professores/turmas"),
           authFetch("http://localhost:3000/professores/disciplinas"),
         ]);
-
-        const turmasData = await turmasRes.json();
-        const disciplinasData = await disciplinasRes.json();
-
-        setTurmas(turmasData);
-        setDisciplinas(disciplinasData);
-      } catch (err) {
+        setTurmas(await turmasRes.json());
+        setDisciplinas(await disciplinasRes.json());
+      } catch {
         toast.error("Erro ao carregar turmas e disciplinas");
       } finally {
         setLoadingListas(false);
       }
     };
-
     fetchListas();
   }, []);
 
   useEffect(() => {
     const disciplinaId = watch("disciplinaId");
-    if (!disciplinaId) {
-      setHabilidades([]);
-      return;
-    }
+    if (!disciplinaId) return setHabilidades([]);
 
     const fetchHabilidades = async () => {
       try {
@@ -193,18 +179,11 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
           `http://localhost:3000/disciplinas/${disciplinaId}/habilidades`
         );
         const data = await res.json();
-
-        setHabilidades(
-          data.map((h: any) => ({
-            id: h.id,
-            nome: h.nome,
-          }))
-        );
+        setHabilidades(data.map((h: any) => ({ id: h.id, nome: h.nome })));
       } catch {
         toast.error("Erro ao carregar habilidades");
       }
     };
-
     fetchHabilidades();
   }, [watch("disciplinaId")]);
 
@@ -215,10 +194,7 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
         { id: crypto.randomUUID(), texto: "Falso", correta: false },
       ]);
     }
-
-    if (tipoQuestao === "DISSERTATIVA") {
-      setAlternativas([]);
-    }
+    if (tipoQuestao === "DISSERTATIVA") setAlternativas([]);
   }, [tipoQuestao]);
 
   function atualizarAlternativa(
@@ -243,20 +219,40 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
     setAlternativas((prev) => prev.filter((alt) => alt.id !== id));
   }
 
-  function adicionarHabilidadePorSelect(habilidadeId: string) {
+  function adicionarHabilidadePorSelect(
+    habilidadeId: string,
+    questaoId?: string
+  ) {
     const habilidade = habilidades.find((h) => h.id === habilidadeId);
     if (!habilidade) return;
 
-    const jaExiste = habilidadesSelecionadas.some(
-      (h) => h.id === habilidade.id
-    );
-    if (jaExiste) return;
-
-    setHabilidadesSelecionadas((prev) => [...prev, habilidade]);
+    if (questaoId) {
+      setQuestoes((prev) =>
+        prev.map((q) =>
+          q.id === questaoId &&
+          !q.habilidades.some((h) => h.id === habilidade.id)
+            ? { ...q, habilidades: [...q.habilidades, habilidade] }
+            : q
+        )
+      );
+    } else {
+      if (habilidadesSelecionadas.some((h) => h.id === habilidade.id)) return;
+      setHabilidadesSelecionadas((prev) => [...prev, habilidade]);
+    }
   }
 
-  function removerHabilidade(h: Habilidade) {
-    setHabilidadesSelecionadas((prev) => prev.filter((x) => x.id !== h.id));
+  function removerHabilidade(h: Habilidade, questaoId?: string) {
+    if (questaoId) {
+      setQuestoes((prev) =>
+        prev.map((q) =>
+          q.id === questaoId
+            ? { ...q, habilidades: q.habilidades.filter((x) => x.id !== h.id) }
+            : q
+        )
+      );
+    } else {
+      setHabilidadesSelecionadas((prev) => prev.filter((x) => x.id !== h.id));
+    }
   }
 
   function adicionarQuestao() {
@@ -264,23 +260,15 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
       const alternativasInvalidas = alternativas.some(
         (alt) => !alt.texto.trim()
       );
-      if (alternativasInvalidas) {
-        toast.error("Preencha todas as alternativas");
-        return;
-      }
-
-      const temCorreta = alternativas.some((alt) => alt.correta);
-      if (!temCorreta) {
-        toast.error("Selecione pelo menos uma alternativa como correta");
-        return;
-      }
+      if (alternativasInvalidas)
+        return toast.error("Preencha todas as alternativas");
+      if (!alternativas.some((alt) => alt.correta))
+        return toast.error("Selecione pelo menos uma alternativa correta");
     }
-
-    if (!enunciado.trim()) {
-      toast.error("Digite o enunciado da questão");
-      return;
+    if (!enunciado.trim()) return toast.error("Digite o enunciado da questão");
+    if (!valorQuestao || valorQuestao <= 0) {
+      return toast.error("O valor da questão deve ser maior que zero");
     }
-
     setQuestoes((prev) => [
       ...prev,
       {
@@ -292,6 +280,7 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
         habilidades: [...habilidadesSelecionadas],
       },
     ]);
+
     setTipoQuestao("MULTIPLA_ESCOLHA");
     setValorQuestao(1);
     setEnunciado("");
@@ -304,63 +293,107 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
     setHabilidadesSelecionadas([]);
   }
 
-async function onSubmit(data: FormData) {
-  if (questoes.length === 0) {
-    toast.error("Adicione pelo menos uma questão");
-    return;
+  async function gerarQuestoesIA() {
+    const disciplinaId = watch("disciplinaId");
+    if (!disciplinaId)
+      return toast.error("Selecione a disciplina antes de gerar questões");
+    if (!temaIA.trim())
+      return toast.error("Digite um tema para a geração de questões");
+
+    setLoadingIA(true);
+    try {
+      const res = await authFetch(
+        "http://localhost:3000/atividades/gerar-questoes-ia",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            disciplinaId,
+            tema: temaIA,
+            quantidade: quantidadeIA,
+            habilidadesIds: habilidadesSelecionadas.map((h) => h.id),
+            tipos: [tipoQuestaoIA],
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Erro ao gerar questões com IA");
+      const data = await res.json();
+
+      const novasQuestoes: Questao[] = data.questoes.map((q: any) => ({
+        id: crypto.randomUUID(),
+        enunciado: q.enunciado,
+        tipo: q.tipo || tipoQuestaoIA,
+        valor: q.valor,
+        alternativas: q.alternativas ?? [],
+        habilidades: q.habilidades ?? [],
+      }));
+
+      setQuestoes((prev) => [...prev, ...novasQuestoes]);
+
+      setEnunciado("");
+      setAlternativas([
+        { id: crypto.randomUUID(), texto: "", correta: false },
+        { id: crypto.randomUUID(), texto: "", correta: false },
+        { id: crypto.randomUUID(), texto: "", correta: false },
+        { id: crypto.randomUUID(), texto: "", correta: false },
+      ]);
+      setHabilidadesSelecionadas([]);
+      toast.success("Questões geradas com IA adicionadas com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoadingIA(false);
+    }
   }
 
-  const payload = {
-    titulo: data.titulo,
-    descricao: data.descricao,
-    dataEntrega: data.dataEntrega + "T00:00",
-    disciplinaId: data.disciplinaId,
-    turmaIds: [data.turmaId],
-    questoes: questoes.map((q) => ({
-      id: q.id, 
-      enunciado: q.enunciado,
-      tipo: q.tipo,
-      valor: q.valor,
-      habilidadesIds: q.habilidades.map((h) => h.id),
-      alternativas:
-        q.tipo !== "DISSERTATIVA"
-          ? q.alternativas.map((a) => ({
-              id: a.id,
-              texto: a.texto,
-              correta: a.correta,
-            }))
-          : undefined,
-    })),
-  };
+  async function onSubmit(data: FormData) {
+    if (questoes.length === 0)
+      return toast.error("Adicione pelo menos uma questão");
 
-  const url = atividadeId
-    ? `http://localhost:3000/atividades/${atividadeId}`
-    : "http://localhost:3000/atividades";
+    const payload = {
+      titulo: data.titulo,
+      descricao: data.descricao,
+      dataEntrega: data.dataEntrega + "T00:00",
+      disciplinaId: data.disciplinaId,
+      turmaIds: [data.turmaId],
+      questoes: questoes.map((q) => ({
+        ...(atividadeId && { id: q.id }),
+        enunciado: q.enunciado,
+        tipo: q.tipo,
+        valor: q.valor,
+        habilidadesIds: q.habilidades.map((h) => h.id),
+        alternativas:
+          q.tipo !== "DISSERTATIVA"
+            ? q.alternativas.map((a) => ({
+                ...(atividadeId && { id: a.id }),
+                texto: a.texto,
+                correta: a.correta,
+              }))
+            : undefined,
+      })),
+    };
 
-  const method = atividadeId ? "PATCH" : "POST";
+    try {
+      const url = atividadeId
+        ? `http://localhost:3000/atividades/${atividadeId}`
+        : "http://localhost:3000/atividades";
+      const method = atividadeId ? "PATCH" : "POST";
+      const res = await authFetch(url, {
+        method,
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Erro ao salvar atividade");
 
-  try {
-    const res = await authFetch(url, {
-      method,
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) throw new Error("Erro ao salvar atividade");
-    
-    const dataAtualizada = await res.json();
-    if (onSubmitCallback) onSubmitCallback(dataAtualizada);
-    
-    toast.success(
-      atividadeId
-        ? "Atividade atualizada com sucesso!"
-        : "Atividade criada com sucesso!"
-    );
-
-    handleCancelar();
-  } catch (err: any) {
-    toast.error(err.message);
+      const dataAtualizada = await res.json();
+      if (onSubmitCallback) onSubmitCallback(dataAtualizada);
+      toast.success(
+        atividadeId ? "Atividade atualizada!" : "Atividade criada!"
+      );
+      handleCancelar();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   }
-}
 
   function handleCancelar() {
     reset();
@@ -487,7 +520,95 @@ async function onSubmit(data: FormData) {
               </div>
             </div>
           </section>
+          <section className="mt-8">
+            <h2 className="font-semibold mb-2">Gerar Questões com IA</h2>
+            <div className="flex flex-col gap-3">
+              <Input
+                placeholder="Digite o tema das questões"
+                label="Tema"
+                type="text"
+                value={temaIA}
+                onChange={(e) => setTemaIA(e.target.value)}
+              />
 
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">
+                  Quantidade de questões
+                </label>
+                <input
+                  type="number"
+                  value={quantidadeIA}
+                  onChange={(e) => setQuantidadeIA(Number(e.target.value))}
+                  className="input w-20 border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">
+                  Habilidades
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {habilidadesSelecionadas.map((h) => (
+                    <span
+                      key={h.id}
+                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm cursor-pointer flex items-center gap-1"
+                      onClick={() => removerHabilidade(h)}
+                    >
+                      {h.nome} <span className="text-red-500">✕</span>
+                    </span>
+                  ))}
+                </div>
+
+                <select
+                  className="input w-full border border-gray-200 rounded-lg bg-blue-50"
+                  onChange={(e) => {
+                    adicionarHabilidadePorSelect(e.target.value);
+                    e.target.value = "";
+                  }}
+                >
+                  <option value="">Selecionar habilidade</option>
+                  {habilidades.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">
+                  Tipo da Questão
+                </label>
+                <select
+                  className="input w-full border border-gray-200 rounded-lg bg-blue-50"
+                  value={tipoQuestaoIA}
+                  onChange={(e) =>
+                    setTipoQuestaoIA(
+                      e.target.value as
+                        | "MULTIPLA_ESCOLHA"
+                        | "DISSERTATIVA"
+                        | "VERDADEIRO_FALSO"
+                    )
+                  }
+                >
+                  <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
+                  <option value="DISSERTATIVA">Dissertativa</option>
+                  <option value="VERDADEIRO_FALSO">Verdadeiro/Falso</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={gerarQuestoesIA}
+                className={`mt-2 px-4 py-2 rounded-lg text-white bg-[#1D5D7F] ${
+                  loadingIA ? "bg-[#1D5D7F]" : "bg-[#1D5D7F]-600"
+                }`}
+                disabled={loadingIA}
+              >
+                {loadingIA ? "Gerando..." : "Gerar Questões com IA"}
+              </button>
+            </div>
+          </section>
           <section>
             <h2 className="font-semibold mb-2">
               Adicionar Questão ({tipoQuestao.replace("_", " ")})
@@ -523,6 +644,19 @@ async function onSubmit(data: FormData) {
                 placeholder="Ex: Qual evento marcou o início da colonização portuguesa no Brasil?"
                 value={enunciado}
                 onChange={(e) => setEnunciado(e.target.value)}
+              />
+            </div>
+            <div className="mt-3">
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Valor da questão
+              </label>
+              <input
+                type="number"
+                min={0.5}
+                step={0.5}
+                value={valorQuestao}
+                onChange={(e) => setValorQuestao(Number(e.target.value))}
+                className="input w-32 border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base"
               />
             </div>
 
@@ -631,9 +765,14 @@ async function onSubmit(data: FormData) {
                 {questoes.map((q, index) => (
                   <div key={q.id} className="p-4 bg-gray-50 rounded-lg border">
                     <div className="flex justify-between items-start">
-                      <strong className="text-lg">
-                        {index + 1}. {q.enunciado}
-                      </strong>
+                      <div>
+                        <strong className="text-lg">
+                          {index + 1}. {q.enunciado}
+                        </strong>
+                        <div className="text-sm text-gray-500">
+                          Valor: {q.valor} ponto(s)
+                        </div>
+                      </div>
                       <button
                         type="button"
                         onClick={() =>

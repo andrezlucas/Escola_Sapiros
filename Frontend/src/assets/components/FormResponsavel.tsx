@@ -266,8 +266,6 @@ export default function FormResponsavel({
                       setValue("bairro", data.bairro || "");
                       setValue("cidade", data.cidade || "");
                       setValue("estado", data.estado || "");
-                      if (data.complemento)
-                        setValue("complemento", data.complemento);
                     }
                   }
                 },

@@ -12,6 +12,7 @@ import { AtividadeService } from './atividade.service';
 import { AtividadeController } from './atividade.controller';
 import { Entrega } from './entities/entrega.entity';
 import { RespostaQuestao } from './entities/resposta-questao.entity';
+import { IaModule } from 'src/ia/ia.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RespostaQuestao } from './entities/resposta-questao.entity';
       Turma,
       Habilidade,
     ]),
+    IaModule,
   ],
   controllers: [AtividadeController],
   providers: [AtividadeService],

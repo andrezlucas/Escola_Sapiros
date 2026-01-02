@@ -89,7 +89,7 @@ function DashboardProfessor() {
 
               <div className="col-span-2 flex flex-col space-y-6">
                 <div className="h-90">
-                  <CardMuralDashboard />
+                  <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
                 </div>
 
                 <div className="h-96">
