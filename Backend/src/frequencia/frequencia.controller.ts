@@ -1,19 +1,15 @@
-import { Body,Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query,Req,UseGuards,UsePipes,ValidationPipe,} from '@nestjs/common';
-import type { Request } from 'express';
+import { Controller, Get, Post, Body, Query, Req, UseGuards, UsePipes, ValidationPipe, ParseUUIDPipe, Patch, Delete, Param } from '@nestjs/common';
 import { FrequenciaService } from './frequencia.service';
 import { CreateFrequenciaDto } from './dto/create-frequencia.dto';
-import { UpdateFrequenciaDto } from './dto/update-frequencia.dto';
 import { FrequenciaFilterDto } from './dto/frequencia-filter.dto';
+import { UpdateFrequenciaDto } from './dto/update-frequencia.dto';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { Role, Usuario } from '../usuario/entities/usuario.entity';
 import { Frequencia } from './entities/frequencia.entity';
+import { StatusFrequencia } from './entities/frequencia.entity';
 
-/**
- * Tipo local que estende Request para incluir `user` (populado pelo JwtAuthGuard).
- * Ajuste `Usuario` se o shape do token for diferente (por exemplo, payload parcial).
- */
 type AuthRequest = Request & { user?: Usuario | any };
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -21,7 +17,6 @@ type AuthRequest = Request & { user?: Usuario | any };
 export class FrequenciaController {
   constructor(private readonly frequenciaService: FrequenciaService) {}
 
-  // Criar frequência: coordenação e professores
   @Roles(Role.COORDENACAO, Role.PROFESSOR)
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
@@ -32,7 +27,6 @@ export class FrequenciaController {
     return await this.frequenciaService.create(createFrequenciaDto, req.user);
   }
 
-  // Listar frequências: coordenação, professores e alunos (service filtra por role)
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   @Get()
   @UsePipes(new ValidationPipe({ transform: true, skipMissingProperties: true }))
@@ -43,26 +37,28 @@ export class FrequenciaController {
     return await this.frequenciaService.findAll(filters, req.user);
   }
 
-  // Resumo por aluno e disciplina: coordenação, professores e alunos (service valida)
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   @Get('resumo')
   async resumo(
-    @Query('alunoId') alunoId: string,
+    @Query('alunoId',) alunoId: string,
     @Query('disciplinaId', ParseUUIDPipe) disciplinaId: string,
-    @Query('dataInicio') dataInicio: string | undefined,
-    @Query('dataFim') dataFim: string | undefined,
-    @Req() req: AuthRequest,
+    @Query('turmaId', ParseUUIDPipe) turmaId: string,
+    @Query('dataInicio') dataInicio?: string,
+    @Query('dataFim') dataFim?: string,
+    @Query('status') status?: StatusFrequencia,
+    @Req() req?: AuthRequest,
   ) {
-    return await this.frequenciaService.resumoPorAlunoEDisciplina(
+    return this.frequenciaService.resumo(
       alunoId,
       disciplinaId,
+      turmaId,
       dataInicio,
       dataFim,
-      req.user,
+      status,
+      req?.user,
     );
   }
 
-  // Buscar por id: coordenação, professores e aluno (service valida acesso)
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   @Get(':id')
   async findOne(
@@ -72,7 +68,6 @@ export class FrequenciaController {
     return await this.frequenciaService.findOne(id, req.user);
   }
 
-  // Atualizar frequência: coordenação e professores
   @Roles(Role.COORDENACAO, Role.PROFESSOR)
   @Patch(':id')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
@@ -84,7 +79,33 @@ export class FrequenciaController {
     return await this.frequenciaService.update(id, updateFrequenciaDto, req.user);
   }
 
-  // Remover frequência: coordenação e professores
+  @Roles(Role.COORDENACAO, Role.PROFESSOR)
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('status') status: StatusFrequencia,
+    @Body('justificativa') justificativa?: string,
+    @Req() req?: AuthRequest,
+  ): Promise<Frequencia> {
+    return this.frequenciaService.updateStatus(id, status, justificativa, req?.user);
+  }
+
+  @Roles(Role.COORDENACAO, Role.PROFESSOR)
+  @Get('estatisticas/turma/:turmaId')
+  async estatisticasTurma(
+    @Param('turmaId', ParseUUIDPipe) turmaId: string,
+    @Query('disciplinaId', ParseUUIDPipe) disciplinaId: string,
+    @Query('dataInicio') dataInicio?: string,
+    @Query('dataFim') dataFim?: string,
+  ) {
+    return this.frequenciaService.getEstatisticasTurma(
+      turmaId,
+      disciplinaId,
+      dataInicio,
+      dataFim,
+    );
+  }
+
   @Roles(Role.COORDENACAO, Role.PROFESSOR)
   @Delete(':id')
   async remove(

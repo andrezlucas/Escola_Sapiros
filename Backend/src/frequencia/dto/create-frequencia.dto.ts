@@ -1,23 +1,33 @@
-import {IsBoolean,IsDateString,IsNotEmpty,IsOptional,IsString,IsUUID,} from 'class-validator';
+import { IsBoolean, IsDateString, IsNotEmpty, IsOptional, IsString, IsUUID, IsInt, Min, IsEnum } from 'class-validator';
+import { StatusFrequencia } from '../entities/frequencia.entity';
 
 export class CreateFrequenciaDto {
-  @IsDateString({}, { message: 'Data deve estar em formato ISO válido (DD-MM-YYYY)' })
+  @IsDateString()
   @IsNotEmpty({ message: 'Data é obrigatória' })
   data: string;
 
-  @IsBoolean({ message: 'Presente deve ser um valor booleano' })
+  @IsEnum(StatusFrequencia, { message: `status deve ser um dos valores: ${Object.values(StatusFrequencia).join(', ')}` })
   @IsOptional()
-  presente?: boolean = false;
+  status?: StatusFrequencia = StatusFrequencia.PRESENTE;
 
-  @IsString({ message: 'Observação deve ser texto' })
+  @IsString()
   @IsOptional()
-  observacao?: string;
+  justificativa?: string;
 
-  @IsString({ message: 'alunoId deve ser a matrícula do aluno' })
-  @IsNotEmpty({ message: 'alunoId é obrigatório' })
-  alunoId: string; // corresponde a matricula_aluno
+  @IsString()
+  @IsNotEmpty()
+  alunoId: string;
 
-  @IsUUID('4', { message: 'disciplinaId deve ser um UUID válido' })
-  @IsNotEmpty({ message: 'disciplinaId é obrigatório' })
-  disciplinaId: string; // corresponde ao id da disciplina
+  @IsUUID('4',)
+  @IsNotEmpty()
+  disciplinaId: string; 
+
+  @IsUUID('4',)
+  @IsNotEmpty()
+  turmaId: string;
+
+  @IsInt()
+  @Min(0,)
+  @IsOptional()
+  faltasNoPeriodo?: number;
 }

@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { Frequencia } from './entities/frequencia.entity';
 import { FrequenciaService } from './frequencia.service';
 import { FrequenciaController } from './frequencia.controller';
-
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Turma } from '../turma/entities/turma.entity';
@@ -17,7 +15,7 @@ import { Usuario } from '../usuario/entities/usuario.entity';
       Frequencia,
       Aluno,
       Disciplina,
-      Turma,        // ✅ adiciona isto!
+      Turma,
       Professor,
       Usuario,
     ]),

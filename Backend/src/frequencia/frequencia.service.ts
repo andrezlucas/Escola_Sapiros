@@ -1,10 +1,17 @@
-import { Injectable,NotFoundException,BadRequestException,ForbiddenException,} from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Frequencia } from './entities/frequencia.entity';
+
+import { Frequencia, StatusFrequencia } from './entities/frequencia.entity';
 import { CreateFrequenciaDto } from './dto/create-frequencia.dto';
 import { UpdateFrequenciaDto } from './dto/update-frequencia.dto';
 import { FrequenciaFilterDto } from './dto/frequencia-filter.dto';
+
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Turma } from '../turma/entities/turma.entity';
@@ -28,13 +35,14 @@ export class FrequenciaService {
     private readonly usuarioRepository: Repository<Usuario>,
   ) {}
 
- 
-
   private async findAlunoByMatricula(matricula: string): Promise<Aluno> {
     const aluno = await this.alunoRepository.findOne({
       where: { matriculaAluno: matricula },
     });
-    if (!aluno) throw new NotFoundException(`Aluno com matrícula ${matricula} não encontrado`);
+    if (!aluno)
+      throw new NotFoundException(
+        `Aluno com matrícula ${matricula} não encontrado`,
+      );
     return aluno;
   }
 
@@ -42,33 +50,60 @@ export class FrequenciaService {
     const disciplina = await this.disciplinaRepository.findOne({
       where: { id_disciplina: id },
     });
-    if (!disciplina) throw new NotFoundException(`Disciplina com ID ${id} não encontrada`);
+    if (!disciplina)
+      throw new NotFoundException(`Disciplina com ID ${id} não encontrada`);
     return disciplina;
   }
 
-  private async findProfessorByUsuarioId(usuarioId: string): Promise<Professor | null> {
+  private async findTurmaById(id: string): Promise<Turma> {
+    const turma = await this.turmaRepository.findOne({ where: { id } });
+    if (!turma)
+      throw new NotFoundException(`Turma com ID ${id} não encontrada`);
+    return turma;
+  }
+
+  private getUserMatricula(user: any): string | undefined {
+    return user?.matriculaAluno ?? user?.matricula_aluno ?? user?.matricula;
+  }
+
+  private async findProfessorByUsuarioId(
+    usuarioId: string,
+  ): Promise<Professor | null> {
     return this.professorRepository.findOne({
       where: { usuario: { id: usuarioId } as any },
       relations: ['turmas', 'turmas.disciplinas'],
     });
   }
 
-  private async professorMinistraDisciplina(professor: Professor, disciplinaId: string): Promise<boolean> {
+  private async professorMinistraDisciplina(
+    professor: Professor,
+    disciplinaId: string,
+  ): Promise<boolean> {
     if (!professor) return false;
+
     for (const t of professor.turmas || []) {
-      if (t.disciplinas && t.disciplinas.some(d => d.id_disciplina === disciplinaId)) {
+      if (
+        t.disciplinas &&
+        t.disciplinas.some((d) => d.id_disciplina === disciplinaId)
+      ) {
         return true;
       }
+
       if (!t.disciplinas || t.disciplinas.length === 0) {
         const turmaFull = await this.turmaRepository.findOne({
           where: { id: t.id },
           relations: ['disciplinas'],
         });
-        if (turmaFull && turmaFull.disciplinas.some(d => d.id_disciplina === disciplinaId)) {
+
+        if (
+          turmaFull &&
+          turmaFull.disciplinas.some((d) => d.id_disciplina === disciplinaId)
+        ) {
           return true;
         }
       }
     }
+
     return false;
   }
 
@@ -79,22 +114,41 @@ export class FrequenciaService {
     return d;
   }
 
-  private async assertCanReadFrequencia(frequencia: Frequencia, user: any): Promise<void> {
+  private async assertCanReadFrequencia(
+    frequencia: Frequencia,
+    user: any,
+  ): Promise<void> {
     if (!user) throw new ForbiddenException('Usuário não autenticado');
 
     if (user.role === Role.COORDENACAO) return;
 
     if (user.role === Role.PROFESSOR) {
       const professor = await this.findProfessorByUsuarioId(user.id);
-      if (!professor) throw new ForbiddenException('Professor não encontrado para o usuário autenticado');
-      const ok = await this.professorMinistraDisciplina(professor, frequencia.disciplina.id_disciplina);
-      if (!ok) throw new ForbiddenException('Professor não autorizado para acessar esta frequência');
+      if (!professor)
+        throw new ForbiddenException(
+          'Professor não encontrado para o usuário autenticado',
+        );
+
+      const ok = await this.professorMinistraDisciplina(
+        professor,
+        frequencia.disciplina.id_disciplina,
+      );
+      if (!ok)
+        throw new ForbiddenException(
+          'Professor não autorizado para acessar esta frequência',
+        );
       return;
     }
 
     if (user.role === Role.ALUNO) {
-      if (!frequencia.aluno) throw new NotFoundException('Frequência sem aluno vinculado');
-      if (frequencia.aluno.matriculaAluno !== user.matriculaAluno ) {
+      if (!frequencia.aluno)
+        throw new NotFoundException('Frequência sem aluno vinculado');
+
+      const mat = this.getUserMatricula(user);
+      if (!mat)
+        throw new ForbiddenException('Matrícula do aluno não encontrada no token');
+
+      if (frequencia.aluno.matriculaAluno !== mat) {
         throw new ForbiddenException('Aluno não autorizado a ver esta frequência');
       }
       return;
@@ -103,31 +157,55 @@ export class FrequenciaService {
     throw new ForbiddenException('Role não autorizada');
   }
 
-  private async assertCanModifyFrequencia(frequencia: Frequencia | null, user: any, disciplinaIdForCreate?: string): Promise<void> {
+  private async assertCanModifyFrequencia(
+    frequencia: Frequencia | null,
+    user: any,
+    disciplinaIdForCreate?: string,
+  ): Promise<void> {
     if (!user) throw new ForbiddenException('Usuário não autenticado');
 
     if (user.role === Role.COORDENACAO) return;
 
     if (user.role === Role.PROFESSOR) {
       const professor = await this.findProfessorByUsuarioId(user.id);
-      if (!professor) throw new ForbiddenException('Professor não encontrado para o usuário autenticado');
+      if (!professor)
+        throw new ForbiddenException(
+          'Professor não encontrado para o usuário autenticado',
+        );
 
       if (frequencia) {
-        const ok = await this.professorMinistraDisciplina(professor, frequencia.disciplina.id_disciplina);
-        if (!ok) throw new ForbiddenException('Professor não autorizado para modificar esta frequência');
+        const ok = await this.professorMinistraDisciplina(
+          professor,
+          frequencia.disciplina.id_disciplina,
+        );
+        if (!ok)
+          throw new ForbiddenException(
+            'Professor não autorizado para modificar esta frequência',
+          );
         return;
       }
 
-      if (!disciplinaIdForCreate) throw new BadRequestException('Disciplina é obrigatória para criação de frequência');
-      const ministra = await this.professorMinistraDisciplina(professor, disciplinaIdForCreate);
-      if (!ministra) throw new ForbiddenException('Professor não autorizado para criar frequência nesta disciplina');
+      if (!disciplinaIdForCreate)
+        throw new BadRequestException(
+          'Disciplina é obrigatória para criação de frequência',
+        );
+
+      const ministra = await this.professorMinistraDisciplina(
+        professor,
+        disciplinaIdForCreate,
+      );
+      if (!ministra)
+        throw new ForbiddenException(
+          'Professor não autorizado para criar frequência nesta disciplina',
+        );
       return;
     }
 
-    throw new ForbiddenException('Apenas coordenação e professores podem modificar frequências');
+    throw new ForbiddenException(
+      'Apenas coordenação e professores podem modificar frequências',
+    );
   }
 
- 
   /**
    * Cria uma frequência.
    * createFrequenciaDto deve conter:
@@ -138,25 +216,50 @@ export class FrequenciaService {
    * - disciplinaId (UUID)
    * user: req.user (id, role, matricula_aluno quando aplicável)
    */
-  async create(createFrequenciaDto: CreateFrequenciaDto, user: any): Promise<Frequencia> {
-    const { data, presente, observacao, alunoId, disciplinaId } = createFrequenciaDto;
+  async create(
+    createFrequenciaDto: CreateFrequenciaDto,
+    user: any,
+  ): Promise<Frequencia> {
+    const { data, status, justificativa, faltasNoPeriodo, alunoId, disciplinaId, turmaId } =
+      createFrequenciaDto;
 
     if (!alunoId) throw new BadRequestException('alunoId (matrícula) é obrigatório');
     if (!disciplinaId) throw new BadRequestException('disciplinaId é obrigatório');
+    if (!turmaId) throw new BadRequestException('turmaId é obrigatório');
 
     await this.assertCanModifyFrequencia(null, user, disciplinaId);
 
     const aluno = await this.findAlunoByMatricula(alunoId);
     const disciplina = await this.findDisciplinaById(disciplinaId);
+    const turma = await this.findTurmaById(turmaId);
 
     const d = this.parseDateOrThrow(data);
+    const dataISO = d.toISOString().slice(0, 10);
+
+    const jaExiste = await this.frequenciaRepository
+      .createQueryBuilder('f')
+      .where('f.aluno_id = :alunoId', { alunoId: aluno.id })
+      .andWhere('f.disciplina_id = :disciplinaId', {
+        disciplinaId: disciplina.id_disciplina,
+      })
+      .andWhere('f.turma_id = :turmaId', { turmaId: turma.id })
+      .andWhere('f.data = :data', { data: dataISO })
+      .getOne();
+
+    if (jaExiste) {
+      throw new BadRequestException(
+        'Já existe frequência para este aluno/discipina/turma nesta data',
+      );
+    }
 
     const frequencia = this.frequenciaRepository.create({
       data: d,
-      presente: Boolean(presente),
-      observacao: observacao ?? undefined,
+      status: status ?? StatusFrequencia.PRESENTE,
+      justificativa: justificativa ?? undefined,
+      faltasNoPeriodo: faltasNoPeriodo ?? 0,
       aluno,
       disciplina,
+      turma,
     });
 
     return this.frequenciaRepository.save(frequencia);
@@ -167,33 +270,55 @@ export class FrequenciaService {
    * filters: FrequenciaFilterDto (alunoId, disciplinaId, dataInicio, dataFim, presente)
    * user: req.user
    */
-  async findAll(filters: FrequenciaFilterDto | undefined, user: any): Promise<Frequencia[]> {
+  async findAll(
+    filters: FrequenciaFilterDto | undefined,
+    user: any,
+  ): Promise<Frequencia[]> {
     const qb = this.frequenciaRepository
       .createQueryBuilder('f')
       .leftJoinAndSelect('f.aluno', 'aluno')
       .leftJoinAndSelect('f.disciplina', 'disciplina')
+      .leftJoinAndSelect('f.turma', 'turma')
       .orderBy('f.data', 'DESC');
 
     if (filters?.alunoId) {
-      qb.andWhere('aluno.matricula_aluno = :alunoId', { alunoId: filters.alunoId });
+      qb.andWhere('aluno.matricula_aluno = :alunoId', {
+        alunoId: filters.alunoId,
+      });
     }
 
     if (filters?.disciplinaId) {
-      qb.andWhere('disciplina.id_disciplina = :disciplinaId', { disciplinaId: filters.disciplinaId });
+      qb.andWhere('disciplina.id_disciplina = :disciplinaId', {
+        disciplinaId: filters.disciplinaId,
+      });
     }
 
-    if (filters?.presente !== undefined) {
-      qb.andWhere('f.presente = :presente', { presente: filters.presente });
+    if (filters?.turmaId) {
+      qb.andWhere('turma.id = :turmaId', { turmaId: filters.turmaId });
+    }
+
+    if (filters?.status) {
+      qb.andWhere('f.status = :status', { status: filters.status });
+    } else if (filters?.presente !== undefined) {
+      qb.andWhere('f.status = :status', {
+        status: filters.presente
+          ? StatusFrequencia.PRESENTE
+          : StatusFrequencia.FALTA,
+      });
     }
 
     if (filters?.dataInicio) {
       const dInicio = this.parseDateOrThrow(filters.dataInicio);
-      qb.andWhere('f.data >= :dataInicio', { dataInicio: dInicio.toISOString().slice(0, 10) });
+      qb.andWhere('f.data >= :dataInicio', {
+        dataInicio: dInicio.toISOString().slice(0, 10),
+      });
     }
 
     if (filters?.dataFim) {
       const dFim = this.parseDateOrThrow(filters.dataFim);
-      qb.andWhere('f.data <= :dataFim', { dataFim: dFim.toISOString().slice(0, 10) });
+      qb.andWhere('f.data <= :dataFim', {
+        dataFim: dFim.toISOString().slice(0, 10),
+      });
     }
 
     if (!user) throw new ForbiddenException('Usuário não autenticado');
@@ -203,46 +328,64 @@ export class FrequenciaService {
     }
 
     if (user.role === Role.ALUNO) {
-      if (!user.matricula_aluno) throw new ForbiddenException('Matrícula do aluno não encontrada no token');
-      qb.andWhere('aluno.matricula_aluno = :matAluno', { matAluno: user.matricula_aluno });
+      const mat = this.getUserMatricula(user);
+      if (!mat)
+        throw new ForbiddenException('Matrícula do aluno não encontrada no token');
+
+      qb.andWhere('aluno.matricula_aluno = :matAluno', { matAluno: mat });
       return qb.getMany();
     }
 
     if (user.role === Role.PROFESSOR) {
       const professor = await this.findProfessorByUsuarioId(user.id);
-      if (!professor) throw new ForbiddenException('Professor não encontrado para o usuário autenticado');
+      if (!professor)
+        throw new ForbiddenException(
+          'Professor não encontrado para o usuário autenticado',
+        );
 
       const turmas = await this.turmaRepository.find({
-        where: { professor: { id_professor: professor.id} as any },
+        where: { professor: { id_professor: professor.id } as any },
         relations: ['disciplinas'],
       });
-      const disciplinaIds = turmas.flatMap(t => (t.disciplinas || []).map(d => d.id_disciplina));
+
+      const disciplinaIds = turmas.flatMap((t) =>
+        (t.disciplinas || []).map((d) => d.id_disciplina),
+      );
       if (disciplinaIds.length === 0) return [];
-      qb.andWhere('disciplina.id_disciplina IN (:...ids)', { ids: disciplinaIds });
+
+      qb.andWhere('disciplina.id_disciplina IN (:...ids)', {
+        ids: disciplinaIds,
+      });
+
       return qb.getMany();
     }
 
     throw new ForbiddenException('Role não autorizada para listar frequências');
   }
 
-  /**
-   * Resumo por aluno e disciplina: total de registros, presenças, faltas e percentual.
-   * Aplica validação de acesso (aluno só para si; professor apenas para disciplinas que ministra; coordenação tudo).
-   */
-  async resumoPorAlunoEDisciplina(
+  async resumo(
     alunoId: string,
     disciplinaId: string,
+    turmaId: string,
     dataInicio?: string,
     dataFim?: string,
+    status?: StatusFrequencia,
     user?: any,
-  ): Promise<{ total: number; presencas: number; faltas: number; percentualPresenca: number }> {
+  ): Promise<{
+    total: number;
+    presentes: number;
+    faltas: number;
+    faltasJustificadas: number;
+    percentualPresenca: number;
+  }> {
     if (!alunoId) throw new BadRequestException('alunoId (matrícula) é obrigatório');
     if (!disciplinaId) throw new BadRequestException('disciplinaId é obrigatório');
+    if (!turmaId) throw new BadRequestException('turmaId é obrigatório');
 
     const aluno = await this.findAlunoByMatricula(alunoId);
     const disciplina = await this.findDisciplinaById(disciplinaId);
+    const turma = await this.findTurmaById(turmaId);
 
-    // autorização: montar um objeto Frequencia mínimo para checar leitura
     const dummyFreq = new Frequencia();
     dummyFreq.aluno = aluno;
     dummyFreq.disciplina = disciplina;
@@ -252,28 +395,51 @@ export class FrequenciaService {
     const qb = this.frequenciaRepository
       .createQueryBuilder('f')
       .select([
-        'COUNT(f.id_frequencia) as total',
-        'SUM(CASE WHEN f.presente = true THEN 1 ELSE 0 END) as presencas',
+        'COUNT(f.id) as total',
+        `SUM(CASE WHEN f.status = :sPresente THEN 1 ELSE 0 END) as presentes`,
+        `SUM(CASE WHEN f.status = :sFalta THEN 1 ELSE 0 END) as faltas`,
+        `SUM(CASE WHEN f.status = :sFaltaJust THEN 1 ELSE 0 END) as faltasJustificadas`,
       ])
-      .where('f.aluno_id = :mat', { mat: aluno.matriculaAluno })
-      .andWhere('f.disciplina_id = :did', { did: disciplina.id_disciplina });
+      .setParameters({
+        sPresente: StatusFrequencia.PRESENTE,
+        sFalta: StatusFrequencia.FALTA,
+        sFaltaJust: StatusFrequencia.FALTA_JUSTIFICADA,
+      })
+      .where('f.aluno_id = :alunoDbId', { alunoDbId: aluno.id })
+      .andWhere('f.disciplina_id = :discDbId', {
+        discDbId: disciplina.id_disciplina,
+      })
+      .andWhere('f.turma_id = :turmaDbId', { turmaDbId: turma.id });
+
+    if (status) {
+      qb.andWhere('f.status = :status', { status });
+    }
 
     if (dataInicio) {
       const dInicio = this.parseDateOrThrow(dataInicio);
-      qb.andWhere('f.data >= :dataInicio', { dataInicio: dInicio.toISOString().slice(0, 10) });
+      qb.andWhere('f.data >= :dataInicio', {
+        dataInicio: dInicio.toISOString().slice(0, 10),
+      });
     }
+
     if (dataFim) {
       const dFim = this.parseDateOrThrow(dataFim);
-      qb.andWhere('f.data <= :dataFim', { dataFim: dFim.toISOString().slice(0, 10) });
+      qb.andWhere('f.data <= :dataFim', {
+        dataFim: dFim.toISOString().slice(0, 10),
+      });
     }
 
     const raw = await qb.getRawOne();
-    const total = Number(raw?.total ?? 0);
-    const presencas = Number(raw?.presencas ?? 0);
-    const faltas = total - presencas;
-    const percentualPresenca = total === 0 ? 0 : Math.round((presencas / total) * 10000) / 100; // 2 casas decimais
 
-    return { total, presencas, faltas, percentualPresenca };
+    const total = Number(raw?.total ?? 0);
+    const presentes = Number(raw?.presentes ?? 0);
+    const faltas = Number(raw?.faltas ?? 0);
+    const faltasJustificadas = Number(raw?.faltasJustificadas ?? 0);
+
+    const percentualPresenca =
+      total === 0 ? 0 : Math.round((presentes / total) * 10000) / 100;
+
+    return { total, presentes, faltas, faltasJustificadas, percentualPresenca };
   }
 
   /**
@@ -282,9 +448,10 @@ export class FrequenciaService {
   async findOne(id: string, user: any): Promise<Frequencia> {
     const frequencia = await this.frequenciaRepository.findOne({
       where: { id: id },
-      relations: ['aluno', 'disciplina'],
+      relations: ['aluno', 'disciplina', 'turma'],
     });
-    if (!frequencia) throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
+    if (!frequencia)
+      throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
 
     await this.assertCanReadFrequencia(frequencia, user);
     return frequencia;
@@ -293,36 +460,167 @@ export class FrequenciaService {
   /**
    * Atualiza uma frequência. Professores e coordenação podem alterar (professor apenas se ministra a disciplina).
    */
-  async update(id: string, updateFrequenciaDto: UpdateFrequenciaDto, user: any): Promise<Frequencia> {
+  async update(
+    id: string,
+    updateFrequenciaDto: UpdateFrequenciaDto,
+    user: any,
+  ): Promise<Frequencia> {
     const frequencia = await this.frequenciaRepository.findOne({
-      where: { id : id },
-      relations: ['aluno', 'disciplina'],
+      where: { id: id },
+      relations: ['aluno', 'disciplina', 'turma'],
     });
-    if (!frequencia) throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
+    if (!frequencia)
+      throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
 
     await this.assertCanModifyFrequencia(frequencia, user);
 
     if (updateFrequenciaDto.data !== undefined) {
       frequencia.data = this.parseDateOrThrow(updateFrequenciaDto.data);
     }
-    if (updateFrequenciaDto.presente !== undefined) {
-      frequencia.presente = Boolean(updateFrequenciaDto.presente);
+    if (updateFrequenciaDto.status !== undefined) {
+      frequencia.status = updateFrequenciaDto.status;
     }
-    if (updateFrequenciaDto.observacao !== undefined) {
-      frequencia.observacao = updateFrequenciaDto.observacao;
+    if (updateFrequenciaDto.justificativa !== undefined) {
+      frequencia.justificativa = updateFrequenciaDto.justificativa;
+    }
+    if (updateFrequenciaDto.faltasNoPeriodo !== undefined) {
+      frequencia.faltasNoPeriodo = updateFrequenciaDto.faltasNoPeriodo;
     }
 
-    // trocar aluno/disciplina apenas para coordenação
     if (user?.role === Role.COORDENACAO) {
-      if (updateFrequenciaDto.alunoId !== undefined && updateFrequenciaDto.alunoId !== frequencia.aluno.matriculaAluno) {
-        frequencia.aluno = await this.findAlunoByMatricula(updateFrequenciaDto.alunoId);
+      if (
+        updateFrequenciaDto.alunoId !== undefined &&
+        updateFrequenciaDto.alunoId !== frequencia.aluno.matriculaAluno
+      ) {
+        frequencia.aluno = await this.findAlunoByMatricula(
+          updateFrequenciaDto.alunoId,
+        );
       }
-      if (updateFrequenciaDto.disciplinaId !== undefined && updateFrequenciaDto.disciplinaId !== frequencia.disciplina.id_disciplina) {
-        frequencia.disciplina = await this.findDisciplinaById(updateFrequenciaDto.disciplinaId);
+      if (
+        updateFrequenciaDto.disciplinaId !== undefined &&
+        updateFrequenciaDto.disciplinaId !== frequencia.disciplina.id_disciplina
+      ) {
+        frequencia.disciplina = await this.findDisciplinaById(
+          updateFrequenciaDto.disciplinaId,
+        );
+      }
+      if (
+        updateFrequenciaDto.turmaId !== undefined &&
+        updateFrequenciaDto.turmaId !== frequencia.turma.id
+      ) {
+        frequencia.turma = await this.findTurmaById(updateFrequenciaDto.turmaId);
       }
     }
 
     return this.frequenciaRepository.save(frequencia);
+  }
+
+  async updateStatus(
+    id: string,
+    status: StatusFrequencia,
+    justificativa: string | undefined,
+    user: any,
+  ): Promise<Frequencia> {
+    const frequencia = await this.frequenciaRepository.findOne({
+      where: { id },
+      relations: ['aluno', 'disciplina', 'turma'],
+    });
+    if (!frequencia)
+      throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
+
+    await this.assertCanModifyFrequencia(frequencia, user);
+
+    frequencia.status = status;
+    if (justificativa !== undefined) {
+      frequencia.justificativa = justificativa;
+    }
+
+    return this.frequenciaRepository.save(frequencia);
+  }
+
+  async getEstatisticasTurma(
+    turmaId: string,
+    disciplinaId: string,
+    dataInicio?: string,
+    dataFim?: string,
+  ): Promise<
+    Array<{
+      alunoId: string;
+      matriculaAluno: string;
+      total: number;
+      presentes: number;
+      faltas: number;
+      faltasJustificadas: number;
+      percentualPresenca: number;
+    }>
+  > {
+    const turma = await this.findTurmaById(turmaId);
+    const disciplina = await this.findDisciplinaById(disciplinaId);
+
+    const alunos = await this.alunoRepository.find({
+      where: { turma: { id: turma.id } as any },
+    });
+
+    const qb = this.frequenciaRepository
+      .createQueryBuilder('f')
+      .leftJoin('f.aluno', 'aluno')
+      .select([
+        'aluno.id as alunoId',
+        'aluno.matricula_aluno as matriculaAluno',
+        'COUNT(f.id) as total',
+        `SUM(CASE WHEN f.status = :sPresente THEN 1 ELSE 0 END) as presentes`,
+        `SUM(CASE WHEN f.status = :sFalta THEN 1 ELSE 0 END) as faltas`,
+        `SUM(CASE WHEN f.status = :sFaltaJust THEN 1 ELSE 0 END) as faltasJustificadas`,
+      ])
+      .setParameters({
+        sPresente: StatusFrequencia.PRESENTE,
+        sFalta: StatusFrequencia.FALTA,
+        sFaltaJust: StatusFrequencia.FALTA_JUSTIFICADA,
+      })
+      .where('f.turma_id = :turmaId', { turmaId: turma.id })
+      .andWhere('f.disciplina_id = :disciplinaId', {
+        disciplinaId: disciplina.id_disciplina,
+      })
+      .groupBy('aluno.id')
+      .addGroupBy('aluno.matricula_aluno');
+
+    if (dataInicio) {
+      const dInicio = this.parseDateOrThrow(dataInicio);
+      qb.andWhere('f.data >= :dataInicio', {
+        dataInicio: dInicio.toISOString().slice(0, 10),
+      });
+    }
+
+    if (dataFim) {
+      const dFim = this.parseDateOrThrow(dataFim);
+      qb.andWhere('f.data <= :dataFim', {
+        dataFim: dFim.toISOString().slice(0, 10),
+      });
+    }
+
+    const rows = await qb.getRawMany();
+    const map = new Map<string, any>();
+    for (const r of rows) map.set(r.alunoId, r);
+
+    return alunos.map((a) => {
+      const r = map.get(a.id);
+      const total = Number(r?.total ?? 0);
+      const presentes = Number(r?.presentes ?? 0);
+      const faltas = Number(r?.faltas ?? 0);
+      const faltasJustificadas = Number(r?.faltasJustificadas ?? 0);
+      const percentualPresenca =
+        total === 0 ? 0 : Math.round((presentes / total) * 10000) / 100;
+
+      return {
+        alunoId: a.id,
+        matriculaAluno: a.matriculaAluno,
+        total,
+        presentes,
+        faltas,
+        faltasJustificadas,
+        percentualPresenca,
+      };
+    });
   }
 
   /**
@@ -331,9 +629,10 @@ export class FrequenciaService {
   async remove(id: string, user: any): Promise<void> {
     const frequencia = await this.frequenciaRepository.findOne({
       where: { id: id },
-      relations: ['aluno', 'disciplina'],
+      relations: ['aluno', 'disciplina', 'turma'],
     });
-    if (!frequencia) throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
+    if (!frequencia)
+      throw new NotFoundException(`Frequência com ID ${id} não encontrada`);
 
     await this.assertCanModifyFrequencia(frequencia, user);
 

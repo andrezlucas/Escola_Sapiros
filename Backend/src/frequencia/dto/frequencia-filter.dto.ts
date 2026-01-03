@@ -1,32 +1,37 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsDateString, IsOptional, IsString, IsUUID, IsEnum } from 'class-validator';
+import { StatusFrequencia } from '../entities/frequencia.entity';
 
 export class FrequenciaFilterDto {
-  @IsString({ message: 'alunoId deve ser a matrícula do aluno' })
+  @IsString()
   @IsOptional()
-  alunoId?: string; // corresponde a matricula_aluno
+  alunoId?: string;
 
-  @IsUUID('4', { message: 'disciplinaId deve ser um UUID válido' })
+  @IsUUID('4',)
   @IsOptional()
-  disciplinaId?: string; // corresponde ao id da disciplina
+  disciplinaId?: string;
 
-  @IsDateString({}, { message: 'Data inicial deve estar em formato ISO válido (YYYY-MM-DD)' })
+  @IsUUID('4',)
+  @IsOptional()
+  turmaId?: string;
+
+  @IsDateString()
   @IsOptional()
   dataInicio?: string;
 
-  @IsDateString({}, { message: 'Data final deve estar em formato ISO válido (YYYY-MM-DD)' })
+  @IsDateString()
   @IsOptional()
   dataFim?: string;
+
+  @IsEnum(StatusFrequencia, { message: `status deve ser um dos valores: ${Object.values(StatusFrequencia).join(', ')}` })
+  @IsOptional()
+  status?: StatusFrequencia;
 
   @IsBoolean({ message: 'Presente deve ser um valor booleano' })
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'boolean') {
-      return value;
-    }
-    if (typeof value === 'string') {
-      return value.toLowerCase() === 'true';
-    }
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') return value.toLowerCase() === 'true';
     return undefined;
   })
   presente?: boolean;

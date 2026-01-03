@@ -16,6 +16,7 @@ import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Aviso } from '../../avisos/entities/aviso.entity';
 import { Professor } from '../../professor/entities/professor.entity';
 import { Atividade } from '../../atividade/entities/atividade.entity';
+import { Frequencia } from '../../frequencia/entities/frequencia.entity';
 
 @Entity('turmas')
 export class Turma {
@@ -24,6 +25,9 @@ export class Turma {
 
   @ManyToMany(() => Atividade, (atividade) => atividade.turmas)
   atividades: Atividade[];
+
+  @OneToMany(() => Frequencia, (frequencia) => frequencia.turma)
+  frequencias: Frequencia[];
 
   // 🔗 Aluno pertence a UMA turma
   @OneToMany(() => Aluno, (aluno) => aluno.turma)

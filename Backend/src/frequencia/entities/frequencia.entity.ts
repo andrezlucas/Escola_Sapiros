@@ -1,32 +1,50 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {  Entity,  PrimaryGeneratedColumn,  Column,  ManyToOne, JoinColumn,  CreateDateColumn,  UpdateDateColumn } from 'typeorm';
 import { Aluno } from '../../aluno/entities/aluno.entity';
+import { Turma } from '../../turma/entities/turma.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
+
+export enum StatusFrequencia {
+  PRESENTE = 'presente',
+  FALTA = 'falta',
+  FALTA_JUSTIFICADA = 'falta_justificada'
+}
 
 @Entity('frequencias')
 export class Frequencia {
   @PrimaryGeneratedColumn('uuid')
-  id: string; // Corrigido: id_frequencia -> id
+  id: string;
 
   @Column({ type: 'date' })
   data: Date;
 
-  @Column({ default: false })
-  presente: boolean;
+  @Column({ 
+    type: 'enum',
+    enum: StatusFrequencia,
+    default: StatusFrequencia.PRESENTE
+  })
+  status: StatusFrequencia;
+
+  @Column({ type: 'int', default: 0 })
+  faltasNoPeriodo: number;
 
   @Column({ type: 'text', nullable: true })
-  observacao: string;
+  justificativa: string;
 
   @ManyToOne(() => Aluno, { nullable: false })
-  @JoinColumn({ name: 'aluno_id' }) // Corrigido: referencedColumnName removido ou apontando para 'id' (padrão)
+  @JoinColumn({ name: 'aluno_id' })
   aluno: Aluno;
 
+  @ManyToOne(() => Turma, { nullable: false })
+  @JoinColumn({ name: 'turma_id' })
+  turma: Turma;
+
   @ManyToOne(() => Disciplina, { nullable: false })
-  @JoinColumn({ name: 'disciplina_id' }) // Corrigido: id_disciplina -> disciplina_id (para consistência) e referencedColumnName removido
+  @JoinColumn({ name: 'disciplina_id' })
   disciplina: Disciplina;
 
-  @CreateDateColumn({ name: 'criado_em' }) // Corrigido: frequenciacriadoEm -> criadoEm
+  @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
 
-  @UpdateDateColumn({ name: 'atualizado_em' }) // Corrigido: frequenciaatualizadoEm -> atualizadoEm
+  @UpdateDateColumn({ name: 'atualizado_em' })
   atualizadoEm: Date;
 }
