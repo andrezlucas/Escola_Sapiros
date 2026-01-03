@@ -17,7 +17,7 @@ import { AtividadeService } from './atividade.service';
 import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 import { CriarEntregaDto } from './dto/criar-entrega.dto';
-
+import { UpdateQuestaoDto } from './dto/update-questao.dto';
 import { Roles } from '../auth/roles/roles.decorator';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Role } from '../usuario/entities/usuario.entity';
@@ -146,5 +146,22 @@ removerQuestao(
     req.user.id,
   );
 }
+
+@Patch(':atividadeId/questoes/:questaoId')
+@Roles(Role.PROFESSOR)
+patchQuestao(
+  @Param('atividadeId') atividadeId: string,
+  @Param('questaoId') questaoId: string,
+  @Body() dto: UpdateQuestaoDto,
+  @Req() req,
+) {
+  return this.atividadeService.patchQuestao(
+    atividadeId,
+    questaoId,
+    dto,
+    req.user.id,
+  );
+}
+
 
 }

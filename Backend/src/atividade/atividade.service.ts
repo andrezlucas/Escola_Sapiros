@@ -20,6 +20,7 @@ import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 import { IaQuestoesService } from 'src/ia/ia-questoes.service';
 import { GerarQuestoesIaDto } from './dto/gerar-questoes-ia.dto';
+import { UpdateQuestaoDto } from './dto/update-questao.dto';
 
 export enum StatusAtividade {
   PENDENTE = 'PENDENTE',
@@ -507,4 +508,69 @@ export class AtividadeService {
 
     return { message: 'Questão removida com sucesso' };
   }
+
+  async patchQuestao(
+  atividadeId: string,
+  questaoId: string,
+  dto: UpdateQuestaoDto,
+  professorId: string,
+) {
+  const atividade = await this.atividadeRepository.findOne({
+    where: {
+      id: atividadeId,
+      professor: { id: professorId },
+    },
+  });
+
+  if (!atividade) {
+    throw new ForbiddenException('Atividade não encontrada');
+  }
+
+  const questao = await this.questaoRepository.findOne({
+    where: {
+      id: questaoId,
+      atividade: { id: atividadeId },
+    },
+    relations: ['alternativas', 'habilidades'],
+  });
+
+  if (!questao) {
+    throw new NotFoundException('Questão não encontrada');
+  }
+
+  return this.dataSource.transaction(async (manager) => {
+    if (dto.enunciado !== undefined) questao.enunciado = dto.enunciado;
+    if (dto.valor !== undefined) questao.valor = dto.valor;
+    if (dto.tipo !== undefined) questao.tipo = dto.tipo;
+
+    if (dto.habilidadesIds) {
+      questao.habilidades = await manager.find(Habilidade, {
+        where: { id: In(dto.habilidadesIds) },
+      });
+    }
+
+    await manager.save(questao);
+
+    if (dto.alternativas && questao.tipo !== 'DISSERTATIVA') {
+      await manager.remove(questao.alternativas);
+
+      const novasAlternativas = dto.alternativas.map((alt, index) =>
+        manager.create(Alternativa, {
+          texto: alt.texto,
+          correta: alt.correta,
+          letra: alt.letra ?? String.fromCharCode(65 + index),
+          questao,
+        }),
+      );
+
+      await manager.save(novasAlternativas);
+    }
+
+    return manager.findOne(Questao, {
+      where: { id: questaoId },
+      relations: ['alternativas', 'habilidades'],
+    });
+  });
+}
+
 }
