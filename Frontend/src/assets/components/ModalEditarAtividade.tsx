@@ -4,7 +4,7 @@ import FormAtividade from "./FormAtividade";
 type ModalEditarAtividadeProps = {
   atividade: any;
   onClose: () => void;
-  onAtualizar: (atividadeAtualizada: any) => void;
+  onAtualizar: React.Dispatch<React.SetStateAction<any>>;
 };
 
 export default function ModalEditarAtividade({
@@ -36,14 +36,44 @@ export default function ModalEditarAtividade({
       toast.error(err.message || "Erro ao excluir atividade");
     }
   }
+
+  async function excluirQuestao(questaoId: string) {
+    if (!confirm("Deseja realmente excluir esta questão?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `http://localhost:3000/atividades/${atividade.id}/questoes/${questaoId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Erro ao excluir questão");
+
+      toast.success("Questão excluída com sucesso!");
+
+      onAtualizar((prev: any) => ({
+        ...prev,
+        questoes: prev.questoes.filter((q: any) => q.id !== questaoId),
+      }));
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao excluir questão");
+    }
+  }
   return (
     <div className="">
       <div className="">
         <div className="flex justify-between items-center mb-4"></div>
 
         <FormAtividade
-          key={`${atividade.id}-${Date.now()}`}
+          key={atividade.id}
           atividadeId={atividade.id}
+          onExcluirQuestao={excluirQuestao}
           onSubmitCallback={(atividadeAtualizada) => {
             onAtualizar(atividadeAtualizada);
             onClose();

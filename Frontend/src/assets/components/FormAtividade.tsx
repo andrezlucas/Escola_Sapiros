@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Input } from "./Input";
 import { toast } from "react-toastify";
+import ModalEditarQuestao from "./ModalEditarQuestao";
 
 interface Turma {
   id: string;
@@ -40,9 +41,14 @@ interface FormData {
 interface FormAtividadeProps {
   atividadeId?: string;
   onSubmitCallback?: (atividadeAtualizada: any) => void;
+  onExcluirQuestao?: (questaoId: string) => void;
 }
 
-function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
+function FormAtividade({
+  atividadeId,
+  onSubmitCallback,
+  onExcluirQuestao,
+}: FormAtividadeProps) {
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [questoes, setQuestoes] = useState<Questao[]>([]);
@@ -70,6 +76,8 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
   const [tipoQuestaoIA, setTipoQuestaoIA] = useState<
     "MULTIPLA_ESCOLHA" | "DISSERTATIVA" | "VERDADEIRO_FALSO"
   >("MULTIPLA_ESCOLHA");
+  const [modalEditarQuestao, setModalEditarQuestao] = useState(false);
+  const [questaoEditando, setQuestaoEditando] = useState<any>(null);
 
   const {
     register,
@@ -91,6 +99,12 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
         ...(options.headers || {}),
       },
     });
+  }
+
+  function atualizarQuestaoNoEstado(questaoAtualizada: any) {
+    setQuestoes((prev) =>
+      prev.map((q) => (q.id === questaoAtualizada.id ? questaoAtualizada : q))
+    );
   }
 
   const carregouRef = useRef(false);
@@ -170,7 +184,7 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
   }, []);
 
   useEffect(() => {
-    const disciplinaId = watch("disciplinaId");
+    const disciplinaId = watch("disciplinaId") ?? "";
     if (!disciplinaId) return setHabilidades([]);
 
     const fetchHabilidades = async () => {
@@ -773,17 +787,34 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
                           Valor: {q.valor} ponto(s)
                         </div>
                       </div>
+                      <div className="flex gap-3 justify-end">
                       <button
                         type="button"
-                        onClick={() =>
-                          setQuestoes((prev) =>
-                            prev.filter((item) => item.id !== q.id)
-                          )
-                        }
+                        onClick={() => {
+                          if (atividadeId && onExcluirQuestao) {
+                            onExcluirQuestao(q.id);
+                          } else {
+                            setQuestoes((prev) =>
+                              prev.filter((item) => item.id !== q.id)
+                            );
+                          }
+                        }}
                         className="text-red-500 hover:text-red-700"
                       >
                         Remover
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuestaoEditando(q);
+                          setModalEditarQuestao(true);
+                        }}
+                        className="text-blue-600"
+                      >
+                        Editar
+                      </button>
+                      </div>
                     </div>
 
                     <div className="mt-3 space-y-2">
@@ -843,6 +874,21 @@ function FormAtividade({ atividadeId, onSubmitCallback }: FormAtividadeProps) {
           </div>
         </form>
       </div>
+
+      {modalEditarQuestao && questaoEditando && atividadeId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <ModalEditarQuestao
+            atividadeId={atividadeId}
+            questao={questaoEditando}
+            disciplinaId={watch("disciplinaId")}
+            onClose={() => {
+              setModalEditarQuestao(false);
+              setQuestaoEditando(null);
+            }}
+            onAtualizarQuestao={atualizarQuestaoNoEstado}
+          />
+        </div>
+      )}
     </div>
   );
 }
