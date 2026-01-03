@@ -1,31 +1,43 @@
 import { Type } from 'class-transformer';
-import {IsDateString,IsEnum, IsNotEmpty,IsNumber,IsOptional,IsString,IsUUID, Max,Min,} from 'class-validator';
-import { TipoAvaliacao } from '../entities/nota.entity';
+import { IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { TipoAvaliacao, NotaStatus } from '../entities/nota.entity';
 
 export class CreateNotaDto {
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Valor deve ser numérico com até 2 casas decimais' })
-  @Min(0, { message: 'Nota mínima é 0' })
-  @Max(10, { message: 'Nota máxima é 10' })
-  valor: number;
-
-  @IsEnum(TipoAvaliacao, { message: 'Tipo de avaliação deve ser PROVA, TRABALHO, PROJETO, ATIVIDADE ou OUTRO' })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(10)
   @IsOptional()
-  tipoAvaliacao?: TipoAvaliacao = TipoAvaliacao.PROVA;
+  valor?: number;
 
-  @IsDateString({}, { message: 'Data deve estar em formato ISO válido (YYYY-MM-DD)' })
-  @IsNotEmpty({ message: 'Data é obrigatória' })
+  @IsEnum(TipoAvaliacao)
+  @IsOptional()
+  tipoAvaliacao?: TipoAvaliacao;
+
+  @IsString()
+  @IsNotEmpty()
+  avaliacaoNome: string;
+
+  @IsString()
+  @IsOptional()
+  feedback?: string;
+
+  @IsOptional()
+  habilidades?: any;
+
+  @IsEnum(NotaStatus)
+  @IsOptional()
+  status?: NotaStatus;
+
+  @IsDateString()
+  @IsNotEmpty()
   data: string;
 
-  @IsString({ message: 'Observação deve ser texto' })
-  @IsOptional()
-  observacao?: string;
+  @IsString()
+  @IsNotEmpty()
+  matriculaAluno: string;
 
-  @IsString({ message: 'alunoId deve ser a matrícula do aluno' })
-  @IsNotEmpty({ message: 'alunoId é obrigatório' })
-  alunoId: string; // corresponde a matricula_aluno
-
-  @IsUUID('4', { message: 'disciplinaId deve ser um UUID válido' })
-  @IsNotEmpty({ message: 'disciplinaId é obrigatório' })
-  disciplinaId: string; // corresponde ao id da disciplina
+  @IsUUID('4')
+  @IsNotEmpty()
+  disciplinaId: string;
 }

@@ -1,24 +1,36 @@
 import { IsDateString, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { TipoAvaliacao } from '../entities/nota.entity';
+import { TipoAvaliacao, NotaStatus } from '../entities/nota.entity';
 
 export class FilterNotaDto {
-  @IsString({ message: 'alunoId deve ser a matrícula do aluno' })
+  @IsString()
   @IsOptional()
-  alunoId?: string; // corresponde a matricula_aluno
+  alunoId?: string;
 
-  @IsUUID('4', { message: 'disciplinaId deve ser um UUID válido' })
+  @IsUUID('4')
   @IsOptional()
-  disciplinaId?: string; // corresponde ao id da disciplina
+  disciplinaId?: string;
 
-  @IsEnum(TipoAvaliacao, { message: 'Tipo de avaliação deve ser PROVA, TRABALHO, PROJETO, ATIVIDADE ou OUTRO' })
+  @IsString()
+  @IsOptional()
+  avaliacaoNome?: string;
+
+  @IsEnum(TipoAvaliacao)
   @IsOptional()
   tipoAvaliacao?: TipoAvaliacao;
 
-  @IsDateString({}, { message: 'Data inicial deve estar em formato ISO válido (YYYY-MM-DD)' })
+  @IsEnum(NotaStatus)
+  @IsOptional()
+  status?: NotaStatus;
+
+  @IsDateString()
   @IsOptional()
   dataInicio?: string;
 
-  @IsDateString({}, { message: 'Data final deve estar em formato ISO válido (YYYY-MM-DD)' })
+  @IsDateString()
   @IsOptional()
   dataFim?: string;
+  
+  @IsOptional()
+  @IsString()
+  turmaId?: string;
 }

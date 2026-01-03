@@ -10,39 +10,57 @@ export enum TipoAvaliacao {
   OUTRO = 'OUTRO'
 }
 
+export enum NotaStatus {
+  SALVO = 'SALVO',
+  PENDENTE = 'PENDENTE'
+}
+
 @Entity('notas')
 export class Nota {
   @PrimaryGeneratedColumn('uuid')
-  id: string; // Corrigido: id_nota -> id
+  id: string;
 
-  @Column('decimal', { precision: 5, scale: 2 })
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
   valor: number;
 
   @Column({
     type: 'enum',
     enum: TipoAvaliacao,
     default: TipoAvaliacao.PROVA,
-    name: 'tipo_avaliacao' // Adicionado nome da coluna para snake_case
+    name: 'tipo_avaliacao'
   })
   tipoAvaliacao: TipoAvaliacao;
+
+  @Column({ name: 'avaliacao_nome', nullable: true })
+  avaliacaoNome: string;
+
+  @Column({ type: 'text', nullable: true })
+  feedback: string;
+
+  @Column({ type: 'json', nullable: true })
+  habilidades: any;
+
+  @Column({
+    type: 'enum',
+    enum: NotaStatus,
+    default: NotaStatus.PENDENTE
+  })
+  status: NotaStatus;
 
   @Column({ type: 'date' })
   data: Date;
 
-  @Column('text', { nullable: true })
-  observacao: string;
-
   @ManyToOne(() => Aluno, { nullable: false })
-  @JoinColumn({ name: 'aluno_id' }) // Corrigido: referencedColumnName removido ou apontando para 'id' (padrão)
+  @JoinColumn({ name: 'aluno_id' })
   aluno: Aluno;
 
   @ManyToOne(() => Disciplina, { nullable: false })
-  @JoinColumn({ name: 'disciplina_id' }) // Corrigido: referencedColumnName removido ou apontando para 'id' (padrão)
+  @JoinColumn({ name: 'disciplina_id' })
   disciplina: Disciplina;
 
-  @CreateDateColumn({ name: 'criado_em' }) // Corrigido: notacriadoEm -> criadoEm
+  @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
 
-  @UpdateDateColumn({ name: 'atualizado_em' }) // Corrigido: notaatualizadoEm -> atualizadoEm
+  @UpdateDateColumn({ name: 'atualizado_em' })
   atualizadoEm: Date;
 }
