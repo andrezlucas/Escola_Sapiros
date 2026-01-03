@@ -21,6 +21,7 @@ import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 import { IaQuestoesService } from 'src/ia/ia-questoes.service';
 import { GerarQuestoesIaDto } from './dto/gerar-questoes-ia.dto';
 import { UpdateQuestaoDto } from './dto/update-questao.dto';
+import { CreateQuestaoDto } from './dto/create-questao.dto';
 
 export enum StatusAtividade {
   PENDENTE = 'PENDENTE',
@@ -572,5 +573,63 @@ export class AtividadeService {
     });
   });
 }
+
+async adicionarQuestao(
+  atividadeId: string,
+  dto: CreateQuestaoDto,
+  professorId: string,
+) {
+  const atividade = await this.atividadeRepository.findOne({
+    where: {
+      id: atividadeId,
+      professor: { id: professorId },
+    },
+  });
+
+  if (!atividade) {
+    throw new ForbiddenException('Atividade não encontrada');
+  }
+
+  return this.dataSource.transaction(async (manager) => {
+    const habilidades = dto.habilidadesIds?.length
+      ? await manager.find(Habilidade, {
+          where: { id: In(dto.habilidadesIds) },
+        })
+      : [];
+
+    const questao = manager.create(Questao, {
+      enunciado: dto.enunciado,
+      tipo: dto.tipo,
+      valor: dto.valor,
+      atividade,
+      habilidades,
+    });
+
+    const questaoSalva = await manager.save(questao);
+
+    if (
+      dto.tipo !== 'DISSERTATIVA' &&
+      dto.alternativas?.length
+    ) {
+      const alternativas = dto.alternativas.map((alt, index) =>
+        manager.create(Alternativa, {
+          texto: alt.texto,
+          correta: alt.correta,
+          letra: alt.letra ?? String.fromCharCode(65 + index),
+          questao: questaoSalva,
+        }),
+      );
+
+      await manager.save(alternativas);
+    }
+
+    return manager.findOne(Questao, {
+      where: { id: questaoSalva.id },
+      relations: ['alternativas', 'habilidades'],
+    });
+  });
+}
+
+
 
 }

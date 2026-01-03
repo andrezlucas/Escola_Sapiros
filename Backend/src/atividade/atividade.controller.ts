@@ -23,6 +23,7 @@ import { RolesGuard } from '../auth/roles/roles.guard';
 import { Role } from '../usuario/entities/usuario.entity';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { GerarQuestoesIaDto } from './dto/gerar-questoes-ia.dto';
+import { CreateQuestaoDto } from './dto/create-questao.dto';
 
 
 @Controller('atividades')
@@ -163,5 +164,18 @@ patchQuestao(
   );
 }
 
+  @Post(':atividadeId/questoes')
+  @Roles(Role.PROFESSOR)
+  adicionarQuestao(
+    @Param('atividadeId') atividadeId: string,
+    @Body() dto: CreateQuestaoDto,
+    @Req() req,
+  ) {
+    return this.atividadeService.adicionarQuestao(
+      atividadeId,
+      dto,
+      req.user.id,
+    );
+  }
 
 }
