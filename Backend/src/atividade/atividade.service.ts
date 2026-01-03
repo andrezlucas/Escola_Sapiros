@@ -20,7 +20,6 @@ import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 import { IaQuestoesService } from 'src/ia/ia-questoes.service';
 import { GerarQuestoesIaDto } from './dto/gerar-questoes-ia.dto';
-import { UpdateAlternativaDto } from './dto/update-alternativa.dto';
 
 export enum StatusAtividade {
   PENDENTE = 'PENDENTE',
@@ -181,30 +180,46 @@ export class AtividadeService {
     return this.atividadeRepository.save(atividade);
   }
 
-async partialUpdate(id: string, dto: UpdateAtividadeDto) {
-  const atividade = await this.atividadeRepository.findOne({
-    where: { id },
-  });
+  async partialUpdate(id: string, dto: UpdateAtividadeDto) {
+    const atividade = await this.atividadeRepository.findOne({
+      where: { id },
+    });
 
-  if (!atividade) {
-    throw new NotFoundException('Atividade não encontrada');
+    if (!atividade) {
+      throw new NotFoundException('Atividade não encontrada');
+    }
+
+    if (dto.dataEntrega) {
+      dto.dataEntrega = new Date(dto.dataEntrega as any);
+    }
+
+    const { questoes, ...dadosAtividade } = dto;
+    this.atividadeRepository.merge(atividade, dadosAtividade);
+
+    return this.atividadeRepository.save(atividade);
   }
-
-  if (dto.dataEntrega) {
-    dto.dataEntrega = new Date(dto.dataEntrega as any);
-  }
-
-  const { questoes, ...dadosAtividade } = dto;
-
-  this.atividadeRepository.merge(atividade, dadosAtividade);
-
-  return this.atividadeRepository.save(atividade);
-}
 
   async remove(id: string) {
     const atividade = await this.findOne(id);
     await this.atividadeRepository.remove(atividade);
     return { message: 'Atividade removida com sucesso' };
+  }
+
+  private calcularNotaQuestao(
+    questao: Questao,
+    alternativaId?: string,
+  ): number {
+    if (
+      (questao.tipo === 'MULTIPLA_ESCOLHA' ||
+        questao.tipo === 'VERDADEIRO_FALSO') &&
+      alternativaId
+    ) {
+      const correta = questao.alternativas.find(
+        (a) => a.id === alternativaId && a.correta,
+      );
+      return correta ? Number(questao.valor) : 0;
+    }
+    return 0;
   }
 
   async responderAtividade(dto: CriarEntregaDto, usuarioId: string) {
@@ -227,7 +242,9 @@ async partialUpdate(id: string, dto: UpdateAtividadeDto) {
       );
     }
 
-    const alunoNaTurma = atividade.turmas.some((t) => t.id === aluno.turma?.id);
+    const alunoNaTurma = atividade.turmas.some(
+      (t) => t.id === aluno.turma?.id,
+    );
     if (!alunoNaTurma) {
       throw new ForbiddenException(
         'Você não tem permissão para responder esta atividade',
@@ -259,14 +276,10 @@ async partialUpdate(id: string, dto: UpdateAtividadeDto) {
         );
         if (!questao) continue;
 
-        let notaQuestao = 0;
-
-        if (questao.tipo === 'MULTIPLA_ESCOLHA' && respDto.alternativaId) {
-          const correta = questao.alternativas.find((a) => a.correta);
-          if (correta && correta.id === respDto.alternativaId) {
-            notaQuestao = Number(questao.valor);
-          }
-        }
+        const notaQuestao = this.calcularNotaQuestao(
+          questao,
+          respDto.alternativaId,
+        );
 
         const resposta = manager.create(RespostaQuestao, {
           entrega: entregaSalva,
@@ -392,7 +405,7 @@ async partialUpdate(id: string, dto: UpdateAtividadeDto) {
         disciplina: atividade.disciplina.nome_disciplina,
         descricao: atividade.descricao,
         dataEntrega: atividade.dataEntrega,
-        status: status,
+        status,
         nota: entrega ? entrega.notaFinal : null,
       };
     });
@@ -466,32 +479,32 @@ async partialUpdate(id: string, dto: UpdateAtividadeDto) {
       } as any,
     });
   }
- async removerQuestao(
-  atividadeId: string,
-  questaoId: string,
-  professorId: string,
-) {
-  const atividade = await this.atividadeRepository.findOne({
-    where: {
-      id: atividadeId,
-      professor: { id: professorId },
-    },
-    relations: ['questoes'],
-  });
 
-  if (!atividade) {
-    throw new ForbiddenException('Atividade não encontrada');
+  async removerQuestao(
+    atividadeId: string,
+    questaoId: string,
+    professorId: string,
+  ) {
+    const atividade = await this.atividadeRepository.findOne({
+      where: {
+        id: atividadeId,
+        professor: { id: professorId },
+      },
+      relations: ['questoes'],
+    });
+
+    if (!atividade) {
+      throw new ForbiddenException('Atividade não encontrada');
+    }
+
+    const questao = atividade.questoes.find((q) => q.id === questaoId);
+
+    if (!questao) {
+      throw new NotFoundException('Questão não encontrada');
+    }
+
+    await this.questaoRepository.remove(questao);
+
+    return { message: 'Questão removida com sucesso' };
   }
-
-  const questao = atividade.questoes.find(q => q.id === questaoId);
-
-  if (!questao) {
-    throw new NotFoundException('Questão não encontrada');
-  }
-
-  await this.questaoRepository.remove(questao);
-
-  return { message: 'Questão removida com sucesso' };
-}
-
 }
