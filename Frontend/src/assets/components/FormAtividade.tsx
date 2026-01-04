@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { Input } from "./Input";
 import { toast } from "react-toastify";
 import ModalEditarQuestao from "./ModalEditarQuestao";
+import ModalCriarQuestao from "./ModalCriarQuestao";
 
 interface Turma {
   id: string;
@@ -78,6 +79,7 @@ function FormAtividade({
   >("MULTIPLA_ESCOLHA");
   const [modalEditarQuestao, setModalEditarQuestao] = useState(false);
   const [questaoEditando, setQuestaoEditando] = useState<any>(null);
+  const [modalCriarQuestao, setModalCriarQuestao] = useState(false);
 
   const {
     register,
@@ -731,6 +733,16 @@ function FormAtividade({
                 + Adicionar Alternativa
               </button>
             )}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                disabled={!atividadeId}
+                onClick={() => setModalCriarQuestao(true)}
+                className="px-4 py-2 bg-[#1D5D7F] text-white rounded-lg"
+              >
+                + Nova Questão
+              </button>
+            </div>
 
             <div className="mb-4 mt-4">
               <label className="block text-sm font-medium mb-2">
@@ -788,32 +800,32 @@ function FormAtividade({
                         </div>
                       </div>
                       <div className="flex gap-3 justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (atividadeId && onExcluirQuestao) {
-                            onExcluirQuestao(q.id);
-                          } else {
-                            setQuestoes((prev) =>
-                              prev.filter((item) => item.id !== q.id)
-                            );
-                          }
-                        }}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Remover
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (atividadeId && onExcluirQuestao) {
+                              onExcluirQuestao(q.id);
+                            } else {
+                              setQuestoes((prev) =>
+                                prev.filter((item) => item.id !== q.id)
+                              );
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          Remover
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQuestaoEditando(q);
-                          setModalEditarQuestao(true);
-                        }}
-                        className="text-blue-600"
-                      >
-                        Editar
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuestaoEditando(q);
+                            setModalEditarQuestao(true);
+                          }}
+                          className="text-blue-600"
+                        >
+                          Editar
+                        </button>
                       </div>
                     </div>
 
@@ -874,6 +886,32 @@ function FormAtividade({
           </div>
         </form>
       </div>
+
+      {modalCriarQuestao && atividadeId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <ModalCriarQuestao
+            atividadeId={atividadeId}
+            disciplinaId={watch("disciplinaId") || ""}
+            onClose={() => {
+              setModalCriarQuestao(false);
+            }}
+            onCriarQuestao={(novaQuestao) => {
+              const questaoFormatada: Questao = {
+                id: novaQuestao.id,
+                enunciado: novaQuestao.enunciado,
+                tipo: novaQuestao.tipo,
+                valor: Number(novaQuestao.valor),
+                alternativas: novaQuestao.alternativas ?? [],
+                habilidades: novaQuestao.habilidades ?? [],
+              };
+
+              setQuestoes((prev) => [...prev, questaoFormatada]);
+              setModalCriarQuestao(false);
+              toast.success("Questão adicionada com sucesso!");
+            }}
+          />
+        </div>
+      )}
 
       {modalEditarQuestao && questaoEditando && atividadeId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

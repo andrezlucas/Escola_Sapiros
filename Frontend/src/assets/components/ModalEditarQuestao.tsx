@@ -166,77 +166,99 @@ export default function ModalEditarQuestao({
   }
 
   return (
-    <div className="p-6 bg-white rounded-xl w-full max-w-2xl">
-      <h2 className="text-xl font-bold mb-4">Editar Questão</h2>
+    <div className="w-full max-w-2xl bg-white rounded-xl p-6">
+      <h2 className="text-2xl font-bold mb-6">Editar Questão</h2>
 
-      <label className="block font-medium mb-1">Enunciado</label>
-      <textarea
-        className="input w-full h-24 mb-4"
-        value={enunciado}
-        onChange={(e) => setEnunciado(e.target.value)}
-      />
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1 text-gray-700">
+          Enunciado da questão
+        </label>
+        <textarea
+          className="input h-24 w-full border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base"
+          placeholder="Digite o enunciado da questão"
+          value={enunciado}
+          onChange={(e) => setEnunciado(e.target.value)}
+        />
+      </div>
 
-      <label className="block font-medium mb-1">Valor</label>
-      <input
-        type="number"
-        className="input w-32 mb-4"
-        min={0.5}
-        step={0.5}
-        value={valor}
-        onChange={(e) => setValor(Number(e.target.value))}
-      />
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1 text-gray-700">
+          Valor da questão
+        </label>
+        <input
+          type="number"
+          min={0.5}
+          step={0.5}
+          value={valor}
+          onChange={(e) => setValor(Number(e.target.value))}
+          className="input w-32 border border-gray-200 rounded-lg bg-blue-50"
+        />
+      </div>
 
       {tipo !== "DISSERTATIVA" && (
-        <>
-          <label className="block font-medium mb-2">Alternativas</label>
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-gray-700">
+            Alternativas
+          </label>
 
-          {alternativas.map((alt) => (
-            <div key={alt.id} className="flex gap-2 mb-2 items-center">
-              <input
-                type="radio"
-                name="correta"
-                checked={alt.correta}
-                onChange={() =>
-                  setAlternativas((prev) =>
-                    prev.map((a) => ({
-                      ...a,
-                      correta: a.id === alt.id,
-                    }))
-                  )
-                }
-              />
+          <div className="space-y-3">
+            {alternativas.map((alt, index) => (
+              <div key={alt.id} className="flex items-center gap-3">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="correta"
+                    checked={alt.correta}
+                    onChange={() =>
+                      setAlternativas((prev) =>
+                        prev.map((a) => ({
+                          ...a,
+                          correta: a.id === alt.id,
+                        }))
+                      )
+                    }
+                    className="mr-2"
+                  />
+                  <span className="font-medium">
+                    {String.fromCharCode(65 + index)}.
+                  </span>
+                </div>
 
-              <input
-                type="text"
-                className="input flex-1"
-                value={alt.texto}
-                disabled={tipo === "VERDADEIRO_FALSO"}
-                onChange={(e) =>
-                  atualizarAlternativa(alt.id, "texto", e.target.value)
-                }
-              />
-            </div>
-          ))}
-        </>
+                <input
+                  type="text"
+                  className="input flex-1"
+                  disabled={tipo === "VERDADEIRO_FALSO"}
+                  placeholder={`Alternativa ${String.fromCharCode(65 + index)}`}
+                  value={alt.texto}
+                  onChange={(e) =>
+                    atualizarAlternativa(alt.id, "texto", e.target.value)
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
-      <div className="mt-6">
-        <label className="block font-medium mb-2">Habilidades</label>
+      <div className="mb-6">
+        <label className="block text-sm font-medium mb-2 text-gray-700">
+          Habilidades / Competências
+        </label>
 
         <div className="flex flex-wrap gap-2 mb-2">
           {habilidadesSelecionadas.map((h) => (
             <span
               key={h.id}
               onClick={() => removerHabilidade(h)}
-              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm cursor-pointer"
+              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm cursor-pointer flex items-center gap-1"
             >
-              {h.nome} ✕
+              {h.nome} <span className="text-red-500">✕</span>
             </span>
           ))}
         </div>
 
         <select
-          className="input w-full"
+          className="input w-full border border-gray-200 rounded-lg bg-blue-50"
           onChange={(e) => {
             adicionarHabilidade(e.target.value);
             e.target.value = "";
@@ -251,15 +273,21 @@ export default function ModalEditarQuestao({
         </select>
       </div>
 
-      <div className="flex justify-end gap-3 mt-6">
-        <button onClick={onClose} className="px-4 py-2 border rounded">
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+        >
           Cancelar
         </button>
+
         <button
+          type="button"
           onClick={salvarEdicao}
-          className="px-4 py-2 bg-[#1D5D7F] text-white rounded"
+          className="px-6 py-2 bg-[#1D5D7F] text-white rounded-lg hover:bg-[#164a66] transition font-medium"
         >
-          Salvar
+          Salvar Alterações
         </button>
       </div>
     </div>
