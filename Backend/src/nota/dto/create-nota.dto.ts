@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
-import { TipoAvaliacao, NotaStatus } from '../entities/nota.entity';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, Min, IsArray } from 'class-validator';
+import { Bimestre, NotaStatus } from '../entities/nota.entity';
 
 export class CreateNotaDto {
   @Type(() => Number)
@@ -8,34 +8,35 @@ export class CreateNotaDto {
   @Min(0)
   @Max(10)
   @IsOptional()
-  valor?: number;
+  nota1?: number;
 
-  @IsEnum(TipoAvaliacao)
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(10)
   @IsOptional()
-  tipoAvaliacao?: TipoAvaliacao;
+  nota2?: number;
 
-  @IsString()
+  @IsEnum(Bimestre)
   @IsNotEmpty()
-  avaliacaoNome: string;
+  bimestre: Bimestre;
 
   @IsString()
   @IsOptional()
   feedback?: string;
 
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  habilidades?: any;
+  habilidades?: string[];
 
   @IsEnum(NotaStatus)
   @IsOptional()
   status?: NotaStatus;
 
-  @IsDateString()
+  @IsUUID('4')
   @IsNotEmpty()
-  data: string;
-
-  @IsString()
-  @IsNotEmpty()
-  matriculaAluno: string;
+  alunoId: string;
 
   @IsUUID('4')
   @IsNotEmpty()

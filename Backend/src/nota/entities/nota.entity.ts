@@ -1,13 +1,22 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  ManyToOne, 
+  JoinColumn, 
+  CreateDateColumn, 
+  UpdateDateColumn 
+} from 'typeorm';
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
+import { Professor } from '../../professor/entities/professor.entity';
 
-export enum TipoAvaliacao {
-  PROVA = 'PROVA',
-  TRABALHO = 'TRABALHO',
-  PROJETO = 'PROJETO',
-  ATIVIDADE = 'ATIVIDADE',
-  OUTRO = 'OUTRO'
+// Conforme sua solicitação: Avaliações fixas por bimestre
+export enum Bimestre {
+  PRIMEIRO = '1º Bimestre',
+  SEGUNDO = '2º Bimestre',
+  TERCEIRO = '3º Bimestre',
+  QUARTO = '4º Bimestre'
 }
 
 export enum NotaStatus {
@@ -20,25 +29,27 @@ export class Nota {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
-  valor: number;
+  // Nota 1 conforme o input da imagem
+  @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'nota_1' })
+  nota1: number;
+
+  // Nota 2 conforme o input da imagem
+  @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'nota_2' })
+  nota2: number;
 
   @Column({
     type: 'enum',
-    enum: TipoAvaliacao,
-    default: TipoAvaliacao.PROVA,
-    name: 'tipo_avaliacao'
+    enum: Bimestre,
+    name: 'bimestre'
   })
-  tipoAvaliacao: TipoAvaliacao;
-
-  @Column({ name: 'avaliacao_nome', nullable: true })
-  avaliacaoNome: string;
+  bimestre: Bimestre;
 
   @Column({ type: 'text', nullable: true })
   feedback: string;
 
+  // Armazena as habilidades selecionadas (ex: ["Habilidade 1", "Habilidade 2"])
   @Column({ type: 'json', nullable: true })
-  habilidades: any;
+  habilidades: string[];
 
   @Column({
     type: 'enum',
@@ -47,16 +58,22 @@ export class Nota {
   })
   status: NotaStatus;
 
-  @Column({ type: 'date' })
-  data: Date;
+  // RELAÇÕES CHAVE
 
-  @ManyToOne(() => Aluno, { nullable: false })
+  // Nota pertence a um Aluno (ajustado para bater com a propriedade 'notas' que você adicionou em Aluno)
+  @ManyToOne(() => Aluno, (aluno) => aluno.notas, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'aluno_id' })
   aluno: Aluno;
 
-  @ManyToOne(() => Disciplina, { nullable: false })
+  // Nota pertence a uma Disciplina
+  @ManyToOne(() => Disciplina, (disciplina) => disciplina.notas, { nullable: false })
   @JoinColumn({ name: 'disciplina_id' })
   disciplina: Disciplina;
+
+  // Nota é lançada por um Professor (necessário para o filtro de segurança)
+  @ManyToOne(() => Professor, { nullable: false })
+  @JoinColumn({ name: 'professor_id' })
+  professor: Professor;
 
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;

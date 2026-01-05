@@ -1,8 +1,8 @@
-import { IsDateString, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { TipoAvaliacao, NotaStatus } from '../entities/nota.entity';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Bimestre, NotaStatus } from '../entities/nota.entity';
 
 export class FilterNotaDto {
-  @IsString()
+  @IsUUID('4')
   @IsOptional()
   alunoId?: string;
 
@@ -10,27 +10,15 @@ export class FilterNotaDto {
   @IsOptional()
   disciplinaId?: string;
 
-  @IsString()
+  @IsEnum(Bimestre)
   @IsOptional()
-  avaliacaoNome?: string;
-
-  @IsEnum(TipoAvaliacao)
-  @IsOptional()
-  tipoAvaliacao?: TipoAvaliacao;
+  bimestre?: Bimestre;
 
   @IsEnum(NotaStatus)
   @IsOptional()
   status?: NotaStatus;
-
-  @IsDateString()
-  @IsOptional()
-  dataInicio?: string;
-
-  @IsDateString()
-  @IsOptional()
-  dataFim?: string;
   
+  @IsUUID('4')
   @IsOptional()
-  @IsString()
   turmaId?: string;
 }

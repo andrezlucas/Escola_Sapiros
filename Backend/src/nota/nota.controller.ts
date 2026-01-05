@@ -9,12 +9,34 @@ import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { Role } from '../usuario/entities/usuario.entity';
-import { Nota } from './entities/nota.entity';
+import { Nota, Bimestre } from './entities/nota.entity';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('notas')
 export class NotaController {
   constructor(private readonly notaService: NotaService) {}
+
+  @Roles(Role.PROFESSOR)
+  @Get('turmas-professor')
+  async getTurmas(@Req() req: Request & { user: Usuario }) {
+    return await this.notaService.findTurmasByProfessor(req.user.id);
+  }
+
+  @Roles(Role.PROFESSOR)
+  @Get('disciplinas-professor')
+  async getDisciplinas(@Query('turmaId', ParseUUIDPipe) turmaId: string, @Req() req: Request & { user: Usuario }) {
+    return await this.notaService.findDisciplinasByTurma(turmaId, req.user.id);
+  }
+
+  @Roles(Role.PROFESSOR, Role.COORDENACAO)
+  @Get('lista-lancamento')
+  async getListaLancamento(
+    @Query('turmaId', ParseUUIDPipe) turmaId: string,
+    @Query('disciplinaId', ParseUUIDPipe) disciplinaId: string,
+    @Query('bimestre') bimestre: Bimestre,
+  ) {
+    return await this.notaService.findAlunosParaLancamento(turmaId, disciplinaId, bimestre);
+  }
 
   @Roles(Role.COORDENACAO, Role.PROFESSOR)
   @Post()

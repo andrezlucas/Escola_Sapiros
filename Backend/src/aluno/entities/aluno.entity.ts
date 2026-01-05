@@ -3,6 +3,8 @@ import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Documentacao } from '../../documentacao/entities/documentacao.entity';
 import { Sexo } from '../../usuario/entities/usuario.entity';
+import { OneToMany } from 'typeorm';
+import { Nota } from '../../nota/entities/nota.entity';
 
 @Entity('alunos')
 export class Aluno {
@@ -133,4 +135,7 @@ responsavel_sexo: Sexo;
 
   @UpdateDateColumn({ name: 'atualizado_em' })
   atualizadoEm: Date;
+
+  @OneToMany(() => Nota, (nota) => nota.aluno)
+  notas: Nota[];
 }
