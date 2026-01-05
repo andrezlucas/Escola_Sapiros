@@ -10,6 +10,7 @@ import Mural from "./Mural";
 import Atividades from "./Atividades";
 import Materiais from "./Materiais";
 import Turmas from "./Turmas";
+import Registro from "./Registro";
 
 function DashboardProfessor() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +36,8 @@ function DashboardProfessor() {
         return <Materiais />;
       case "minhas turmas":
         return <Turmas />;
+      case "registro":
+        return <Registro />;
       default:
         return null;
     }

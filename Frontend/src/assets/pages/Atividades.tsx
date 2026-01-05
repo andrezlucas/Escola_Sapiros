@@ -1,6 +1,7 @@
 import { useState } from "react";
 import FormAtividade from "../components/FormAtividade";
 import FormAnexar from "../components/FormAnexar";
+import FormSimulado from "../components/FormSimulado";
 
 function Atividades() {
   const [etapa, setEtapa] = useState<String>("atividade");
@@ -43,7 +44,8 @@ function Atividades() {
       </div>
       <div className="flex flex-col gap-4">
         {etapa === "atividade" && <FormAtividade />}
-        {etapa === "material" && <FormAnexar/>}
+        {etapa === "material" && <FormAnexar />}
+        {etapa === "simulado" && <FormSimulado />}
       </div>
     </div>
   );

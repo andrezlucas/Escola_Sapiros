@@ -27,13 +27,13 @@ import { TurmaAtivaGuard } from './guards/turma-ativa.guard';
 export class TurmaController {
   constructor(private readonly turmaService: TurmaService) {}
 
-  @Roles('coordenacao', 'professores')
+  @Roles('coordenacao', 'professor')
   @Get()
   async findAll(): Promise<Turma[]> {
     return this.turmaService.findAll();
   }
 
-  @Roles('coordenacao', 'professores')
+  @Roles('coordenacao', 'professor')
   @Get(':id')
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,

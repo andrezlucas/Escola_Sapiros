@@ -57,7 +57,6 @@ export default function ResponderAtividade({
         
         const data = await res.json();
 
-        // Validação de segurança no Frontend: Bloqueia se o prazo expirou
         const agora = new Date();
         const dataLimite = new Date(data.dataEntrega);
         if (agora > dataLimite) {
@@ -160,7 +159,7 @@ export default function ResponderAtividade({
                   {q.alternativas.map((alt) => (
                     <label
                       key={alt.id}
-                      className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-blue-50 has-[:checked]:bg-blue-50 has-[:checked]:border-[#1D5D7F]"
+                      className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-blue-50"
                     >
                       <input
                         type="radio"
