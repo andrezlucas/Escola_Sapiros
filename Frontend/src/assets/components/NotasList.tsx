@@ -7,27 +7,18 @@ type Turma = { id: string; nome_turma: string };
 type Disciplina = { id_disciplina: string; nome_disciplina: string };
 type Habilidade = { id: string; nome: string };
 
-type Aluno = { id: string; matriculaAluno: string; nome: string };
-type Nota = {
-  id: string;
-  valor: number | null;
-  avaliacaoNome: string;
-  status: "SALVO" | "PENDENTE";
-  aluno: { matriculaAluno: string; nome?: string };
-};
-
 type LinhaTabela = {
   alunoId: string;
   matriculaAluno: string;
   nome: string;
-  nota1Id: string | null;
   nota1: number | null;
   nota1Original: number | null;
-  nota2Id: string | null;
   nota2: number | null;
   nota2Original: number | null;
-  status: "salvo" | "pendente";
+  feedback: string;
   habilidadesSelecionadas: Habilidade[];
+  habilidadesOriginais: string[];
+  status: "salvo" | "pendente";
 };
 
 const API_BASE = "http://localhost:3000";
@@ -38,18 +29,19 @@ export default function NotaList() {
   const [habilidades, setHabilidades] = useState<Habilidade[]>([]);
   const [turmaId, setTurmaId] = useState<string>("");
   const [disciplinaId, setDisciplinaId] = useState<string>("");
-  const [avaliacaoNome, setAvaliacaoNome] = useState<string>("");
+  const [bimestre, setBimestre] = useState<string>("");
 
   const [dadosTabela, setDadosTabela] = useState<LinhaTabela[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingHabilidades, setLoadingHabilidades] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados do modal de feedback
   const [modalFeedbackAberto, setModalFeedbackAberto] = useState(false);
   const [alunoSelecionadoParaFeedback, setAlunoSelecionadoParaFeedback] =
     useState<LinhaTabela | null>(null);
   const [feedbackTexto, setFeedbackTexto] = useState("");
+  const [savingIndividual, setSavingIndividual] = useState<string | null>(null);
 
   function authFetch(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem("token");
@@ -69,28 +61,38 @@ export default function NotaList() {
   }
 
   useEffect(() => {
-    const fetchInicial = async () => {
-      try {
-        const [resTurmas, resDisciplinas] = await Promise.all([
-          authFetch(`${API_BASE}/professores/turmas`),
-          authFetch(`${API_BASE}/professores/disciplinas`),
-        ]);
-
-        if (!resTurmas?.ok || !resDisciplinas?.ok)
-          throw new Error("Erro ao carregar dados iniciais");
-
-        const turmasData = await resTurmas.json();
-        const disciplinasData = await resDisciplinas.json();
-
-        setTurmas(turmasData);
-        setDisciplinas(disciplinasData);
-      } catch (err: any) {
-        setError("Falha ao carregar turmas ou disciplinas.");
+    const fetchTurmas = async () => {
+      const res = await authFetch(`${API_BASE}/notas/turmas-professor`);
+      if (!res?.ok) {
+        setError("Erro ao carregar turmas");
+        return;
       }
+      const data = await res.json();
+      setTurmas(data);
     };
-
-    fetchInicial();
+    fetchTurmas();
   }, []);
+
+  useEffect(() => {
+    if (!turmaId) {
+      setDisciplinas([]);
+      setDisciplinaId("");
+      return;
+    }
+
+    const fetchDisciplinas = async () => {
+      const res = await authFetch(
+        `${API_BASE}/notas/disciplinas-professor?turmaId=${turmaId}`
+      );
+      if (!res?.ok) {
+        setError("Erro ao carregar disciplinas");
+        return;
+      }
+      const data = await res.json();
+      setDisciplinas(data);
+    };
+    fetchDisciplinas();
+  }, [turmaId]);
 
   useEffect(() => {
     if (!disciplinaId) {
@@ -104,11 +106,10 @@ export default function NotaList() {
         const res = await authFetch(
           `${API_BASE}/disciplinas/${disciplinaId}/habilidades`
         );
-        if (!res?.ok) throw new Error("Erro ao carregar habilidades");
+        if (!res?.ok) throw new Error();
         const data = await res.json();
         setHabilidades(data);
-      } catch (err) {
-        console.error(err);
+      } catch {
         setHabilidades([]);
       } finally {
         setLoadingHabilidades(false);
@@ -118,20 +119,19 @@ export default function NotaList() {
     fetchHabilidades();
   }, [disciplinaId]);
 
-  const disciplinaSelecionada = disciplinas.find(
+  const opcoesBimestre = [
+    "1º Bimestre",
+    "2º Bimestre",
+    "3º Bimestre",
+    "4º Bimestre",
+  ];
+
+  const nomeDisciplina = disciplinas.find(
     (d) => d.id_disciplina === disciplinaId
-  );
-  const opcoesAvaliacao = disciplinaSelecionada
-    ? [
-        `1º Bimestre - ${disciplinaSelecionada.nome_disciplina}`,
-        `2º Bimestre - ${disciplinaSelecionada.nome_disciplina}`,
-        `3º Bimestre - ${disciplinaSelecionada.nome_disciplina}`,
-        `4º Bimestre - ${disciplinaSelecionada.nome_disciplina}`,
-      ]
-    : [];
+  )?.nome_disciplina;
 
   useEffect(() => {
-    if (!turmaId || !disciplinaId || !avaliacaoNome) {
+    if (!turmaId || !disciplinaId || !bimestre) {
       setDadosTabela([]);
       return;
     }
@@ -141,54 +141,44 @@ export default function NotaList() {
       setError(null);
 
       try {
-        const [resTurma, resNotas] = await Promise.all([
-          authFetch(`${API_BASE}/turmas/${turmaId}`),
-          authFetch(
-            `${API_BASE}/notas?disciplinaId=${encodeURIComponent(
-              disciplinaId
-            )}&avaliacaoNome=${encodeURIComponent(avaliacaoNome)}`
-          ),
-        ]);
-
-        if (!resTurma?.ok) throw new Error("Erro ao carregar turma");
-
-        const turmaData = await resTurma.json();
-        const notasData: Nota[] = resNotas?.ok ? await resNotas.json() : [];
-
-        const alunosExtraidos: Aluno[] = (turmaData.alunos || []).map(
-          (alunoObj: any) => ({
-            id: alunoObj.id,
-            matriculaAluno: alunoObj.matriculaAluno,
-            nome: alunoObj.usuario?.nome || "Nome não disponível",
-          })
+        const res = await authFetch(
+          `${API_BASE}/notas/lista-lancamento?turmaId=${turmaId}&disciplinaId=${disciplinaId}&bimestre=${encodeURIComponent(
+            bimestre
+          )}`
         );
 
-        const tabela: LinhaTabela[] = alunosExtraidos.map((aluno) => {
-          const notaExistente = notasData.find(
-            (n) => n.aluno.matriculaAluno === aluno.matriculaAluno
-          );
+        if (!res?.ok) throw new Error("Erro ao carregar dados");
+
+        const data = await res.json();
+
+        const tabela: LinhaTabela[] = data.map((item: any) => ({
+          alunoId: item.alunoId,
+          matriculaAluno: item.matriculaAluno || "N/I",
+          nome: item.nome || "Sem nome",
+          nota1: item.nota1 || null,
+          nota1Original: item.nota1 || null,
+          nota2: item.nota2 || null,
+          nota2Original: item.nota2 || null,
+          feedback: item.feedback || "",
+          habilidadesSelecionadas: [],
+          habilidadesOriginais: item.habilidades || [],
+          status: item.status === "SALVO" ? "salvo" : "pendente",
+        }));
+
+        const tabelaComHabilidades = tabela.map((linha) => {
+          const habsSelecionadas = linha.habilidadesOriginais
+            .map((id: string) => habilidades.find((h) => h.id === id))
+            .filter(Boolean) as Habilidade[];
 
           return {
-            alunoId: aluno.id,
-            matriculaAluno: aluno.matriculaAluno,
-            nome: aluno.nome,
-            nota1Id: notaExistente?.id || null,
-            nota1: notaExistente?.valor ?? null,
-            nota1Original: notaExistente?.valor ?? null,
-            nota2Id: null,
-            nota2: null,
-            nota2Original: null,
-            status:
-              notaExistente?.status === "SALVO" && notaExistente?.valor !== null
-                ? "salvo"
-                : "pendente",
-            habilidadesSelecionadas: [],
+            ...linha,
+            habilidadesSelecionadas: habsSelecionadas,
           };
         });
 
-        setDadosTabela(tabela);
-      } catch (err: any) {
-        setError("Erro ao carregar alunos ou notas.");
+        setDadosTabela(tabelaComHabilidades);
+      } catch (err) {
+        setError("Erro ao carregar notas dos alunos");
         setDadosTabela([]);
       } finally {
         setLoading(false);
@@ -196,47 +186,39 @@ export default function NotaList() {
     };
 
     fetchDados();
-  }, [turmaId, disciplinaId, avaliacaoNome]);
+  }, [turmaId, disciplinaId, bimestre, habilidades]);
 
-  const atualizarNota1 = (matricula: string, valor: string) => {
+  const atualizarNota1 = (alunoId: string, valor: string) => {
     const num = valor === "" ? null : parseFloat(valor);
     setDadosTabela((prev) =>
       prev.map((item) =>
-        item.matriculaAluno === matricula
+        item.alunoId === alunoId
           ? {
               ...item,
               nota1: num,
-              status:
-                num === item.nota1Original
-                  ? num !== null
-                    ? "salvo"
-                    : "pendente"
-                  : "pendente",
+              status: num === item.nota1Original ? "salvo" : "pendente",
             }
           : item
       )
     );
   };
 
-  const atualizarNota2 = (matricula: string, valor: string) => {
+  const atualizarNota2 = (alunoId: string, valor: string) => {
     const num = valor === "" ? null : parseFloat(valor);
     setDadosTabela((prev) =>
       prev.map((item) =>
-        item.matriculaAluno === matricula
+        item.alunoId === alunoId
           ? { ...item, nota2: num, status: "pendente" }
           : item
       )
     );
   };
 
-  const atualizarHabilidades = (
-    matricula: string,
-    novasHabilidades: Habilidade[]
-  ) => {
+  const atualizarHabilidades = (alunoId: string, novas: Habilidade[]) => {
     setDadosTabela((prev) =>
       prev.map((item) =>
-        item.matriculaAluno === matricula
-          ? { ...item, habilidadesSelecionadas: novasHabilidades }
+        item.alunoId === alunoId
+          ? { ...item, habilidadesSelecionadas: novas, status: "pendente" }
           : item
       )
     );
@@ -244,20 +226,115 @@ export default function NotaList() {
 
   const abrirModalFeedback = (item: LinhaTabela) => {
     setAlunoSelecionadoParaFeedback(item);
-    setFeedbackTexto("");
+    setFeedbackTexto(item.feedback);
     setModalFeedbackAberto(true);
   };
 
-  const salvarFeedback = () => {
+  const salvarFeedbackLocal = () => {
     if (!alunoSelecionadoParaFeedback) return;
 
-    toast.success(
-      `Feedback salvo para ${alunoSelecionadoParaFeedback.nome}:\n${feedbackTexto}`
+    setDadosTabela((prev) =>
+      prev.map((item) =>
+        item.alunoId === alunoSelecionadoParaFeedback.alunoId
+          ? { ...item, feedback: feedbackTexto, status: "pendente" }
+          : item
+      )
     );
 
+    toast.success(
+      `Feedback atualizado para ${alunoSelecionadoParaFeedback.nome}`
+    );
     setModalFeedbackAberto(false);
-    setAlunoSelecionadoParaFeedback(null);
-    setFeedbackTexto("");
+  };
+
+  const salvarTodasAsNotas = async () => {
+    setSaving(true);
+    try {
+      const notasParaSalvar = dadosTabela.map((item) => ({
+        alunoId: item.alunoId,
+        disciplinaId,
+        bimestre: bimestre as any,
+        nota1: item.nota1 ?? undefined,
+        nota2: item.nota2 ?? undefined,
+        feedback: item.feedback || undefined,
+        habilidades: item.habilidadesSelecionadas.map((h) => h.id),
+        status: "SALVO",
+      }));
+
+      const res = await authFetch(`${API_BASE}/notas/bulk`, {
+        method: "POST",
+        body: JSON.stringify(notasParaSalvar),
+      });
+
+      if (!res?.ok) throw new Error("Erro ao salvar");
+
+      toast.success("Todas as notas e feedbacks foram salvos com sucesso!");
+
+      setDadosTabela((prev) =>
+        prev.map((item) => ({
+          ...item,
+          nota1Original: item.nota1,
+          nota2Original: item.nota2,
+          habilidadesOriginais: item.habilidadesSelecionadas.map((h) => h.id),
+          status: "salvo",
+        }))
+      );
+    } catch (err) {
+      toast.error("Erro ao salvar as notas");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const salvarIndividual = async (linha: LinhaTabela) => {
+    setSavingIndividual(linha.alunoId);
+
+    try {
+      const payload = {
+        alunoId: linha.alunoId,
+        disciplinaId,
+        bimestre: bimestre as any,
+        nota1: linha.nota1 ?? undefined,
+        nota2: linha.nota2 ?? undefined,
+        feedback: linha.feedback || undefined,
+        habilidades: linha.habilidadesSelecionadas.map((h) => h.id),
+        status: "SALVO" as const,
+      };
+
+      const res = await authFetch(`${API_BASE}/notas/bulk`, {
+        method: "POST",
+        body: JSON.stringify([payload]),
+      });
+
+      if (!res?.ok) {
+        const errorText = await res?.text();
+        throw new Error(errorText || "Erro ao salvar");
+      }
+
+      toast.success(`Nota de ${linha.nome} salva com sucesso!`);
+
+      setDadosTabela((prev) =>
+        prev.map((item) =>
+          item.alunoId === linha.alunoId
+            ? {
+                ...item,
+                nota1Original: item.nota1,
+                nota2Original: item.nota2,
+                habilidadesOriginais: item.habilidadesSelecionadas.map(
+                  (h) => h.id
+                ),
+                feedback: item.feedback,
+                status: "salvo",
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao salvar nota individual");
+    } finally {
+      setSavingIndividual(null);
+    }
   };
 
   const colunas: Coluna<LinhaTabela>[] = [
@@ -282,7 +359,7 @@ export default function NotaList() {
           max="10"
           step="0.1"
           value={item.nota1 ?? ""}
-          onChange={(e) => atualizarNota1(item.matriculaAluno, e.target.value)}
+          onChange={(e) => atualizarNota1(item.alunoId, e.target.value)}
           className="w-24 px-3 py-2 text-center border rounded-md focus:ring-2 focus:ring-[#1D5D7F]"
           placeholder="0.0"
           label={""}
@@ -298,7 +375,7 @@ export default function NotaList() {
           max="10"
           step="0.1"
           value={item.nota2 ?? ""}
-          onChange={(e) => atualizarNota2(item.matriculaAluno, e.target.value)}
+          onChange={(e) => atualizarNota2(item.alunoId, e.target.value)}
           className="w-24 px-3 py-2 text-center border rounded-md focus:ring-2 focus:ring-[#1D5D7F]"
           placeholder="0.0"
           label={""}
@@ -312,29 +389,27 @@ export default function NotaList() {
           onClick={() => abrirModalFeedback(item)}
           className="px-4 py-2 text-sm text-[#1D5D7F] bg-[#e6f0f8] rounded-md hover:bg-[#d0e4f0] transition"
         >
-          Adicionar Feedback...
+          {item.feedback ? "Editar Feedback..." : "Adicionar Feedback..."}
         </button>
       ),
     },
     {
       titulo: "Habilidades",
       render: (item) => {
-        const adicionarHabilidade = (habilidadeId: string) => {
-          if (!habilidadeId) return;
-          const hab = habilidades.find((h) => h.id === habilidadeId);
+        const adicionar = (habId: string) => {
+          const hab = habilidades.find((h) => h.id === habId);
           if (!hab || item.habilidadesSelecionadas.some((h) => h.id === hab.id))
             return;
-
-          atualizarHabilidades(item.matriculaAluno, [
+          atualizarHabilidades(item.alunoId, [
             ...item.habilidadesSelecionadas,
             hab,
           ]);
         };
 
-        const removerHabilidade = (habilidadeId: string) => {
+        const remover = (habId: string) => {
           atualizarHabilidades(
-            item.matriculaAluno,
-            item.habilidadesSelecionadas.filter((h) => h.id !== habilidadeId)
+            item.alunoId,
+            item.habilidadesSelecionadas.filter((h) => h.id !== habId)
           );
         };
 
@@ -344,7 +419,7 @@ export default function NotaList() {
               {item.habilidadesSelecionadas.map((h) => (
                 <span
                   key={h.id}
-                  onClick={() => removerHabilidade(h.id)}
+                  onClick={() => remover(h.id)}
                   className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm cursor-pointer flex items-center gap-1"
                 >
                   {h.nome}
@@ -352,11 +427,10 @@ export default function NotaList() {
                 </span>
               ))}
             </div>
-
             <select
               value=""
               onChange={(e) => {
-                adicionarHabilidade(e.target.value);
+                adicionar(e.target.value);
                 e.target.value = "";
               }}
               disabled={loadingHabilidades || habilidades.length === 0}
@@ -378,15 +452,27 @@ export default function NotaList() {
     {
       titulo: "Status",
       render: (item) => (
-        <span
-          className={`inline-flex px-4 py-1.5 rounded-full text-xs font-medium ${
-            item.status === "salvo"
-              ? "bg-green-100 text-green-800"
-              : "bg-orange-100 text-orange-800"
-          }`}
-        >
-          {item.status === "salvo" ? "Salvo" : "Pendente"}
-        </span>
+        <div className="flex items-center justify-between">
+          <span
+            className={`inline-flex px-4 py-1.5 rounded-full text-xs font-medium ${
+              item.status === "salvo"
+                ? "bg-green-100 text-green-800"
+                : "bg-orange-100 text-orange-800"
+            }`}
+          >
+            {item.status === "salvo" ? "Salvo" : "Pendente"}
+          </span>
+
+          {item.status === "pendente" && (
+            <button
+              onClick={() => salvarIndividual(item)}
+              disabled={savingIndividual === item.alunoId}
+              className="ml-4 px-5 py-2 bg-[#1D5D7F] text-white text-sm font-medium rounded-md hover:bg-[#164a66] disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+            >
+              {savingIndividual === item.alunoId ? "Salvando..." : "Salvar"}
+            </button>
+          )}
+        </div>
       ),
     },
   ];
@@ -398,14 +484,14 @@ export default function NotaList() {
       </h1>
 
       <p className="text-gray-600 mb-8">
-        Selecione a turma e a avaliação para inserir as notas e feedback dos
-        alunos.
+        Selecione a turma, disciplina e bimestre para lançar notas, feedback e
+        habilidades.
       </p>
 
       <div className="flex flex-col md:flex-row gap-6 mb-10">
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Selecione a Turma
+            Turma
           </label>
           <select
             value={turmaId}
@@ -423,11 +509,12 @@ export default function NotaList() {
 
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Selecione a Disciplina
+            Disciplina
           </label>
           <select
             value={disciplinaId}
             onChange={(e) => setDisciplinaId(e.target.value)}
+            disabled={!turmaId}
             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
           >
             <option value="">Selecione uma disciplina</option>
@@ -441,18 +528,18 @@ export default function NotaList() {
 
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Avaliação
+            Bimestre
           </label>
           <select
-            value={avaliacaoNome}
-            onChange={(e) => setAvaliacaoNome(e.target.value)}
+            value={bimestre}
+            onChange={(e) => setBimestre(e.target.value)}
             disabled={!disciplinaId}
             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
           >
             <option value="">Selecione o bimestre</option>
-            {opcoesAvaliacao.map((opcao) => (
-              <option key={opcao} value={opcao}>
-                {opcao}
+            {opcoesBimestre.map((op) => (
+              <option key={op} value={op}>
+                {op} - {nomeDisciplina || ""}
               </option>
             ))}
           </select>
@@ -467,7 +554,7 @@ export default function NotaList() {
         </p>
       ) : dadosTabela.length === 0 ? (
         <p className="text-center text-gray-500 py-8">
-          Selecione turma, disciplina e avaliação para começar.
+          Selecione turma, disciplina e bimestre para começar.
         </p>
       ) : (
         <Tabela dados={dadosTabela} colunas={colunas} />
@@ -475,10 +562,11 @@ export default function NotaList() {
 
       <div className="mt-8 flex justify-end">
         <button
-          disabled={loading || dadosTabela.length === 0}
+          onClick={salvarTodasAsNotas}
+          disabled={saving || loading || dadosTabela.length === 0}
           className="px-8 py-3 bg-[#1D5D7F] text-white font-medium rounded-md hover:bg-[#164a66] disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
-          Salvar Todas as Notas
+          {saving ? "Salvando..." : "Salvar Todas as Notas"}
         </button>
       </div>
 
@@ -488,27 +576,21 @@ export default function NotaList() {
             <h2 className="text-xl font-bold text-gray-800 mb-4">
               Feedback para {alunoSelecionadoParaFeedback.nome}
             </h2>
-
             <textarea
               value={feedbackTexto}
               onChange={(e) => setFeedbackTexto(e.target.value)}
               placeholder="Escreva aqui o feedback para o aluno..."
               className="w-full h-40 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] resize-none"
             />
-
             <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => {
-                  setModalFeedbackAberto(false);
-                  setAlunoSelecionadoParaFeedback(null);
-                  setFeedbackTexto("");
-                }}
+                onClick={() => setModalFeedbackAberto(false)}
                 className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition"
               >
                 Cancelar
               </button>
               <button
-                onClick={salvarFeedback}
+                onClick={salvarFeedbackLocal}
                 className="px-6 py-2 bg-[#1D5D7F] text-white rounded-md hover:bg-[#164a66] transition"
               >
                 Salvar Feedback
