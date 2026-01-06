@@ -80,6 +80,7 @@ function FormAtividade({
   const [modalEditarQuestao, setModalEditarQuestao] = useState(false);
   const [questaoEditando, setQuestaoEditando] = useState<any>(null);
   const [modalCriarQuestao, setModalCriarQuestao] = useState(false);
+  const [bimestre, setBimestre] = useState<string>("");
 
   const {
     register,
@@ -148,7 +149,8 @@ function FormAtividade({
           turmaId: data.turmas[0]?.id,
           dataEntrega: data.dataEntrega?.slice(0, 10),
         });
-
+        
+        setBimestre(data.bimestre || "")
         setQuestoes(
           data.questoes.map((q: any) => ({
             id: q.id,
@@ -372,6 +374,7 @@ function FormAtividade({
       dataEntrega: data.dataEntrega + "T00:00",
       disciplinaId: data.disciplinaId,
       turmaIds: [data.turmaId],
+      bimestre: bimestre,
       questoes: questoes.map((q) => ({
         ...(atividadeId && { id: q.id }),
         enunciado: q.enunciado,
@@ -508,6 +511,24 @@ function FormAtividade({
                     </span>
                   )}
                 </div>
+
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-700">
+                      Bimestre
+                    </label>
+                    <select
+                      className="input w-full border border-gray-200 rounded-lg bg-blue-50 focus:outline-none focus:ring-1 text-base"
+                      value={bimestre}
+                      onChange={(e) => setBimestre(e.target.value)}
+                      required
+                    >
+                      <option value="">Selecione o bimestre</option>
+                      <option value="1º Bimestre">1º Bimestre</option>
+                      <option value="2º Bimestre">2º Bimestre</option>
+                      <option value="3º Bimestre">3º Bimestre</option>
+                      <option value="4º Bimestre">4º Bimestre</option>
+                    </select>
+                  </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">

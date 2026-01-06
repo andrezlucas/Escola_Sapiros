@@ -13,11 +13,15 @@ type LinhaTabela = {
   nome: string;
   nota1: number | null;
   nota1Original: number | null;
+  habilidades1Selecionadas: Habilidade[];
+  habilidades1Originais: string[];
+  feedback1: string;
   nota2: number | null;
   nota2Original: number | null;
-  feedback: string;
-  habilidadesSelecionadas: Habilidade[];
-  habilidadesOriginais: string[];
+  habilidades2Selecionadas: Habilidade[];
+  habilidades2Originais: string[];
+  feedback2: string;
+
   status: "salvo" | "pendente";
 };
 
@@ -30,16 +34,15 @@ export default function NotaList() {
   const [turmaId, setTurmaId] = useState<string>("");
   const [disciplinaId, setDisciplinaId] = useState<string>("");
   const [bimestre, setBimestre] = useState<string>("");
-
   const [dadosTabela, setDadosTabela] = useState<LinhaTabela[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingHabilidades, setLoadingHabilidades] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [modalFeedbackAberto, setModalFeedbackAberto] = useState(false);
   const [alunoSelecionadoParaFeedback, setAlunoSelecionadoParaFeedback] =
     useState<LinhaTabela | null>(null);
+  const [tipoFeedback, setTipoFeedback] = useState<"1" | "2">("1"); // "1" = Nota 1, "2" = Nota 2
   const [feedbackTexto, setFeedbackTexto] = useState("");
   const [savingIndividual, setSavingIndividual] = useState<string | null>(null);
 
@@ -155,24 +158,35 @@ export default function NotaList() {
           alunoId: item.alunoId,
           matriculaAluno: item.matriculaAluno || "N/I",
           nome: item.nome || "Sem nome",
+
           nota1: item.nota1 || null,
           nota1Original: item.nota1 || null,
+          habilidades1Selecionadas: [],
+          habilidades1Originais: item.habilidades1 || [],
+          feedback1: item.feedback1 || "",
+
           nota2: item.nota2 || null,
           nota2Original: item.nota2 || null,
-          feedback: item.feedback || "",
-          habilidadesSelecionadas: [],
-          habilidadesOriginais: item.habilidades || [],
+          habilidades2Selecionadas: [],
+          habilidades2Originais: item.habilidades2 || [],
+          feedback2: item.feedback2 || "",
+
           status: item.status === "SALVO" ? "salvo" : "pendente",
         }));
 
         const tabelaComHabilidades = tabela.map((linha) => {
-          const habsSelecionadas = linha.habilidadesOriginais
+          const habs1 = (linha.habilidades1Originais || [])
+            .map((id: string) => habilidades.find((h) => h.id === id))
+            .filter(Boolean) as Habilidade[];
+
+          const habs2 = (linha.habilidades2Originais || [])
             .map((id: string) => habilidades.find((h) => h.id === id))
             .filter(Boolean) as Habilidade[];
 
           return {
             ...linha,
-            habilidadesSelecionadas: habsSelecionadas,
+            habilidades1Selecionadas: habs1,
+            habilidades2Selecionadas: habs2,
           };
         });
 
@@ -193,11 +207,7 @@ export default function NotaList() {
     setDadosTabela((prev) =>
       prev.map((item) =>
         item.alunoId === alunoId
-          ? {
-              ...item,
-              nota1: num,
-              status: num === item.nota1Original ? "salvo" : "pendente",
-            }
+          ? { ...item, nota1: num, status: "pendente" }
           : item
       )
     );
@@ -214,19 +224,30 @@ export default function NotaList() {
     );
   };
 
-  const atualizarHabilidades = (alunoId: string, novas: Habilidade[]) => {
+  const atualizarHabilidades1 = (alunoId: string, novas: Habilidade[]) => {
     setDadosTabela((prev) =>
       prev.map((item) =>
         item.alunoId === alunoId
-          ? { ...item, habilidadesSelecionadas: novas, status: "pendente" }
+          ? { ...item, habilidades1Selecionadas: novas, status: "pendente" }
           : item
       )
     );
   };
 
-  const abrirModalFeedback = (item: LinhaTabela) => {
+  const atualizarHabilidades2 = (alunoId: string, novas: Habilidade[]) => {
+    setDadosTabela((prev) =>
+      prev.map((item) =>
+        item.alunoId === alunoId
+          ? { ...item, habilidades2Selecionadas: novas, status: "pendente" }
+          : item
+      )
+    );
+  };
+
+  const abrirModalFeedback = (item: LinhaTabela, tipo: "1" | "2") => {
     setAlunoSelecionadoParaFeedback(item);
-    setFeedbackTexto(item.feedback);
+    setTipoFeedback(tipo);
+    setFeedbackTexto(tipo === "1" ? item.feedback1 : item.feedback2);
     setModalFeedbackAberto(true);
   };
 
@@ -236,13 +257,18 @@ export default function NotaList() {
     setDadosTabela((prev) =>
       prev.map((item) =>
         item.alunoId === alunoSelecionadoParaFeedback.alunoId
-          ? { ...item, feedback: feedbackTexto, status: "pendente" }
+          ? {
+              ...item,
+              feedback1: tipoFeedback === "1" ? feedbackTexto : item.feedback1,
+              feedback2: tipoFeedback === "2" ? feedbackTexto : item.feedback2,
+              status: "pendente",
+            }
           : item
       )
     );
 
     toast.success(
-      `Feedback atualizado para ${alunoSelecionadoParaFeedback.nome}`
+      `Feedback da Nota ${tipoFeedback} salvo para ${alunoSelecionadoParaFeedback.nome}`
     );
     setModalFeedbackAberto(false);
   };
@@ -255,9 +281,11 @@ export default function NotaList() {
         disciplinaId,
         bimestre: bimestre as any,
         nota1: item.nota1 ?? undefined,
+        habilidades1: item.habilidades1Selecionadas.map((h) => h.id),
+        feedback1: item.feedback1 || undefined,
         nota2: item.nota2 ?? undefined,
-        feedback: item.feedback || undefined,
-        habilidades: item.habilidadesSelecionadas.map((h) => h.id),
+        habilidades2: item.habilidades2Selecionadas.map((h) => h.id),
+        feedback2: item.feedback2 || undefined,
         status: "SALVO",
       }));
 
@@ -268,14 +296,17 @@ export default function NotaList() {
 
       if (!res?.ok) throw new Error("Erro ao salvar");
 
-      toast.success("Todas as notas e feedbacks foram salvos com sucesso!");
+      toast.success(
+        "Todas as notas, habilidades e feedbacks foram salvos com sucesso!"
+      );
 
       setDadosTabela((prev) =>
         prev.map((item) => ({
           ...item,
           nota1Original: item.nota1,
           nota2Original: item.nota2,
-          habilidadesOriginais: item.habilidadesSelecionadas.map((h) => h.id),
+          habilidades1Originais: item.habilidades1Selecionadas.map((h) => h.id),
+          habilidades2Originais: item.habilidades2Selecionadas.map((h) => h.id),
           status: "salvo",
         }))
       );
@@ -295,9 +326,11 @@ export default function NotaList() {
         disciplinaId,
         bimestre: bimestre as any,
         nota1: linha.nota1 ?? undefined,
+        habilidades1: linha.habilidades1Selecionadas.map((h) => h.id),
+        feedback1: linha.feedback1 || undefined,
         nota2: linha.nota2 ?? undefined,
-        feedback: linha.feedback || undefined,
-        habilidades: linha.habilidadesSelecionadas.map((h) => h.id),
+        habilidades2: linha.habilidades2Selecionadas.map((h) => h.id),
+        feedback2: linha.feedback2 || undefined,
         status: "SALVO" as const,
       };
 
@@ -311,7 +344,7 @@ export default function NotaList() {
         throw new Error(errorText || "Erro ao salvar");
       }
 
-      toast.success(`Nota de ${linha.nome} salva com sucesso!`);
+      toast.success(`Dados de ${linha.nome} salvos com sucesso!`);
 
       setDadosTabela((prev) =>
         prev.map((item) =>
@@ -320,10 +353,12 @@ export default function NotaList() {
                 ...item,
                 nota1Original: item.nota1,
                 nota2Original: item.nota2,
-                habilidadesOriginais: item.habilidadesSelecionadas.map(
+                habilidades1Originais: item.habilidades1Selecionadas.map(
                   (h) => h.id
                 ),
-                feedback: item.feedback,
+                habilidades2Originais: item.habilidades2Selecionadas.map(
+                  (h) => h.id
+                ),
                 status: "salvo",
               }
             : item
@@ -385,42 +420,112 @@ export default function NotaList() {
     {
       titulo: "Feedback",
       render: (item) => (
-        <button
-          onClick={() => abrirModalFeedback(item)}
-          className="px-4 py-2 text-sm text-[#1D5D7F] bg-[#e6f0f8] rounded-md hover:bg-[#d0e4f0] transition"
-        >
-          {item.feedback ? "Editar Feedback..." : "Adicionar Feedback..."}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => abrirModalFeedback(item, "1")}
+            className="px-4 py-2 text-xs bg-[#3F81A5] text-white rounded  transition"
+          >
+            Nota 1 {item.feedback1 ? "✓" : "+"}
+          </button>
+          <button
+            onClick={() => abrirModalFeedback(item, "2")}
+            className="px-4 py-2 text-xs bg-[#1D5D7F] text-white rounded  transition"
+          >
+            Nota 2 {item.feedback2 ? "✓" : "+"}
+          </button>
+        </div>
       ),
     },
     {
-      titulo: "Habilidades",
+      titulo: "Habilidades Nota 1",
       render: (item) => {
         const adicionar = (habId: string) => {
           const hab = habilidades.find((h) => h.id === habId);
-          if (!hab || item.habilidadesSelecionadas.some((h) => h.id === hab.id))
+          if (
+            !hab ||
+            item.habilidades1Selecionadas.some((h) => h.id === hab.id)
+          )
             return;
-          atualizarHabilidades(item.alunoId, [
-            ...item.habilidadesSelecionadas,
+          atualizarHabilidades1(item.alunoId, [
+            ...item.habilidades1Selecionadas,
             hab,
           ]);
         };
 
         const remover = (habId: string) => {
-          atualizarHabilidades(
+          atualizarHabilidades1(
             item.alunoId,
-            item.habilidadesSelecionadas.filter((h) => h.id !== habId)
+            item.habilidades1Selecionadas.filter((h) => h.id !== habId)
           );
         };
 
         return (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
-              {item.habilidadesSelecionadas.map((h) => (
+              {item.habilidades1Selecionadas.map((h) => (
                 <span
                   key={h.id}
                   onClick={() => remover(h.id)}
-                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1 bg-[#3F81A5] text- rounded-full text-sm cursor-pointer flex items-center gap-1"
+                >
+                  {h.nome}
+                  <span className="text-red-500 font-bold">✕</span>
+                </span>
+              ))}
+            </div>
+            <select
+              value=""
+              onChange={(e) => {
+                adicionar(e.target.value);
+                e.target.value = "";
+              }}
+              disabled={loadingHabilidades || habilidades.length === 0}
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-white text-sm"
+            >
+              <option value="" disabled>
+                Selecionar habilidade
+              </option>
+              {habilidades.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+      },
+    },
+    {
+      titulo: "Habilidades Nota 2",
+      render: (item) => {
+        const adicionar = (habId: string) => {
+          const hab = habilidades.find((h) => h.id === habId);
+          if (
+            !hab ||
+            item.habilidades2Selecionadas.some((h) => h.id === hab.id)
+          )
+            return;
+          atualizarHabilidades2(item.alunoId, [
+            ...item.habilidades2Selecionadas,
+            hab,
+          ]);
+        };
+
+        const remover = (habId: string) => {
+          atualizarHabilidades2(
+            item.alunoId,
+            item.habilidades2Selecionadas.filter((h) => h.id !== habId)
+          );
+        };
+
+        return (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {item.habilidades2Selecionadas.map((h) => (
+                <span
+                  key={h.id}
+                  onClick={() => remover(h.id)}
+                  className="px-3 py-1 bg-[#1D5D7F] text rounded-full text-sm cursor-pointer flex items-center gap-1"
                 >
                   {h.nome}
                   <span className="text-red-500 font-bold">✕</span>
@@ -574,12 +679,13 @@ export default function NotaList() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
-              Feedback para {alunoSelecionadoParaFeedback.nome}
+              Feedback - Nota {tipoFeedback} -{" "}
+              {alunoSelecionadoParaFeedback.nome}
             </h2>
             <textarea
               value={feedbackTexto}
               onChange={(e) => setFeedbackTexto(e.target.value)}
-              placeholder="Escreva aqui o feedback para o aluno..."
+              placeholder="Escreva aqui o feedback específico para esta avaliação..."
               className="w-full h-40 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] resize-none"
             />
             <div className="mt-6 flex justify-end gap-3">
