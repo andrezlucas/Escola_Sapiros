@@ -61,9 +61,11 @@ export class NotaService {
         alunoId: aluno.id,
         nome: aluno.usuario?.nome,
         nota1: notaExistente ? Number(notaExistente.nota1) : 0,
+        habilidades1: notaExistente?.habilidades1 || [],
+        feedback1: notaExistente?.feedback1 || '',
         nota2: notaExistente ? Number(notaExistente.nota2) : 0,
-        habilidades: notaExistente?.habilidades || [],
-        feedback: notaExistente?.feedback || '',
+        habilidades2: notaExistente?.habilidades2 || [],
+        feedback2: notaExistente?.feedback2 || '',
         status: notaExistente?.status || NotaStatus.PENDENTE
       };
     });
@@ -102,21 +104,25 @@ export class NotaService {
         }
       });
 
+      const dataToSave = {
+        nota1: dto.nota1,
+        habilidades1: dto.habilidades1,
+        feedback1: dto.feedback1,
+        nota2: dto.nota2,
+        habilidades2: dto.habilidades2,
+        feedback2: dto.feedback2,
+        status: NotaStatus.SALVO
+      };
+
       if (nota) {
-        Object.assign(nota, {
-          nota1: dto.nota1,
-          nota2: dto.nota2,
-          habilidades: dto.habilidades,
-          feedback: dto.feedback,
-          status: NotaStatus.SALVO
-        });
+        Object.assign(nota, dataToSave);
       } else {
         nota = this.notaRepository.create({
           ...dto,
+          ...dataToSave,
           aluno: { id: dto.alunoId } as Aluno,
           disciplina: { id_disciplina: dto.disciplinaId } as Disciplina,
-          professor,
-          status: NotaStatus.SALVO
+          professor
         });
       }
       results.push(await this.notaRepository.save(nota));

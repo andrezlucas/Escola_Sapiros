@@ -11,7 +11,6 @@ import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Professor } from '../../professor/entities/professor.entity';
 
-// Conforme sua solicitação: Avaliações fixas por bimestre
 export enum Bimestre {
   PRIMEIRO = '1º Bimestre',
   SEGUNDO = '2º Bimestre',
@@ -29,13 +28,23 @@ export class Nota {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Nota 1 conforme o input da imagem
   @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'nota_1' })
   nota1: number;
 
-  // Nota 2 conforme o input da imagem
+  @Column({ type: 'json', nullable: true, name: 'habilidades_1' })
+  habilidades1: string[];
+
+  @Column({ type: 'text', nullable: true, name: 'feedback_1' })
+  feedback1: string;
+
   @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'nota_2' })
   nota2: number;
+
+  @Column({ type: 'json', nullable: true, name: 'habilidades_2' })
+  habilidades2: string[];
+
+  @Column({ type: 'text', nullable: true, name: 'feedback_2' })
+  feedback2: string;
 
   @Column({
     type: 'enum',
@@ -44,13 +53,6 @@ export class Nota {
   })
   bimestre: Bimestre;
 
-  @Column({ type: 'text', nullable: true })
-  feedback: string;
-
-  // Armazena as habilidades selecionadas (ex: ["Habilidade 1", "Habilidade 2"])
-  @Column({ type: 'json', nullable: true })
-  habilidades: string[];
-
   @Column({
     type: 'enum',
     enum: NotaStatus,
@@ -58,19 +60,14 @@ export class Nota {
   })
   status: NotaStatus;
 
-  // RELAÇÕES CHAVE
-
-  // Nota pertence a um Aluno (ajustado para bater com a propriedade 'notas' que você adicionou em Aluno)
   @ManyToOne(() => Aluno, (aluno) => aluno.notas, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'aluno_id' })
   aluno: Aluno;
 
-  // Nota pertence a uma Disciplina
   @ManyToOne(() => Disciplina, (disciplina) => disciplina.notas, { nullable: false })
   @JoinColumn({ name: 'disciplina_id' })
   disciplina: Disciplina;
 
-  // Nota é lançada por um Professor (necessário para o filtro de segurança)
   @ManyToOne(() => Professor, { nullable: false })
   @JoinColumn({ name: 'professor_id' })
   professor: Professor;

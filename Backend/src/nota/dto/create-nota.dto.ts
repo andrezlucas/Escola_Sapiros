@@ -10,6 +10,15 @@ export class CreateNotaDto {
   @IsOptional()
   nota1?: number;
 
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  habilidades1?: string[];
+
+  @IsString()
+  @IsOptional()
+  feedback1?: string;
+
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
@@ -17,18 +26,18 @@ export class CreateNotaDto {
   @IsOptional()
   nota2?: number;
 
-  @IsEnum(Bimestre)
-  @IsNotEmpty()
-  bimestre: Bimestre;
-
-  @IsString()
-  @IsOptional()
-  feedback?: string;
-
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  habilidades?: string[];
+  habilidades2?: string[];
+
+  @IsString()
+  @IsOptional()
+  feedback2?: string;
+
+  @IsEnum(Bimestre)
+  @IsNotEmpty()
+  bimestre: Bimestre;
 
   @IsEnum(NotaStatus)
   @IsOptional()
