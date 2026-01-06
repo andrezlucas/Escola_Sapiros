@@ -15,6 +15,7 @@ import { AvisosModule } from './avisos/avisos.module';
 import { MailModule } from './mail/mail.module';
 import { TurmaModule } from './turma/turma.module';
 import { AtividadeModule } from './atividade/atividade.module';
+import { RelatoriosHabilidadesModule } from './relatorio/relatorios-habilidades.module';
 
 
 @Module({
@@ -54,6 +55,7 @@ import { AtividadeModule } from './atividade/atividade.module';
     MailModule,
     TurmaModule,
     AtividadeModule,
+    RelatoriosHabilidadesModule,
    
 
     
