@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateQuestaoDto } from './create-questao.dto';
-import { Bimestre } from '../../nota/entities/nota.entity';
+import { Bimestre } from '../../shared/enums/bimestre.enum';
 
 export class CreateAtividadeDto {
   @IsNotEmpty()

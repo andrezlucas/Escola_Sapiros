@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Nota, NotaStatus, Bimestre } from './entities/nota.entity';
+import { Nota, NotaStatus } from './entities/nota.entity';
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Professor } from '../professor/entities/professor.entity';
@@ -9,6 +9,7 @@ import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { CreateNotaDto } from './dto/create-nota.dto';
 import { UpdateNotaDto } from './dto/update-nota.dto';
 import { FilterNotaDto } from './dto/filter-nota.dto';
+import { Bimestre } from '../shared/enums/bimestre.enum';
 
 @Injectable()
 export class NotaService {

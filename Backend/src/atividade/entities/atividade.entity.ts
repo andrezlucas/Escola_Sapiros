@@ -15,7 +15,7 @@ import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Questao } from './questao.entity';
 import { Professor } from '../../professor/entities/professor.entity';
-import { Bimestre } from '../../nota/entities/nota.entity';
+import { Bimestre } from '../../shared/enums/bimestre.enum';
 
 @Entity('atividades')
 export class Atividade {

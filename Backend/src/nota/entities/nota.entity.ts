@@ -10,13 +10,7 @@ import {
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Professor } from '../../professor/entities/professor.entity';
-
-export enum Bimestre {
-  PRIMEIRO = '1º Bimestre',
-  SEGUNDO = '2º Bimestre',
-  TERCEIRO = '3º Bimestre',
-  QUARTO = '4º Bimestre'
-}
+import { Bimestre } from '../../shared/enums/bimestre.enum';
 
 export enum NotaStatus {
   SALVO = 'SALVO',

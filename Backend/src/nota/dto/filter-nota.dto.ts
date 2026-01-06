@@ -1,5 +1,6 @@
 import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { Bimestre, NotaStatus } from '../entities/nota.entity';
+import { NotaStatus } from '../entities/nota.entity';
+import { Bimestre } from '../../shared/enums/bimestre.enum';
 
 export class FilterNotaDto {
   @IsUUID('4')

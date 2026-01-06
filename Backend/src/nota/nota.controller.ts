@@ -9,7 +9,8 @@ import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { Role } from '../usuario/entities/usuario.entity';
-import { Nota, Bimestre } from './entities/nota.entity';
+import { Nota } from './entities/nota.entity';
+import { Bimestre } from '../shared/enums/bimestre.enum';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('notas')
