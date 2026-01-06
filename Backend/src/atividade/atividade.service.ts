@@ -77,6 +77,7 @@ export class AtividadeService {
       const atividade = manager.create(Atividade, {
         titulo: dto.titulo,
         descricao: dto.descricao,
+        bimestre: dto.bimestre,
         dataEntrega: new Date(dto.dataEntrega),
         valor: dto.valor,
         ativa: dto.ativa ?? true,
@@ -407,6 +408,7 @@ export class AtividadeService {
         disciplina: atividade.disciplina.nome_disciplina,
         descricao: atividade.descricao,
         dataEntrega: atividade.dataEntrega,
+        bimestre: atividade.bimestre,
         status,
         nota: entrega ? entrega.notaFinal : null,
       };
@@ -511,125 +513,122 @@ export class AtividadeService {
   }
 
   async patchQuestao(
-  atividadeId: string,
-  questaoId: string,
-  dto: UpdateQuestaoDto,
-  professorId: string,
-) {
-  const atividade = await this.atividadeRepository.findOne({
-    where: {
-      id: atividadeId,
-      professor: { id: professorId },
-    },
-  });
+    atividadeId: string,
+    questaoId: string,
+    dto: UpdateQuestaoDto,
+    professorId: string,
+  ) {
+    const atividade = await this.atividadeRepository.findOne({
+      where: {
+        id: atividadeId,
+        professor: { id: professorId },
+      },
+    });
 
-  if (!atividade) {
-    throw new ForbiddenException('Atividade não encontrada');
-  }
-
-  const questao = await this.questaoRepository.findOne({
-    where: {
-      id: questaoId,
-      atividade: { id: atividadeId },
-    },
-    relations: ['alternativas', 'habilidades'],
-  });
-
-  if (!questao) {
-    throw new NotFoundException('Questão não encontrada');
-  }
-
-  return this.dataSource.transaction(async (manager) => {
-    if (dto.enunciado !== undefined) questao.enunciado = dto.enunciado;
-    if (dto.valor !== undefined) questao.valor = dto.valor;
-    if (dto.tipo !== undefined) questao.tipo = dto.tipo;
-
-    if (dto.habilidadesIds) {
-      questao.habilidades = await manager.find(Habilidade, {
-        where: { id: In(dto.habilidadesIds) },
-      });
+    if (!atividade) {
+      throw new ForbiddenException('Atividade não encontrada');
     }
 
-    await manager.save(questao);
-
-    if (dto.alternativas && questao.tipo !== 'DISSERTATIVA') {
-      await manager.remove(questao.alternativas);
-
-      const novasAlternativas = dto.alternativas.map((alt, index) =>
-        manager.create(Alternativa, {
-          texto: alt.texto,
-          correta: alt.correta,
-          letra: alt.letra ?? String.fromCharCode(65 + index),
-          questao,
-        }),
-      );
-
-      await manager.save(novasAlternativas);
-    }
-
-    return manager.findOne(Questao, {
-      where: { id: questaoId },
+    const questao = await this.questaoRepository.findOne({
+      where: {
+        id: questaoId,
+        atividade: { id: atividadeId },
+      },
       relations: ['alternativas', 'habilidades'],
     });
-  });
-}
 
-async adicionarQuestao(
-  atividadeId: string,
-  dto: CreateQuestaoDto,
-  professorId: string,
-) {
-  const atividade = await this.atividadeRepository.findOne({
-    where: {
-      id: atividadeId,
-      professor: { id: professorId },
-    },
-  });
+    if (!questao) {
+      throw new NotFoundException('Questão não encontrada');
+    }
 
-  if (!atividade) {
-    throw new ForbiddenException('Atividade não encontrada');
-  }
+    return this.dataSource.transaction(async (manager) => {
+      if (dto.enunciado !== undefined) questao.enunciado = dto.enunciado;
+      if (dto.valor !== undefined) questao.valor = dto.valor;
+      if (dto.tipo !== undefined) questao.tipo = dto.tipo;
 
-  return this.dataSource.transaction(async (manager) => {
-    const habilidades = dto.habilidadesIds?.length
-      ? await manager.find(Habilidade, {
+      if (dto.habilidadesIds) {
+        questao.habilidades = await manager.find(Habilidade, {
           where: { id: In(dto.habilidadesIds) },
-        })
-      : [];
+        });
+      }
 
-    const questao = manager.create(Questao, {
-      enunciado: dto.enunciado,
-      tipo: dto.tipo,
-      valor: dto.valor,
-      atividade,
-      habilidades,
+      await manager.save(questao);
+
+      if (dto.alternativas && questao.tipo !== 'DISSERTATIVA') {
+        await manager.remove(questao.alternativas);
+
+        const novasAlternativas = dto.alternativas.map((alt, index) =>
+          manager.create(Alternativa, {
+            texto: alt.texto,
+            correta: alt.correta,
+            letra: alt.letra ?? String.fromCharCode(65 + index),
+            questao,
+          }),
+        );
+
+        await manager.save(novasAlternativas);
+      }
+
+      return manager.findOne(Questao, {
+        where: { id: questaoId },
+        relations: ['alternativas', 'habilidades'],
+      });
+    });
+  }
+
+  async adicionarQuestao(
+    atividadeId: string,
+    dto: CreateQuestaoDto,
+    professorId: string,
+  ) {
+    const atividade = await this.atividadeRepository.findOne({
+      where: {
+        id: atividadeId,
+        professor: { id: professorId },
+      },
     });
 
-    const questaoSalva = await manager.save(questao);
-
-    if (
-      dto.tipo !== 'DISSERTATIVA' &&
-      dto.alternativas?.length
-    ) {
-      const alternativas = dto.alternativas.map((alt, index) =>
-        manager.create(Alternativa, {
-          texto: alt.texto,
-          correta: alt.correta,
-          letra: alt.letra ?? String.fromCharCode(65 + index),
-          questao: questaoSalva,
-        }),
-      );
-
-      await manager.save(alternativas);
+    if (!atividade) {
+      throw new ForbiddenException('Atividade não encontrada');
     }
 
-    return manager.findOne(Questao, {
-      where: { id: questaoSalva.id },
-      relations: ['alternativas', 'habilidades'],
+    return this.dataSource.transaction(async (manager) => {
+      const habilidades = dto.habilidadesIds?.length
+        ? await manager.find(Habilidade, {
+            where: { id: In(dto.habilidadesIds) },
+          })
+        : [];
+
+      const questao = manager.create(Questao, {
+        enunciado: dto.enunciado,
+        tipo: dto.tipo,
+        valor: dto.valor,
+        atividade,
+        habilidades,
+      });
+
+      const questaoSalva = await manager.save(questao);
+
+      if (
+        dto.tipo !== 'DISSERTATIVA' &&
+        dto.alternativas?.length
+      ) {
+        const alternativas = dto.alternativas.map((alt, index) =>
+          manager.create(Alternativa, {
+            texto: alt.texto,
+            correta: alt.correta,
+            letra: alt.letra ?? String.fromCharCode(65 + index),
+            questao: questaoSalva,
+          }),
+        );
+
+        await manager.save(alternativas);
+      }
+
+      return manager.findOne(Questao, {
+        where: { id: questaoSalva.id },
+        relations: ['alternativas', 'habilidades'],
+      });
     });
-  });
-}
-
-
-
+  }
 }

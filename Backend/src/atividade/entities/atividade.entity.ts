@@ -15,6 +15,7 @@ import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Questao } from './questao.entity';
 import { Professor } from '../../professor/entities/professor.entity';
+import { Bimestre } from '../../nota/entities/nota.entity';
 
 @Entity('atividades')
 export class Atividade {
@@ -29,6 +30,13 @@ export class Atividade {
 
   @Column({ type: 'text', nullable: true })
   descricao: string;
+
+  @Column({
+    type: 'enum',
+    enum: Bimestre,
+    name: 'bimestre'
+  })
+  bimestre: Bimestre;
 
   @Column({ type: 'timestamp', name: 'data_entrega' })
   dataEntrega: Date;

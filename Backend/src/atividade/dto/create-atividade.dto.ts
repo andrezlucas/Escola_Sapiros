@@ -9,9 +9,11 @@ import {
   MaxLength,
   ValidateNested,
   IsUUID,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateQuestaoDto } from './create-questao.dto';
+import { Bimestre } from '../../nota/entities/nota.entity';
 
 export class CreateAtividadeDto {
   @IsNotEmpty()
@@ -22,6 +24,10 @@ export class CreateAtividadeDto {
   @IsString()
   @IsOptional()
   descricao?: string;
+
+  @IsNotEmpty()
+  @IsEnum(Bimestre)
+  bimestre: Bimestre;
 
   @IsNotEmpty()
   @IsDateString()
