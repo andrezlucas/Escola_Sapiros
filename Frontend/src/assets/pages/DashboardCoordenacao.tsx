@@ -4,7 +4,7 @@ import CardMenuBackground from "../components/CardMenuBackground";
 import CardMenu from "../components/CardMenu";
 import CardMural from "../components/CardMural";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom"; 
+import { useSearchParams } from "react-router-dom";
 import ImagenDocumentos from "../imagens/imagendocumento.png";
 import ImagenMatricula from "../imagens/imagenmatricula.png";
 import ImagenPortal from "../imagens/imagenPortal.png";
@@ -21,6 +21,7 @@ import GraficoDesempenho from "../components/GraficoDeTurma";
 import { toast } from "react-toastify";
 import IndicadorCircular from "../components/IndicadorCircular";
 import CardMuralDashboard from "../components/CardMuralDashboard";
+import Relatorios from "./Relatorios";
 
 interface TurmaGrafico {
   turmaId: string;
@@ -110,6 +111,8 @@ function DashboardCoordenacao() {
         return <Gerenciamento />;
       case "mural":
         return <Mural />;
+      case "relatorios":
+        return <Relatorios />;
       default:
         return null;
     }
