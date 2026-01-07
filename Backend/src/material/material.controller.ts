@@ -16,21 +16,24 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
+import type { Request } from 'express';
+
 import { MaterialService } from './material.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 import { ListMaterialDto } from './dto/list-material.dto';
+
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
-import { Role, Usuario } from '../usuario/entities/usuario.entity';
 import { SenhaExpiradaGuard } from '../auth/senha-expirada/senha-expirada.guard';
+
+import { Role, Usuario } from '../usuario/entities/usuario.entity';
 import { storageConfig } from '../upload/upload.config';
 import { OrigemMaterial } from './enums/origem-material.enum';
-import type { Request } from 'express';
 
 type AuthRequest = Request & {
-  user?: Usuario | { id: string; role: Role } | any;
+  user: Usuario & { tipo: Role };
 };
 
 @UseGuards(JwtAuthGuard, RolesGuard, SenhaExpiradaGuard)
@@ -42,22 +45,24 @@ export class MaterialController {
   @Roles(Role.PROFESSOR, Role.COORDENACAO)
   @UseInterceptors(FileInterceptor('file', storageConfig))
   async create(
-    @Body(new ValidationPipe({ transform: true })) createMaterialDto: CreateMaterialDto,
+    @Body(new ValidationPipe({ transform: true })) dto: CreateMaterialDto,
     @UploadedFile() file: Express.Multer.File,
     @Req() req: AuthRequest,
   ) {
     try {
-      const professorId = req.user.id;
-
-      if (createMaterialDto.origem === OrigemMaterial.LOCAL && !file) {
+      if (dto.origem === OrigemMaterial.LOCAL && !file) {
         throw new BadRequestException('Arquivo obrigatório para origem LOCAL');
       }
 
-      if (createMaterialDto.origem === OrigemMaterial.URL && !createMaterialDto.url) {
+      if (dto.origem === OrigemMaterial.URL && !dto.url) {
         throw new BadRequestException('URL obrigatória para origem URL');
       }
 
-      return await this.materialService.create(createMaterialDto, professorId, file);
+      return await this.materialService.create(
+        dto,
+        req.user.id,
+        file,
+      );
     } catch (error) {
       if (file?.path && fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
@@ -67,13 +72,27 @@ export class MaterialController {
   }
 
   @Get()
-  async findAll(@Query(new ValidationPipe({ transform: true })) filters: ListMaterialDto) {
-    return this.materialService.findAll(filters);
+  async findAll(
+    @Req() req: AuthRequest,
+    @Query(new ValidationPipe({ transform: true })) filters: ListMaterialDto,
+  ) {
+    return this.materialService.findAll(
+      req.user.id,
+      req.user.tipo === Role.ALUNO ? 'ALUNO' : 'PROFESSOR',
+      filters,
+    );
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.materialService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ) {
+    return this.materialService.findOne(
+      id,
+      req.user.id,
+      req.user.tipo === Role.ALUNO ? 'ALUNO' : 'PROFESSOR',
+    );
   }
 
   @Patch(':id')
@@ -81,11 +100,11 @@ export class MaterialController {
   @UseInterceptors(FileInterceptor('file', storageConfig))
   async update(
     @Param('id') id: string,
-    @Body(new ValidationPipe({ transform: true })) updateMaterialDto: UpdateMaterialDto,
+    @Body(new ValidationPipe({ transform: true })) dto: UpdateMaterialDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
     try {
-      return await this.materialService.update(id, updateMaterialDto, file);
+      return await this.materialService.update(id, dto, file);
     } catch (error) {
       if (file?.path && fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
@@ -96,8 +115,11 @@ export class MaterialController {
 
   @Delete(':id')
   @Roles(Role.PROFESSOR, Role.COORDENACAO)
-  async remove(@Param('id') id: string) {
+  async remove(
+    @Param('id') id: string,
+  ) {
     await this.materialService.remove(id);
     return { message: 'Material removido com sucesso' };
   }
 }
+
