@@ -15,6 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import * as fs from 'fs';
 import { MaterialService } from './material.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
@@ -45,28 +46,28 @@ export class MaterialController {
     @UploadedFile() file: Express.Multer.File,
     @Req() req: AuthRequest,
   ) {
-    const professorId = req.user.id;
+    try {
+      const professorId = req.user.id;
 
-    // Validar origem vs arquivo
-    if (createMaterialDto.origem === OrigemMaterial.LOCAL && !file) {
-      throw new BadRequestException(
-        'Arquivo obrigatório para materiais de origem LOCAL',
-      );
+      if (createMaterialDto.origem === OrigemMaterial.LOCAL && !file) {
+        throw new BadRequestException('Arquivo obrigatório para origem LOCAL');
+      }
+
+      if (createMaterialDto.origem === OrigemMaterial.URL && !createMaterialDto.url) {
+        throw new BadRequestException('URL obrigatória para origem URL');
+      }
+
+      return await this.materialService.create(createMaterialDto, professorId, file);
+    } catch (error) {
+      if (file?.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      throw error;
     }
-
-    if (createMaterialDto.origem === OrigemMaterial.URL && !createMaterialDto.url) {
-      throw new BadRequestException(
-        'URL obrigatória para materiais de origem URL',
-      );
-    }
-
-    return this.materialService.create(createMaterialDto, professorId, file);
   }
 
   @Get()
-  async findAll(
-    @Query(new ValidationPipe({ transform: true })) filters: ListMaterialDto,
-  ) {
+  async findAll(@Query(new ValidationPipe({ transform: true })) filters: ListMaterialDto) {
     return this.materialService.findAll(filters);
   }
 
@@ -83,7 +84,14 @@ export class MaterialController {
     @Body(new ValidationPipe({ transform: true })) updateMaterialDto: UpdateMaterialDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.materialService.update(id, updateMaterialDto, file);
+    try {
+      return await this.materialService.update(id, updateMaterialDto, file);
+    } catch (error) {
+      if (file?.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      throw error;
+    }
   }
 
   @Delete(':id')

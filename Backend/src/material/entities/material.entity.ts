@@ -13,7 +13,7 @@ import { Professor } from '../../professor/entities/professor.entity';
 import { TipoMaterial } from '../enums/tipo-material.enum';
 import { OrigemMaterial } from '../enums/origem-material.enum';
 
-@Entity('materials')
+@Entity('materiais')
 export class Material {
   @PrimaryGeneratedColumn('uuid')
   id: string;

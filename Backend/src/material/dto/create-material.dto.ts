@@ -27,7 +27,7 @@ export class CreateMaterialDto {
 
   // URL é obrigatória se origem for URL
   @ValidateIf((o) => o.origem === OrigemMaterial.URL)
-  @IsUrl({}, { message: 'URL inválida' })
+  @IsUrl({}, { message: 'Por favor, insira um link válido para o material externo.' })
   url?: string;
 
   @IsOptional()
