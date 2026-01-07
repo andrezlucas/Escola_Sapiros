@@ -20,7 +20,7 @@ export class RelatoriosHabilidadesService {
       .innerJoin('rq.entrega', 'e')
       .innerJoin('e.atividade', 'atv')
       .innerJoin('atv.disciplina', 'd')
-      .where('d.id = :disciplinaId', { disciplinaId })
+      .where('d.id_disciplina = :disciplinaId', { disciplinaId })
       .andWhere('atv.bimestre = :bimestre', { bimestre });
 
     if (turmaId) {
@@ -43,7 +43,7 @@ export class RelatoriosHabilidadesService {
       .orderBy('percentual', 'ASC')
       .getRawMany();
 
-    return dados.map(d => {
+    return dados.map((d) => {
       const p = Number(d.percentual) || 0;
       return {
         habilidadeId: d.habilidadeId,
@@ -67,7 +67,7 @@ export class RelatoriosHabilidadesService {
       .innerJoin('e.aluno', 'a')
       .innerJoin('a.turma', 't')
       .innerJoin('atv.disciplina', 'd')
-      .where('d.id = :disciplinaId', { disciplinaId })
+      .where('d.id_disciplina = :disciplinaId', { disciplinaId })
       .andWhere('h.id = :habilidadeId', { habilidadeId })
       .andWhere('atv.bimestre = :bimestre', { bimestre })
       .select('t.nome_turma', 'turma')
@@ -80,7 +80,7 @@ export class RelatoriosHabilidadesService {
       .orderBy('t.nome_turma', 'ASC')
       .getRawMany();
 
-    return dados.map(d => ({
+    return dados.map((d) => ({
       turma: d.turma,
       percentual: Number(d.percentual) || 0,
     }));
