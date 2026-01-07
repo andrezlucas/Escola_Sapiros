@@ -24,13 +24,13 @@ export const storageConfig = {
     },
   }),
   fileFilter: (req: any, file: Express.Multer.File, cb: Function) => {
-    // Permite apenas pdf, jpg e jpeg
-    if (!file.originalname.match(/\.(pdf|jpg|jpeg)$/)) {
-      return cb(new Error('Apenas arquivos PDF, JPG ou JPEG são permitidos!'), false);
+    // Permite pdf, jpg, jpeg e vídeos (mp4, avi, mov, mkv)
+    if (!file.originalname.match(/\.(pdf|jpg|jpeg|mp4|avi|mov|mkv)$/)) {
+      return cb(new Error('Apenas arquivos PDF, JPG, JPEG, MP4, AVI, MOV ou MKV são permitidos!'), false);
     }
     cb(null, true);
   },
   limits: {
-    fileSize: 5 * 1024 * 1024, // Limite de 5MB por arquivo
+    fileSize: 50 * 1024 * 1024, // Limite de 50MB por arquivo (aumentado para vídeos)
   },
 };
