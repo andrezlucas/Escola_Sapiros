@@ -2,12 +2,19 @@ import {  Entity,  PrimaryGeneratedColumn,  Column,  ManyToOne, JoinColumn,  Cre
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
+import { Index } from 'typeorm';
 
 export enum StatusFrequencia {
   PRESENTE = 'presente',
   FALTA = 'falta',
   FALTA_JUSTIFICADA = 'falta_justificada'
 }
+
+@Index(
+  'UQ_frequencia_unica_por_dia',
+  ['aluno', 'disciplina', 'turma', 'data'],
+  { unique: true }
+)
 
 @Entity('frequencias')
 export class Frequencia {

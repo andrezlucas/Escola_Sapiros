@@ -216,54 +216,109 @@ export class FrequenciaService {
    * - disciplinaId (UUID)
    * user: req.user (id, role, matricula_aluno quando aplicável)
    */
-  async create(
-    createFrequenciaDto: CreateFrequenciaDto,
-    user: any,
-  ): Promise<Frequencia> {
-    const { data, status, justificativa, faltasNoPeriodo, alunoId, disciplinaId, turmaId } =
-      createFrequenciaDto;
+ async create(
+  createFrequenciaDto: CreateFrequenciaDto,
+  user: any,
+): Promise<Frequencia> {
+  const {
+    data,
+    status,
+    justificativa,
+    faltasNoPeriodo,
+    alunoId,
+    disciplinaId,
+    turmaId,
+  } = createFrequenciaDto;
 
-    if (!alunoId) throw new BadRequestException('alunoId (matrícula) é obrigatório');
-    if (!disciplinaId) throw new BadRequestException('disciplinaId é obrigatório');
-    if (!turmaId) throw new BadRequestException('turmaId é obrigatório');
+  if (!alunoId) throw new BadRequestException('alunoId é obrigatório');
+  if (!disciplinaId) throw new BadRequestException('disciplinaId é obrigatório');
+  if (!turmaId) throw new BadRequestException('turmaId é obrigatório');
 
-    await this.assertCanModifyFrequencia(null, user, disciplinaId);
+  await this.assertCanModifyFrequencia(null, user, disciplinaId);
 
-    const aluno = await this.findAlunoByMatricula(alunoId);
-    const disciplina = await this.findDisciplinaById(disciplinaId);
-    const turma = await this.findTurmaById(turmaId);
+  const aluno = await this.findAlunoByMatricula(alunoId);
+  const disciplina = await this.findDisciplinaById(disciplinaId);
+  const turma = await this.findTurmaById(turmaId);
 
-    const d = this.parseDateOrThrow(data);
-    const dataISO = d.toISOString().slice(0, 10);
+  const d = this.parseDateOrThrow(data);
+  const dataISO = d.toISOString().slice(0, 10);
 
-    const jaExiste = await this.frequenciaRepository
-      .createQueryBuilder('f')
-      .where('f.aluno_id = :alunoId', { alunoId: aluno.id })
-      .andWhere('f.disciplina_id = :disciplinaId', {
-        disciplinaId: disciplina.id_disciplina,
-      })
-      .andWhere('f.turma_id = :turmaId', { turmaId: turma.id })
-      .andWhere('f.data = :data', { data: dataISO })
-      .getOne();
+  const existente = await this.frequenciaRepository
+    .createQueryBuilder('f')
+    .leftJoinAndSelect('f.aluno', 'aluno')
+    .leftJoinAndSelect('f.disciplina', 'disciplina')
+    .leftJoinAndSelect('f.turma', 'turma')
+    .where('f.aluno_id = :alunoId', { alunoId: aluno.id })
+    .andWhere('f.disciplina_id = :disciplinaId', {
+      disciplinaId: disciplina.id_disciplina,
+    })
+    .andWhere('f.turma_id = :turmaId', { turmaId: turma.id })
+    .andWhere('f.data = :data', { data: dataISO })
+    .getOne();
 
-    if (jaExiste) {
-      throw new BadRequestException(
-        'Já existe frequência para este aluno/discipina/turma nesta data',
-      );
+  if (existente) {
+    await this.assertCanModifyFrequencia(existente, user);
+
+    existente.status = status ?? existente.status;
+    existente.justificativa =
+      justificativa !== undefined
+        ? justificativa
+        : existente.justificativa;
+    existente.faltasNoPeriodo =
+      faltasNoPeriodo ?? existente.faltasNoPeriodo;
+
+    return this.frequenciaRepository.save(existente);
+  }
+
+  const frequencia = this.frequenciaRepository.create({
+    data: d,
+    status: status ?? StatusFrequencia.PRESENTE,
+    justificativa: justificativa ?? undefined,
+    faltasNoPeriodo: faltasNoPeriodo ?? 0,
+    aluno,
+    disciplina,
+    turma,
+  });
+
+  try {
+    return await this.frequenciaRepository.save(frequencia);
+  } catch (e: any) {
+    if (
+      e?.code === 'ER_DUP_ENTRY' ||
+      e?.code === '23505'
+    ) {
+      const freq = await this.frequenciaRepository
+        .createQueryBuilder('f')
+        .leftJoinAndSelect('f.aluno', 'aluno')
+        .leftJoinAndSelect('f.disciplina', 'disciplina')
+        .leftJoinAndSelect('f.turma', 'turma')
+        .where('f.aluno_id = :alunoId', { alunoId: aluno.id })
+        .andWhere('f.disciplina_id = :disciplinaId', {
+          disciplinaId: disciplina.id_disciplina,
+        })
+        .andWhere('f.turma_id = :turmaId', { turmaId: turma.id })
+        .andWhere('f.data = :data', { data: dataISO })
+        .getOne();
+
+      if (freq) {
+        await this.assertCanModifyFrequencia(freq, user);
+
+        freq.status = status ?? freq.status;
+        freq.justificativa =
+          justificativa !== undefined
+            ? justificativa
+            : freq.justificativa;
+        freq.faltasNoPeriodo =
+          faltasNoPeriodo ?? freq.faltasNoPeriodo;
+
+        return this.frequenciaRepository.save(freq);
+      }
     }
 
-    const frequencia = this.frequenciaRepository.create({
-      data: d,
-      status: status ?? StatusFrequencia.PRESENTE,
-      justificativa: justificativa ?? undefined,
-      faltasNoPeriodo: faltasNoPeriodo ?? 0,
-      aluno,
-      disciplina,
-      turma,
-    });
-
-    return this.frequenciaRepository.save(frequencia);
+    throw e;
   }
+}
+
 
   /**
    * Lista frequências com filtros e restrições por role.
@@ -344,7 +399,7 @@ export class FrequenciaService {
         );
 
       const turmas = await this.turmaRepository.find({
-        where: { professor: { id_professor: professor.id } as any },
+        where: { professor: { id: professor.id } },
         relations: ['disciplinas'],
       });
 
