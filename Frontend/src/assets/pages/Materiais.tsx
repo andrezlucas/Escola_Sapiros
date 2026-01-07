@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ListAtividades from "../components/ListAtividades";
+import ListaMateriais from "../components/ListMateriais";
 
 function Materiais() {
   const [etapa, setEtapa] = useState<String>("minhasatividades");
@@ -42,6 +43,7 @@ function Materiais() {
       </div>
       <div className="flex flex-col gap-4">
         {etapa === "minhasatividades" && <ListAtividades />}
+        {etapa === "meusmateriais" && <ListaMateriais isProfessor={true} />}
       </div>
     </div>
   );

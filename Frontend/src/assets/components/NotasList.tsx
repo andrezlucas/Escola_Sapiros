@@ -42,7 +42,7 @@ export default function NotaList() {
   const [modalFeedbackAberto, setModalFeedbackAberto] = useState(false);
   const [alunoSelecionadoParaFeedback, setAlunoSelecionadoParaFeedback] =
     useState<LinhaTabela | null>(null);
-  const [tipoFeedback, setTipoFeedback] = useState<"1" | "2">("1"); // "1" = Nota 1, "2" = Nota 2
+  const [tipoFeedback, setTipoFeedback] = useState<"1" | "2">("1");
   const [feedbackTexto, setFeedbackTexto] = useState("");
   const [savingIndividual, setSavingIndividual] = useState<string | null>(null);
 

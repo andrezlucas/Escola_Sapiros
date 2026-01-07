@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import Tabela, { type Coluna } from "./Tabela";
 import { toast } from "react-toastify";
+import { Input } from "./Input";
+import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 type Turma = { id: string; nome_turma: string };
 type Disciplina = { id_disciplina: string; nome_disciplina: string };
@@ -8,7 +10,7 @@ type Disciplina = { id_disciplina: string; nome_disciplina: string };
 type Aluno = {
   id: string;
   matriculaAluno: string;
-  nome: string;
+  usuario: { nome: string };
 };
 
 type FrequenciaBackend = {
@@ -17,7 +19,11 @@ type FrequenciaBackend = {
   status: "presente" | "falta" | "falta_justificada";
   justificativa?: string | null;
   faltasNoPeriodo: number;
-  aluno: { id: string; matriculaAluno: string; nome: string };
+  aluno: {
+    id: string;
+    matriculaAluno: string;
+    usuario: { nome: string };
+  };
 };
 
 type LinhaTabela = {
@@ -49,11 +55,14 @@ export default function FrequenciaList() {
   const [alunoParaJustificativa, setAlunoParaJustificativa] =
     useState<LinhaTabela | null>(null);
   const [justificativaTexto, setJustificativaTexto] = useState("");
+  const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(
+    null
+  );
 
   function authFetch(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("Usuário não autenticado. Faça login novamente.");
+      toast.error("Você precisa estar logado.");
       return null;
     }
 
@@ -75,16 +84,15 @@ export default function FrequenciaList() {
           authFetch(`${API_BASE}/professores/disciplinas`),
         ]);
 
-        if (!resTurmas?.ok || !resDisciplinas?.ok)
-          throw new Error("Erro ao carregar dados");
+        if (!resTurmas?.ok || !resDisciplinas?.ok) throw new Error();
 
         const turmasData = await resTurmas.json();
         const disciplinasData = await resDisciplinas.json();
 
         setTurmas(turmasData);
         setDisciplinas(disciplinasData);
-      } catch (err) {
-        setError("Falha ao carregar turmas ou disciplinas.");
+      } catch {
+        toast.error("Erro ao carregar turmas ou disciplinas.");
       }
     };
 
@@ -103,16 +111,14 @@ export default function FrequenciaList() {
 
       try {
         const resTurma = await authFetch(`${API_BASE}/turmas/${turmaId}`);
-        if (!resTurma?.ok) throw new Error("Erro ao carregar turma");
+        if (!resTurma?.ok) throw new Error("Turma não encontrada");
         const turmaData = await resTurma.json();
 
-        const alunosExtraidos: Aluno[] = (turmaData.alunos || []).map(
-          (alunoObj: any) => ({
-            id: alunoObj.id,
-            matriculaAluno: alunoObj.matriculaAluno,
-            nome: alunoObj.usuario?.nome || "Nome não disponível",
-          })
-        );
+        const alunos: Aluno[] = (turmaData.alunos || []).map((a: any) => ({
+          id: a.id,
+          matriculaAluno: a.matriculaAluno,
+          usuario: { nome: a.usuario?.nome || "Sem nome" },
+        }));
 
         const params = new URLSearchParams({
           turmaId,
@@ -122,22 +128,20 @@ export default function FrequenciaList() {
         });
 
         const resFreq = await authFetch(`${API_BASE}/frequencias?${params}`);
-        const frequenciasData: FrequenciaBackend[] = resFreq?.ok
+        const frequencias: FrequenciaBackend[] = resFreq?.ok
           ? await resFreq.json()
           : [];
 
-        const mapaFrequencias = new Map<string, FrequenciaBackend>();
-        frequenciasData.forEach((f) =>
-          mapaFrequencias.set(f.aluno.matriculaAluno, f)
-        );
+        const mapaFreq = new Map<string, FrequenciaBackend>();
+        frequencias.forEach((f) => mapaFreq.set(f.aluno.matriculaAluno, f));
 
-        const tabela: LinhaTabela[] = alunosExtraidos.map((aluno) => {
-          const freq = mapaFrequencias.get(aluno.matriculaAluno);
+        const tabela: LinhaTabela[] = alunos.map((aluno) => {
+          const freq = mapaFreq.get(aluno.matriculaAluno);
 
           return {
             alunoId: aluno.id,
             matriculaAluno: aluno.matriculaAluno,
-            nome: aluno.nome,
+            nome: aluno.usuario.nome,
             frequenciaId: freq?.id,
             status: freq?.status || "presente",
             justificativa: freq?.justificativa || null,
@@ -147,8 +151,8 @@ export default function FrequenciaList() {
         });
 
         setDadosTabela(tabela);
-      } catch (err: any) {
-        setError("Erro ao carregar frequência.");
+      } catch {
+        toast.error("Erro ao carregar dados da frequência.");
         setDadosTabela([]);
       } finally {
         setLoading(false);
@@ -158,46 +162,25 @@ export default function FrequenciaList() {
     fetchDados();
   }, [turmaId, disciplinaId, dataSelecionada]);
 
-  const alternarPresenca = (matricula: string) => {
-    const item = dadosTabela.find((i) => i.matriculaAluno === matricula);
-    if (!item) return;
-
-    const novoPresente = !item.presente;
-
-    if (!novoPresente) {
-      setAlunoParaJustificativa(item);
-      setJustificativaTexto(item.justificativa || "");
+  const alternarPresenca = (linha: LinhaTabela) => {
+    if (linha.presente) {
+      setAlunoParaJustificativa(linha);
+      setJustificativaTexto(linha.justificativa || "");
+      setArquivoSelecionado(null);
       setModalJustificativaAberto(true);
     } else {
-      atualizarStatus(matricula, "presente", null);
+      salvarFrequencia(linha, "presente", null);
     }
   };
 
-  const salvarJustificativaEFalta = () => {
-    if (!alunoParaJustificativa) return;
-
-    atualizarStatus(
-      alunoParaJustificativa.matriculaAluno,
-      justificativaTexto.trim() ? "falta_justificada" : "falta",
-      justificativaTexto.trim() || null
-    );
-
-    setModalJustificativaAberto(false);
-    setAlunoParaJustificativa(null);
-    setJustificativaTexto("");
-  };
-
-  const atualizarStatus = async (
-    matricula: string,
+  const salvarFrequencia = async (
+    linha: LinhaTabela,
     status: "presente" | "falta" | "falta_justificada",
-    justificativa?: string | null
+    justificativa: string | null
   ) => {
-    const item = dadosTabela.find((i) => i.matriculaAluno === matricula);
-    if (!item) return;
-
     const payload = {
       data: dataSelecionada,
-      alunoId: item.alunoId,
+      alunoId: linha.matriculaAluno,
       disciplinaId,
       turmaId,
       status,
@@ -206,8 +189,8 @@ export default function FrequenciaList() {
 
     try {
       let res;
-      if (item.frequenciaId) {
-        res = await authFetch(`${API_BASE}/frequencias/${item.frequenciaId}`, {
+      if (linha.frequenciaId) {
+        res = await authFetch(`${API_BASE}/frequencias/${linha.frequenciaId}`, {
           method: "PATCH",
           body: JSON.stringify(payload),
         });
@@ -218,23 +201,57 @@ export default function FrequenciaList() {
         });
       }
 
-      if (!res?.ok) throw new Error("Erro ao salvar");
+      if (!res?.ok) {
+        const err = await res?.json().catch(() => ({}));
+        throw new Error(err.message || "Erro ao salvar");
+      }
+
+      const novaFreq = await res.json();
 
       setDadosTabela((prev) =>
-        prev.map((i) =>
-          i.matriculaAluno === matricula
+        prev.map((item) =>
+          item.matriculaAluno === linha.matriculaAluno
             ? {
-                ...i,
+                ...item,
+                frequenciaId: novaFreq.id,
                 status,
                 justificativa: justificativa || null,
                 presente: status === "presente",
+                faltasNoPeriodo:
+                  novaFreq.faltasNoPeriodo || item.faltasNoPeriodo,
               }
-            : i
+            : item
         )
       );
-    } catch (err) {
+
+      toast.success("Frequência salva com sucesso!");
+    } catch {
       toast.error("Erro ao salvar frequência.");
     }
+  };
+
+  const confirmarFaltaComJustificativa = () => {
+    if (!alunoParaJustificativa) return;
+
+    let justificativaFinal = justificativaTexto.trim();
+
+    if (arquivoSelecionado) {
+      justificativaFinal += justificativaFinal ? " | " : "";
+      justificativaFinal += `Documento anexado: ${arquivoSelecionado.name}`;
+    }
+
+    const novoStatus = justificativaFinal ? "falta_justificada" : "falta";
+
+    salvarFrequencia(
+      alunoParaJustificativa,
+      novoStatus,
+      justificativaFinal || null
+    );
+
+    setModalJustificativaAberto(false);
+    setAlunoParaJustificativa(null);
+    setJustificativaTexto("");
+    setArquivoSelecionado(null);
   };
 
   const turmaSelecionada = turmas.find((t) => t.id === turmaId);
@@ -266,13 +283,52 @@ export default function FrequenciaList() {
     {
       titulo: "Presença",
       render: (item) => (
-        <div className="flex justify-center">
-          <input
-            type="checkbox"
-            checked={item.presente}
-            onChange={() => alternarPresenca(item.matriculaAluno)}
-            className="w-6 h-6 text-[#1D5D7F] rounded focus:ring-[#1D5D7F]"
-          />
+        <div className="flex justify-center gap-3">
+          <button
+            onClick={() => salvarFrequencia(item, "presente", null)}
+            className={`p-2 rounded-full transition-all ${
+              item.status === "presente"
+                ? "bg-[#1D5D7F] text-white shadow-lg"
+                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+            }`}
+            title="Marcar como Presente"
+          >
+            <CheckCircle2/>
+          </button>
+
+          <button
+            onClick={() => {
+              setAlunoParaJustificativa(item);
+              setJustificativaTexto(item.justificativa || "");
+              setArquivoSelecionado(null);
+              setModalJustificativaAberto(true);
+            }}
+            className={`p-2 rounded-full transition-all ${
+              item.status === "falta"
+                ? "bg-red-500 text-white shadow-lg"
+                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+            }`}
+            title="Marcar como Falta"
+          >
+            <XCircle />
+          </button>
+
+          <button
+            onClick={() => {
+              setAlunoParaJustificativa(item);
+              setJustificativaTexto(item.justificativa || "");
+              setArquivoSelecionado(null);
+              setModalJustificativaAberto(true);
+            }}
+            className={`p-2 rounded-full transition-all ${
+              item.status === "falta_justificada"
+                ? "bg-orange-500 text-white shadow-lg"
+                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+            }`}
+            title="Marcar como Falta Justificada"
+          >
+            <AlertCircle />
+          </button>
         </div>
       ),
     },
@@ -390,38 +446,55 @@ export default function FrequenciaList() {
         <>
           <h2 className="text-xl font-semibold text-[#1D5D7F] mb-4">
             Lista de Alunos - {turmaSelecionada?.nome_turma} (
-            {disciplinaSelecionada?.nome_disciplina})
+            {disciplinaSelecionada?.nome_disciplina}) - {dataSelecionada}
           </h2>
 
           <Tabela dados={dadosTabela} colunas={colunas} />
         </>
       )}
 
-      <div className="mt-8 flex justify-end">
-        <button
-          onClick={() =>
-            toast.success("Frequências salvas automaticamente ao marcar!")
-          }
-          disabled={loading || dadosTabela.length === 0}
-          className="px-8 py-3 bg-[#1D5D7F] text-white font-medium rounded-md hover:bg-[#164a66] disabled:opacity-50 transition"
-        >
-          Salvar Todas as Faltas
-        </button>
-      </div>
-
       {modalJustificativaAberto && alunoParaJustificativa && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
               Justificativa de Falta - {alunoParaJustificativa.nome}
             </h2>
 
-            <textarea
-              value={justificativaTexto}
-              onChange={(e) => setJustificativaTexto(e.target.value)}
-              placeholder="Opcional: escreva a justificativa da falta..."
-              className="w-full h-32 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] resize-none"
-            />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descrição da justificativa (opcional)
+                </label>
+                <textarea
+                  value={justificativaTexto}
+                  onChange={(e) => setJustificativaTexto(e.target.value)}
+                  placeholder="Ex: Atestado médico, viagem familiar..."
+                  className="w-full h-28 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Anexar documento comprovante (opcional)
+                </label>
+                <Input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setArquivoSelecionado(e.target.files[0]);
+                    }
+                  }}
+                  className="w-full"
+                  label={""}
+                />
+                {arquivoSelecionado && (
+                  <p className="text-sm text-green-600 mt-2">
+                    Arquivo: {arquivoSelecionado.name}
+                  </p>
+                )}
+              </div>
+            </div>
 
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -429,6 +502,7 @@ export default function FrequenciaList() {
                   setModalJustificativaAberto(false);
                   setAlunoParaJustificativa(null);
                   setJustificativaTexto("");
+                  setArquivoSelecionado(null);
                   setDadosTabela((prev) =>
                     prev.map((i) =>
                       i.matriculaAluno === alunoParaJustificativa.matriculaAluno
@@ -437,13 +511,13 @@ export default function FrequenciaList() {
                     )
                   );
                 }}
-                className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition"
               >
                 Cancelar
               </button>
               <button
-                onClick={salvarJustificativaEFalta}
-                className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                onClick={confirmarFaltaComJustificativa}
+                className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
               >
                 Confirmar Falta
               </button>

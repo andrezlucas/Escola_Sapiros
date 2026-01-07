@@ -10,6 +10,8 @@ import Mural from "./Mural";
 import Atividades from "./Atividades";
 import AtividadesAluno from "./AtividadesAluno";
 import CardAtividadesAluno from "../components/CardAtividadesAluno";
+import ListaMateriais from "../components/ListMateriais";
+import MateriaisAluno from "./MateriaisAluno";
 
 function DashboardAluno() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,6 +33,8 @@ function DashboardAluno() {
         return <Mural />;
       case "atividadesAluno":
         return <AtividadesAluno />;
+      case "materiais":
+        return <MateriaisAluno />;
       default:
         return null;
     }
@@ -79,7 +83,7 @@ function DashboardAluno() {
 
               <div className="col-span-2 flex flex-col space-y-6">
                 <div className="h-1/2">
-                  <CardMuralDashboard onVerMural={()=> navigateTo("mural")} />
+                  <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
                 </div>
 
                 <div className="h-1/2">
