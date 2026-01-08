@@ -115,12 +115,24 @@ export class FrequenciaService {
     return false;
   }
 
-  private parseDateOrThrow(dateStr?: string | Date): Date {
-    if (!dateStr) throw new BadRequestException('Data inválida ou ausente');
-    const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-    if (Number.isNaN(d.getTime())) throw new BadRequestException('Data inválida');
-    return d;
+ private parseDateOrThrow(dateStr?: string | Date): Date {
+  if (!dateStr) {
+    throw new BadRequestException('Data inválida ou ausente');
   }
+
+  if (dateStr instanceof Date) {
+    return dateStr;
+  }
+
+  const [year, month, day] = dateStr.split('-').map(Number);
+
+  if (!year || !month || !day) {
+    throw new BadRequestException('Formato de data inválido');
+  }
+
+  return new Date(year, month - 1, day, 12, 0, 0);
+}
+
 
   private async assertCanReadFrequencia(
     frequencia: Frequencia,
@@ -701,7 +713,7 @@ export class FrequenciaService {
 
     await this.frequenciaRepository.remove(frequencia);
   }
-  
+
   async anexarJustificativa(
     frequenciaId: string,
     arquivo: Express.Multer.File,
