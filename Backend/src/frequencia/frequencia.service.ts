@@ -20,6 +20,7 @@ import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { Documento } from '../documentacao/entities/documento.entity';
 import { Documentacao } from '../documentacao/entities/documentacao.entity';
 import { TipoDocumento } from '../documentacao/enums/tipo-documento.enum';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class FrequenciaService {
@@ -40,6 +41,7 @@ export class FrequenciaService {
     private readonly documentoRepository: Repository<Documento>,
     @InjectRepository(Documentacao)
     private readonly documentacaoRepository: Repository<Documentacao>,
+    private readonly dataSource: DataSource,
 
   ) {}
 
@@ -714,19 +716,13 @@ export class FrequenciaService {
     await this.frequenciaRepository.remove(frequencia);
   }
 
-  async anexarJustificativa(
+async anexarJustificativa(
     frequenciaId: string,
     arquivo: Express.Multer.File,
     user: any,
   ): Promise<{ message: string }> {
     if (!arquivo) {
       throw new BadRequestException('Arquivo é obrigatório');
-    }
-
-    if (user.role !== Role.PROFESSOR && user.role !== Role.COORDENACAO) {
-      throw new ForbiddenException(
-        'Apenas professores ou coordenação podem anexar justificativa',
-      );
     }
 
     const frequencia = await this.frequenciaRepository.findOne({
@@ -738,74 +734,53 @@ export class FrequenciaService {
       throw new NotFoundException('Frequência não encontrada');
     }
 
-    if (frequencia.status === StatusFrequencia.FALTA_JUSTIFICADA) {
-      throw new BadRequestException(
-        'Esta falta já foi justificada anteriormente',
-      );
-    }
-
     if (frequencia.status !== StatusFrequencia.FALTA) {
-      throw new BadRequestException(
-        'Apenas frequências com status FALTA podem ser justificadas',
-      );
+      throw new BadRequestException('Apenas faltas podem ser justificadas');
     }
 
-    if (user.role === Role.PROFESSOR) {
-      const professor = await this.findProfessorByUsuarioId(user.id);
-      if (!professor) {
-        throw new ForbiddenException('Professor não encontrado');
-      }
+    await this.assertCanModifyFrequencia(frequencia, user);
 
-      const autorizado = await this.professorMinistraDisciplina(
-        professor,
-        frequencia.disciplina.id_disciplina,
-      );
-
-      if (!autorizado) {
-        throw new ForbiddenException(
-          'Professor não autorizado para justificar falta nesta disciplina',
-        );
-      }
-    }
-
-    const documentacao = await this.documentacaoRepository.findOne({
+    let documentacao = await this.documentacaoRepository.findOne({
       where: { aluno: { id: frequencia.aluno.id } as any },
     });
 
     if (!documentacao) {
-      throw new NotFoundException('Documentação do aluno não encontrada');
+      documentacao = this.documentacaoRepository.create({
+        aluno: frequencia.aluno,
+      });
+      await this.documentacaoRepository.save(documentacao);
     }
 
-    const justificativaExistente = await this.documentoRepository.findOne({
-      where: {
-        documentacao: { id: documentacao.id } as any,
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const documento = this.documentoRepository.create({
         tipo: TipoDocumento.JUSTIFICATIVA_FALTA,
-      },
-    });
+        nomeOriginal: arquivo.originalname,
+        nomeArquivo: arquivo.filename || `${Date.now()}-${arquivo.originalname}`,
+        caminho: arquivo.path || `uploads/justificativas/${arquivo.originalname}`,
+        mimeType: arquivo.mimetype,
+        tamanho: arquivo.size,
+        documentacao,
+        frequencia,
+      });
 
-    if (justificativaExistente) {
-      throw new BadRequestException(
-        'Já existe uma justificativa cadastrada para esta falta',
-      );
+      await queryRunner.manager.save(documento);
+
+      frequencia.status = StatusFrequencia.FALTA_JUSTIFICADA;
+      await queryRunner.manager.save(frequencia);
+
+      await queryRunner.commitTransaction();
+      
+      return { message: 'Justificativa anexada com sucesso' };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
-
-    const documento = this.documentoRepository.create({
-      tipo: TipoDocumento.JUSTIFICATIVA_FALTA,
-      nomeOriginal: arquivo.originalname,
-      nomeArquivo: arquivo.filename,
-      caminho: arquivo.path,
-      mimeType: arquivo.mimetype,
-      tamanho: arquivo.size,
-      documentacao,
-    });
-
-    await this.documentoRepository.save(documento);
-
-    frequencia.status = StatusFrequencia.FALTA_JUSTIFICADA;
-    await this.frequenciaRepository.save(frequencia);
-
-    return { message: 'Justificativa anexada com sucesso' };
   }
-
 
 }

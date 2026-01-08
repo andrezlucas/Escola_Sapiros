@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Req, UseGuards, UsePipes, ValidationPipe, ParseUUIDPipe, Patch, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Req, UseGuards, UsePipes, ValidationPipe, ParseUUIDPipe, Patch, Delete, Param, BadRequestException } from '@nestjs/common';
 import { FrequenciaService } from './frequencia.service';
 import { CreateFrequenciaDto } from './dto/create-frequencia.dto';
 import { FrequenciaFilterDto } from './dto/frequencia-filter.dto';
@@ -14,6 +14,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 
 type AuthRequest = Request & { user?: Usuario | any };
@@ -121,19 +123,30 @@ export class FrequenciaController {
     return await this.frequenciaService.remove(id, req.user);
   }
 
-  @Roles(Role.COORDENACAO, Role.PROFESSOR)
-  @Post(':id/justificativa')
-  @UseInterceptors(FileInterceptor('arquivo'))
-  async anexarJustificativa(
-    @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile() arquivo: Express.Multer.File,
-    @Req() req: AuthRequest,
-  ) {
-    return this.frequenciaService.anexarJustificativa(
-      id,
-      arquivo,
-      req.user,
-    );
+ @Roles(Role.COORDENACAO, Role.PROFESSOR)
+@Post(':id/justificativa')
+@UseInterceptors(FileInterceptor('arquivo', {
+  storage: diskStorage({
+    destination: './uploads/justificativas',
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      cb(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/)) {
+      return cb(new BadRequestException('Somente imagens e PDFs são permitidos'), false);
+    }
+    cb(null, true);
   }
+}))
+async anexarJustificativa(
+  @Param('id', ParseUUIDPipe) id: string,
+  @UploadedFile() arquivo: Express.Multer.File,
+  @Req() req: AuthRequest,
+) {
+  return this.frequenciaService.anexarJustificativa(id, arquivo, req.user);
+}
 
 }
