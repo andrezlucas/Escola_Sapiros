@@ -70,30 +70,29 @@ export class MaterialController {
       throw error;
     }
   }
+@Get()
+async findAll(
+  @Req() req: AuthRequest,
+  @Query(new ValidationPipe({ transform: true })) filters: ListMaterialDto,
+) {
+  return this.materialService.findAll(
+    req.user.id,
+    req.user.role, // Alterado de 'tipo' para 'role' para bater com a Entity
+    filters,
+  );
+}
 
-  @Get()
-  async findAll(
-    @Req() req: AuthRequest,
-    @Query(new ValidationPipe({ transform: true })) filters: ListMaterialDto,
-  ) {
-    return this.materialService.findAll(
-      req.user.id,
-      req.user.tipo === Role.ALUNO ? 'ALUNO' : 'PROFESSOR',
-      filters,
-    );
-  }
-
-  @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Req() req: AuthRequest,
-  ) {
-    return this.materialService.findOne(
-      id,
-      req.user.id,
-      req.user.tipo === Role.ALUNO ? 'ALUNO' : 'PROFESSOR',
-    );
-  }
+@Get(':id')
+async findOne(
+  @Param('id') id: string,
+  @Req() req: AuthRequest,
+) {
+  return this.materialService.findOne(
+    id,
+    req.user.id,
+    req.user.role // Usando o campo correto da entidade
+  );
+}
 
   @Patch(':id')
   @Roles(Role.PROFESSOR, Role.COORDENACAO)

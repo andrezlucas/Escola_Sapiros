@@ -17,6 +17,7 @@ import { Professor } from '../professor/entities/professor.entity';
 import { Turma } from '../turma/entities/turma.entity';
 import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { OrigemMaterial } from './enums/origem-material.enum';
+import { Aluno } from '../aluno/entities/aluno.entity';
 
 @Injectable()
 export class MaterialService {
@@ -31,6 +32,9 @@ export class MaterialService {
     private readonly turmaRepo: Repository<Turma>,
     @InjectRepository(Disciplina)
     private readonly disciplinaRepo: Repository<Disciplina>,
+    @InjectRepository(Aluno)
+    private readonly alunoRepo: Repository<Aluno>,
+
   ) {}
 
   async create(
@@ -55,29 +59,25 @@ export class MaterialService {
       throw new BadRequestException('URL obrigatória para origem URL');
     }
 
-    let turma: Turma | undefined;
-    let disciplina: Disciplina | undefined;
+    let turma: Turma | null = null;
+    let disciplina: Disciplina | null = null;
 
     if (dto.turmaId) {
-      const turmaEncontrada = await this.turmaRepo.findOne({
-        where: { id: dto.turmaId },
-      });
-      if (!turmaEncontrada) {
+      turma = await this.turmaRepo.findOne({ where: { id: dto.turmaId } });
+      if (!turma) {
         this.cleanupFile(file?.path);
         throw new NotFoundException('Turma não encontrada');
       }
-      turma = turmaEncontrada;
     }
 
     if (dto.disciplinaId) {
-      const disciplinaEncontrada = await this.disciplinaRepo.findOne({
+      disciplina = await this.disciplinaRepo.findOne({
         where: { id_disciplina: dto.disciplinaId },
       });
-      if (!disciplinaEncontrada) {
+      if (!disciplina) {
         this.cleanupFile(file?.path);
         throw new NotFoundException('Disciplina não encontrada');
       }
-      disciplina = disciplinaEncontrada;
     }
 
     const material = this.materialRepo.create({
@@ -86,44 +86,54 @@ export class MaterialService {
       mimeType: file?.mimetype,
       tamanho: file?.size,
       professor,
-      turma,
-      disciplina,
+      turma: turma ?? undefined,
+      disciplina: disciplina ?? undefined,
     });
 
     return this.materialRepo.save(material);
   }
 
-  async findAll(
+
+async findAll(
   userId: string,
-  role: 'ALUNO' | 'PROFESSOR',
+  role: string,
   filters: ListMaterialDto,
-): Promise<any[]> {
-  const query = this.materialRepo
-    .createQueryBuilder('material')
+) {
+  const query = this.materialRepo.createQueryBuilder('material')
     .leftJoinAndSelect('material.professor', 'professor')
     .leftJoinAndSelect('professor.usuario', 'usuarioProfessor')
     .leftJoinAndSelect('material.turma', 'turma')
     .leftJoinAndSelect('material.disciplina', 'disciplina')
     .orderBy('material.criadoEm', 'DESC');
 
-  if (role === 'ALUNO') {
-    query
-      .innerJoin('turma.alunos', 'aluno')
-      .innerJoin('aluno.usuario', 'usuarioAluno')
-      .andWhere('usuarioAluno.id = :userId', { userId });
-  }
+  if (role.toLowerCase() === 'aluno') {
+    const aluno = await this.alunoRepo.findOne({
+      where: { usuario: { id: userId } },
+      relations: ['turma'],
+    });
 
-  if (role === 'PROFESSOR') {
-    query.andWhere('usuarioProfessor.id = :userId', { userId });
-  }
+    if (!aluno || !aluno.turma) {
+      return [];
+    }
 
-  if (filters.turmaId) {
-    query.andWhere('turma.id = :turmaId', { turmaId: filters.turmaId });
+    query.andWhere('material.turma_id = :alunoTurmaId', { 
+      alunoTurmaId: aluno.turma.id 
+    });
+  } else {
+    if (role.toLowerCase() === 'professor') {
+      query.andWhere('usuarioProfessor.id = :userId', { userId });
+    }
+
+    if (filters.turmaId) {
+      query.andWhere('material.turma_id = :fTurmaId', { 
+        fTurmaId: filters.turmaId 
+      });
+    }
   }
 
   if (filters.disciplinaId) {
-    query.andWhere('disciplina.id_disciplina = :disciplinaId', {
-      disciplinaId: filters.disciplinaId,
+    query.andWhere('material.disciplina_id = :dId', {
+      dId: filters.disciplinaId,
     });
   }
 
@@ -145,52 +155,45 @@ export class MaterialService {
 }
 
 
-  async findOne(
-    id: string,
-    userId: string,
-    role: 'ALUNO' | 'PROFESSOR',
-  ): Promise<any> {
-    const material = await this.materialRepo
-      .createQueryBuilder('material')
-      .leftJoinAndSelect('material.professor', 'professor')
-      .leftJoinAndSelect('professor.usuario', 'usuario')
-      .leftJoinAndSelect('material.turma', 'turma')
-      .leftJoinAndSelect('turma.alunos', 'alunos')
-      .leftJoinAndSelect('material.disciplina', 'disciplina')
-      .where('material.id = :id', { id })
-      .getOne();
+async findOne(id: string, userId: string, role: string) {
+  const material = await this.materialRepo.findOne({
+    where: { id },
+    relations: ['professor', 'professor.usuario', 'turma', 'disciplina'],
+  });
 
-    if (!material) {
-      throw new NotFoundException('Material não encontrado');
-    }
-
-    if (role === 'ALUNO') {
-      const permitido = material.turma?.alunos?.some(
-        (aluno) => aluno.id === userId,
-      );
-      if (!permitido) {
-        throw new ForbiddenException('Acesso negado');
-      }
-    }
-
-    if (role === 'PROFESSOR') {
-      const permitido =
-        material.professor?.id === userId ||
-        material.turma?.professor?.id === userId;
-
-      if (!permitido) {
-        throw new ForbiddenException('Acesso negado');
-      }
-    }
-
-    return {
-      ...material,
-      fileUrl:
-        material.origem === OrigemMaterial.LOCAL && material.filePath
-          ? `${this.baseUrl}/uploads/${material.filePath}`
-          : material.url,
-    };
+  if (!material) {
+    throw new NotFoundException('Material não encontrado');
   }
+
+  const userRole = role.toLowerCase();
+
+  if (userRole === 'aluno') {
+    const aluno = await this.alunoRepo.findOne({
+      where: { usuario: { id: userId } },
+      relations: ['turma'],
+    });
+
+    if (!aluno || !aluno.turma || aluno.turma.id !== material.turma?.id) {
+      throw new ForbiddenException('Você não tem permissão para acessar este material');
+    }
+  }
+
+  if (userRole === 'professor') {
+    if (material.professor.usuario?.id !== userId) {
+      throw new ForbiddenException('Acesso negado: você não é o autor deste material');
+    }
+  }
+
+  return {
+    ...material,
+    fileUrl: material.origem === OrigemMaterial.LOCAL && material.filePath
+      ? `${this.baseUrl}/uploads/${material.filePath}`
+      : material.url,
+    instructorName: material.professor?.usuario?.nome || 'N/A',
+    disciplineName: material.disciplina?.nome_disciplina || 'Geral',
+  };
+}
+
 
   async update(
     id: string,
@@ -279,4 +282,5 @@ export class MaterialService {
     }
   }
 }
+
 
