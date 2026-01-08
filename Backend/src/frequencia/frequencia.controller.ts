@@ -9,6 +9,12 @@ import { Roles } from '../auth/roles/roles.decorator';
 import { Role, Usuario } from '../usuario/entities/usuario.entity';
 import { Frequencia } from './entities/frequencia.entity';
 import { StatusFrequencia } from './entities/frequencia.entity';
+import {
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 
 type AuthRequest = Request & { user?: Usuario | any };
 
@@ -114,4 +120,20 @@ export class FrequenciaController {
   ): Promise<void> {
     return await this.frequenciaService.remove(id, req.user);
   }
+
+  @Roles(Role.COORDENACAO, Role.PROFESSOR)
+  @Post(':id/justificativa')
+  @UseInterceptors(FileInterceptor('arquivo'))
+  async anexarJustificativa(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() arquivo: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
+    return this.frequenciaService.anexarJustificativa(
+      id,
+      arquivo,
+      req.user,
+    );
+  }
+
 }

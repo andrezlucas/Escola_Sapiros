@@ -8,6 +8,8 @@ import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Turma } from '../turma/entities/turma.entity';
 import { Professor } from '../professor/entities/professor.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
+import { Documento } from '../documentacao/entities/documento.entity';
+import { Documentacao } from 'src/documentacao/entities/documentacao.entity';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { Usuario } from '../usuario/entities/usuario.entity';
       Turma,
       Professor,
       Usuario,
+      Documento,
+      Documentacao,
     ]),
   ],
   controllers: [FrequenciaController],

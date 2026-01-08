@@ -17,6 +17,9 @@ import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Turma } from '../turma/entities/turma.entity';
 import { Professor } from '../professor/entities/professor.entity';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
+import { Documento } from '../documentacao/entities/documento.entity';
+import { Documentacao } from '../documentacao/entities/documentacao.entity';
+import { TipoDocumento } from '../documentacao/enums/tipo-documento.enum';
 
 @Injectable()
 export class FrequenciaService {
@@ -33,6 +36,11 @@ export class FrequenciaService {
     private readonly professorRepository: Repository<Professor>,
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(Documento)
+    private readonly documentoRepository: Repository<Documento>,
+    @InjectRepository(Documentacao)
+    private readonly documentacaoRepository: Repository<Documentacao>,
+
   ) {}
 
   private async findAlunoByMatricula(matricula: string): Promise<Aluno> {
@@ -693,4 +701,99 @@ export class FrequenciaService {
 
     await this.frequenciaRepository.remove(frequencia);
   }
+  
+  async anexarJustificativa(
+    frequenciaId: string,
+    arquivo: Express.Multer.File,
+    user: any,
+  ): Promise<{ message: string }> {
+    if (!arquivo) {
+      throw new BadRequestException('Arquivo é obrigatório');
+    }
+
+    if (user.role !== Role.PROFESSOR && user.role !== Role.COORDENACAO) {
+      throw new ForbiddenException(
+        'Apenas professores ou coordenação podem anexar justificativa',
+      );
+    }
+
+    const frequencia = await this.frequenciaRepository.findOne({
+      where: { id: frequenciaId },
+      relations: ['aluno', 'disciplina', 'turma'],
+    });
+
+    if (!frequencia) {
+      throw new NotFoundException('Frequência não encontrada');
+    }
+
+    if (frequencia.status === StatusFrequencia.FALTA_JUSTIFICADA) {
+      throw new BadRequestException(
+        'Esta falta já foi justificada anteriormente',
+      );
+    }
+
+    if (frequencia.status !== StatusFrequencia.FALTA) {
+      throw new BadRequestException(
+        'Apenas frequências com status FALTA podem ser justificadas',
+      );
+    }
+
+    if (user.role === Role.PROFESSOR) {
+      const professor = await this.findProfessorByUsuarioId(user.id);
+      if (!professor) {
+        throw new ForbiddenException('Professor não encontrado');
+      }
+
+      const autorizado = await this.professorMinistraDisciplina(
+        professor,
+        frequencia.disciplina.id_disciplina,
+      );
+
+      if (!autorizado) {
+        throw new ForbiddenException(
+          'Professor não autorizado para justificar falta nesta disciplina',
+        );
+      }
+    }
+
+    const documentacao = await this.documentacaoRepository.findOne({
+      where: { aluno: { id: frequencia.aluno.id } as any },
+    });
+
+    if (!documentacao) {
+      throw new NotFoundException('Documentação do aluno não encontrada');
+    }
+
+    const justificativaExistente = await this.documentoRepository.findOne({
+      where: {
+        documentacao: { id: documentacao.id } as any,
+        tipo: TipoDocumento.JUSTIFICATIVA_FALTA,
+      },
+    });
+
+    if (justificativaExistente) {
+      throw new BadRequestException(
+        'Já existe uma justificativa cadastrada para esta falta',
+      );
+    }
+
+    const documento = this.documentoRepository.create({
+      tipo: TipoDocumento.JUSTIFICATIVA_FALTA,
+      nomeOriginal: arquivo.originalname,
+      nomeArquivo: arquivo.filename,
+      caminho: arquivo.path,
+      mimeType: arquivo.mimetype,
+      tamanho: arquivo.size,
+      documentacao,
+    });
+
+    await this.documentoRepository.save(documento);
+
+    frequencia.status = StatusFrequencia.FALTA_JUSTIFICADA;
+    await this.frequenciaRepository.save(frequencia);
+
+    return { message: 'Justificativa anexada com sucesso' };
+  }
+
+
 }

@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Documentacao } from '../../documentacao/entities/documentacao.entity';
 import { TipoDocumento } from '../enums/tipo-documento.enum';
+import { Frequencia } from '../../frequencia/entities/frequencia.entity';
 
 @Entity('documentos')
 export class Documento {
@@ -44,4 +45,11 @@ export class Documento {
 
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
+
+  @ManyToOne(() => Frequencia, frequencia => frequencia.documentos, {
+  onDelete: 'CASCADE',
+  nullable: true,
+})
+@JoinColumn({ name: 'frequencia_id' })
+frequencia: Frequencia;
 }

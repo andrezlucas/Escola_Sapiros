@@ -1,7 +1,8 @@
-import {  Entity,  PrimaryGeneratedColumn,  Column,  ManyToOne, JoinColumn,  CreateDateColumn,  UpdateDateColumn } from 'typeorm';
+import {  Entity,  PrimaryGeneratedColumn,  Column,  ManyToOne, JoinColumn,  CreateDateColumn,  UpdateDateColumn, OneToMany } from 'typeorm';
 import { Aluno } from '../../aluno/entities/aluno.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
+import { Documento } from '../../documentacao/entities/documento.entity';
 import { Index } from 'typeorm';
 
 export enum StatusFrequencia {
@@ -54,4 +55,8 @@ export class Frequencia {
 
   @UpdateDateColumn({ name: 'atualizado_em' })
   atualizadoEm: Date;
+
+  @OneToMany(() => Documento, documento => documento.frequencia)
+  documentos: Documento[];
+
 }
