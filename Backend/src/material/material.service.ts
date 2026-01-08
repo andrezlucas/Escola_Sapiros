@@ -94,57 +94,56 @@ export class MaterialService {
   }
 
   async findAll(
-    userId: string,
-    role: 'ALUNO' | 'PROFESSOR',
-    filters: ListMaterialDto,
-  ): Promise<any[]> {
-    const query = this.materialRepo
-      .createQueryBuilder('material')
-      .leftJoinAndSelect('material.professor', 'professor')
-      .leftJoinAndSelect('professor.usuario', 'usuario')
-      .leftJoinAndSelect('material.turma', 'turma')
-      .leftJoinAndSelect('material.disciplina', 'disciplina')
-      .orderBy('material.criadoEm', 'DESC');
+  userId: string,
+  role: 'ALUNO' | 'PROFESSOR',
+  filters: ListMaterialDto,
+): Promise<any[]> {
+  const query = this.materialRepo
+    .createQueryBuilder('material')
+    .leftJoinAndSelect('material.professor', 'professor')
+    .leftJoinAndSelect('professor.usuario', 'usuarioProfessor')
+    .leftJoinAndSelect('material.turma', 'turma')
+    .leftJoinAndSelect('material.disciplina', 'disciplina')
+    .orderBy('material.criadoEm', 'DESC');
 
-    if (role === 'ALUNO') {
-      query
-        .innerJoin('turma.alunos', 'aluno')
-        .andWhere('aluno.id = :userId', { userId });
-    }
-
-    if (role === 'PROFESSOR') {
-      query.andWhere(
-        '(professor.id = :userId OR turma.professor_id = :userId)',
-        { userId },
-      );
-    }
-
-    if (filters.turmaId) {
-      query.andWhere('turma.id = :turmaId', { turmaId: filters.turmaId });
-    }
-
-    if (filters.disciplinaId) {
-      query.andWhere('disciplina.id_disciplina = :disciplinaId', {
-        disciplinaId: filters.disciplinaId,
-      });
-    }
-
-    if (filters.tipo) {
-      query.andWhere('material.tipo = :tipo', { tipo: filters.tipo });
-    }
-
-    const materiais = await query.getMany();
-
-    return materiais.map((m) => ({
-      ...m,
-      fileUrl:
-        m.origem === OrigemMaterial.LOCAL && m.filePath
-          ? `${this.baseUrl}/uploads/${m.filePath}`
-          : m.url,
-      instructorName: m.professor?.usuario?.nome || 'N/A',
-      disciplineName: m.disciplina?.nome_disciplina || 'Geral',
-    }));
+  if (role === 'ALUNO') {
+    query
+      .innerJoin('turma.alunos', 'aluno')
+      .innerJoin('aluno.usuario', 'usuarioAluno')
+      .andWhere('usuarioAluno.id = :userId', { userId });
   }
+
+  if (role === 'PROFESSOR') {
+    query.andWhere('usuarioProfessor.id = :userId', { userId });
+  }
+
+  if (filters.turmaId) {
+    query.andWhere('turma.id = :turmaId', { turmaId: filters.turmaId });
+  }
+
+  if (filters.disciplinaId) {
+    query.andWhere('disciplina.id_disciplina = :disciplinaId', {
+      disciplinaId: filters.disciplinaId,
+    });
+  }
+
+  if (filters.tipo) {
+    query.andWhere('material.tipo = :tipo', { tipo: filters.tipo });
+  }
+
+  const materiais = await query.getMany();
+
+  return materiais.map((m) => ({
+    ...m,
+    fileUrl:
+      m.origem === OrigemMaterial.LOCAL && m.filePath
+        ? `${this.baseUrl}/uploads/${m.filePath}`
+        : m.url,
+    instructorName: m.professor?.usuario?.nome || 'N/A',
+    disciplineName: m.disciplina?.nome_disciplina || 'Geral',
+  }));
+}
+
 
   async findOne(
     id: string,
