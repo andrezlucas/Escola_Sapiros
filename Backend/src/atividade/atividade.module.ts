@@ -13,7 +13,6 @@ import { AtividadeController } from './atividade.controller';
 import { Entrega } from './entities/entrega.entity';
 import { RespostaQuestao } from './entities/resposta-questao.entity';
 import { IaModule } from 'src/ia/ia.module';
-import { Simulado } from './entities/simulado.entity';
 
 @Module({
   imports: [
@@ -26,7 +25,6 @@ import { Simulado } from './entities/simulado.entity';
       RespostaQuestao,
       Turma,
       Habilidade,
-      Simulado,
     ]),
     IaModule,
   ],

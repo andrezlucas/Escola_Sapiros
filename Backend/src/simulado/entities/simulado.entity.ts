@@ -5,15 +5,15 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   ManyToMany,
+  OneToMany,
   JoinColumn,
   JoinTable,
   VersionColumn,
 } from 'typeorm';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
-import { Questao } from './questao.entity';
+import { Questao } from '../../atividade/entities/questao.entity';
 import { Professor } from '../../professor/entities/professor.entity';
 import { Bimestre } from '../../shared/enums/bimestre.enum';
 
@@ -28,14 +28,7 @@ export class Simulado {
   @Column({ length: 200 })
   titulo: string;
 
-  @Column({ type: 'text', nullable: true })
-  descricao: string;
-
-  @Column({
-    type: 'enum',
-    enum: Bimestre,
-    name: 'bimestre'
-  })
+  @Column({ type: 'enum', enum: Bimestre })
   bimestre: Bimestre;
 
   @Column({ type: 'timestamp', name: 'data_inicio' })
@@ -47,34 +40,29 @@ export class Simulado {
   @Column({ type: 'int', name: 'tempo_duracao' })
   tempoDuracao: number;
 
-  @Column({ type: 'timestamp', nullable: true, name: 'inicio_da_prova' })
-  iniciodaprova: Date;
-
-  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, name: 'valor_total' })
-  valortotal: number;
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, name: 'valor_total' })
+  valorTotal: number;
 
   @Column({ default: true })
   ativo: boolean;
 
-  @ManyToOne(() => Professor, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Professor, { onDelete: 'RESTRICT', nullable: false })
   @JoinColumn({ name: 'professor_id' })
   professor: Professor;
 
-  @ManyToOne(() => Disciplina, disciplina => disciplina.simulados, {
-    onDelete: 'RESTRICT',
-  })
+  @ManyToOne(() => Disciplina, { onDelete: 'RESTRICT', nullable: false })
   @JoinColumn({ name: 'disciplina_id' })
   disciplina: Disciplina;
 
-  @ManyToMany(() => Turma, turma => turma.simulados)
+  @ManyToMany(() => Turma)
   @JoinTable({
     name: 'simulados_turmas',
     joinColumn: { name: 'simulado_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'turma_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'turma_id' },
   })
   turmas: Turma[];
 
-  @OneToMany(() => Questao, questao => questao.simulado, {
+  @OneToMany(() => Questao, (questao) => questao.simulado, {
     cascade: true,
     orphanedRowAction: 'delete',
   })

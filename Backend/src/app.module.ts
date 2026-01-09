@@ -17,6 +17,7 @@ import { TurmaModule } from './turma/turma.module';
 import { AtividadeModule } from './atividade/atividade.module';
 import { RelatoriosHabilidadesModule } from './relatorio/relatorios-habilidades.module';
 import { MaterialModule } from './material/material.module';
+import { SimuladoModule } from './simulado/simulado.module';
 
 
 @Module({
@@ -58,6 +59,7 @@ import { MaterialModule } from './material/material.module';
     AtividadeModule,
     RelatoriosHabilidadesModule,
     MaterialModule,
+    SimuladoModule,
    
 
     

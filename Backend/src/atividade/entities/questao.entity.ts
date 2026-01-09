@@ -13,7 +13,7 @@ import {
 import { Atividade } from './atividade.entity';
 import { Alternativa } from './alternativa.entity';
 import { Habilidade } from '../../disciplina/entities/habilidade.entity';
-import { Simulado } from './simulado.entity'; //  caminho relativo correto
+import { Simulado } from '../../simulado/entities/simulado.entity';
 
 @Entity('questoes')
 export class Questao {
@@ -34,10 +34,12 @@ export class Questao {
   valor: number;
 
   @ManyToOne(() => Atividade, atividade => atividade.questoes, {
-    onDelete: 'CASCADE',
-  })
+  onDelete: 'CASCADE',
+  nullable: true, //  permite que atividade_id seja NULL
+})
   @JoinColumn({ name: 'atividade_id' })
-  atividade: Atividade;
+  atividade?: Atividade;
+
 
   @OneToMany(() => Alternativa, alternativa => alternativa.questao, {
     cascade: true,
@@ -54,7 +56,8 @@ export class Questao {
   habilidades: Habilidade[];
 
   @ManyToOne(() => Simulado, simulado => simulado.questoes, {
-    onDelete: 'CASCADE'
+    onDelete: 'CASCADE',
+    nullable: true,
   })
   @JoinColumn({ name: 'simulado_id' })
   simulado: Simulado;

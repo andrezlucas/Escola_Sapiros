@@ -14,7 +14,7 @@ import { Turma } from '../../turma/entities/turma.entity';
 import { Professor } from '../../professor/entities/professor.entity';
 import { Habilidade } from '../../disciplina/entities/habilidade.entity';
 import { Atividade } from '../../atividade/entities/atividade.entity';
-import { Simulado } from '../../atividade/entities/simulado.entity';
+import { Simulado } from '../../simulado/entities/simulado.entity';
 @Entity('disciplinas')
 export class Disciplina {
   @PrimaryGeneratedColumn('uuid')

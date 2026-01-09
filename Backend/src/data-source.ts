@@ -18,7 +18,7 @@ import { Atividade } from './atividade/entities/atividade.entity';
 import { Questao } from './atividade/entities/questao.entity';
 import { Alternativa } from './atividade/entities/alternativa.entity';
 import { Material } from './material/entities/material.entity';
-import { Simulado } from './atividade/entities/simulado.entity';
+import { Simulado } from './simulado/entities/simulado.entity';
 
 
 
