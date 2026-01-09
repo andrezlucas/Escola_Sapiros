@@ -1,4 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, VersionColumn, ManyToMany,JoinTable,} from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  ManyToMany,
+  JoinColumn,
+  JoinTable,
+  VersionColumn,
+} from 'typeorm';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Disciplina } from '../../disciplina/entities/disciplina.entity';
 import { Questao } from './questao.entity';
@@ -36,10 +48,10 @@ export class Simulado {
   tempoDuracao: number;
 
   @Column({ type: 'timestamp', nullable: true, name: 'inicio_da_prova' })
-  iniciodaprova: Date; //Registra quando o aluno inicia o simulado
+  iniciodaprova: Date;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, name: 'valor_total' })
-  valortotal: number; //Valor total do simulado
+  valortotal: number;
 
   @Column({ default: true })
   ativo: boolean;
@@ -54,15 +66,15 @@ export class Simulado {
   @JoinColumn({ name: 'disciplina_id' })
   disciplina: Disciplina;
 
-  @ManyToMany(() => Turma, (turma) => turma.simulados)
+  @ManyToMany(() => Turma, turma => turma.simulados)
   @JoinTable({
     name: 'simulados_turmas',
     joinColumn: { name: 'simulado_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'turma_id' },
+    inverseJoinColumn: { name: 'turma_id', referencedColumnName: 'id' },
   })
   turmas: Turma[];
 
-  @OneToMany(() => Questao, (questao) => questao.simulado, {
+  @OneToMany(() => Questao, questao => questao.simulado, {
     cascade: true,
     orphanedRowAction: 'delete',
   })

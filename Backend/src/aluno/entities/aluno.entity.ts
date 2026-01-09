@@ -5,6 +5,7 @@ import { Documentacao } from '../../documentacao/entities/documentacao.entity';
 import { Sexo } from '../../usuario/entities/usuario.entity';
 import { OneToMany } from 'typeorm';
 import { Nota } from '../../nota/entities/nota.entity';
+import { Frequencia } from '../../frequencia/entities/frequencia.entity';
 
 @Entity('alunos')
 export class Aluno {
@@ -138,4 +139,7 @@ responsavel_sexo: Sexo;
 
   @OneToMany(() => Nota, (nota) => nota.aluno)
   notas: Nota[];
+
+  @OneToMany(() => Frequencia, (frequencia) => frequencia.aluno)
+  frequencias: Frequencia[];
 }

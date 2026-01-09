@@ -13,7 +13,7 @@ import {
 import { Atividade } from './atividade.entity';
 import { Alternativa } from './alternativa.entity';
 import { Habilidade } from '../../disciplina/entities/habilidade.entity';
-import { Simulado } from '../../atividade/entities/simulado.entity';
+import { Simulado } from './simulado.entity'; //  caminho relativo correto
 
 @Entity('questoes')
 export class Questao {
@@ -53,12 +53,11 @@ export class Questao {
   })
   habilidades: Habilidade[];
 
-  @ManyToOne(() => Simulado, (simulado) => simulado.questoes, {
+  @ManyToOne(() => Simulado, simulado => simulado.questoes, {
     onDelete: 'CASCADE'
   })
   @JoinColumn({ name: 'simulado_id' })
   simulado: Simulado;
-  
 
   @CreateDateColumn({ name: 'criado_em' })
   criadoem: Date;

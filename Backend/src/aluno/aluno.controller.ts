@@ -87,5 +87,41 @@ transferirTurma(
 ) {
   return this.alunoService.transferirTurma(id, dto);
 }
+@Roles(Role.ALUNO)
+@Get('dashboard/perfil')
+getPerfilAluno(@Req() req: AuthRequest) {
+  return this.alunoService.getPerfilAluno(req.user.id);
+}
+
+@Roles(Role.ALUNO)
+@Get('dashboard/resumo')
+getResumo(@Req() req: AuthRequest) {
+  return this.alunoService.getResumoGeral(req.user.id);
+}
+
+@Roles(Role.ALUNO)
+@Get('dashboard/habilidades')
+getHabilidades(@Req() req: AuthRequest) {
+  return this.alunoService.getDesempenhoPorHabilidade(req.user.id);
+}
+
+@Roles(Role.ALUNO)
+@Get('dashboard/habilidades-desenvolver')
+getHabilidadesDesenvolver(@Req() req: AuthRequest) {
+  return this.alunoService.getHabilidadesADesenvolver(req.user.id);
+}
+
+@Roles(Role.ALUNO)
+@Get('dashboard/notas')
+getNotas(@Req() req: AuthRequest) {
+  return this.alunoService.getNotasDetalhadas(req.user.id);
+}
+
+@Roles(Role.ALUNO)
+@Get('dashboard/disciplinas')
+getDesempenhoDisciplinas(@Req() req: AuthRequest) {
+  return this.alunoService.getDesempenhoPorDisciplina(req.user.id);
+}
+
 
 }

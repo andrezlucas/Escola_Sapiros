@@ -10,6 +10,7 @@ import { AuthModule } from '../auth/auth.module';
 import { UsuarioModule } from '../usuario/usuario.module';
 import { MailModule } from '../mail/mail.module';
 import { DocumentacaoModule } from 'src/documentacao/documentacao.module';
+import { Habilidade } from '../disciplina/entities/habilidade.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DocumentacaoModule } from 'src/documentacao/documentacao.module';
       Usuario,
       Turma,
       Documentacao,
+      Habilidade,
     ]),
     
     forwardRef(() => AuthModule),
