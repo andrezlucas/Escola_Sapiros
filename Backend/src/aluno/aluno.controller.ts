@@ -10,6 +10,7 @@ import {
   ValidationPipe,
   UsePipes,
   Req,
+  Query,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { AlunoService } from './aluno.service';
@@ -95,33 +96,32 @@ getPerfilAluno(@Req() req: AuthRequest) {
 
 @Roles(Role.ALUNO)
 @Get('dashboard/resumo')
-getResumo(@Req() req: AuthRequest) {
-  return this.alunoService.getResumoGeral(req.user.id);
+getResumo(@Req() req: AuthRequest, @Query('bimestre') bimestre?: number) {
+  return this.alunoService.getResumoGeral(req.user.id, bimestre ? Number(bimestre) : undefined);
 }
 
 @Roles(Role.ALUNO)
 @Get('dashboard/habilidades')
-getHabilidades(@Req() req: AuthRequest) {
-  return this.alunoService.getDesempenhoPorHabilidade(req.user.id);
+getHabilidades(@Req() req: AuthRequest, @Query('bimestre') bimestre?: number) {
+  return this.alunoService.getDesempenhoPorHabilidade(req.user.id, bimestre ? Number(bimestre) : undefined);
 }
 
 @Roles(Role.ALUNO)
 @Get('dashboard/habilidades-desenvolver')
-getHabilidadesDesenvolver(@Req() req: AuthRequest) {
-  return this.alunoService.getHabilidadesADesenvolver(req.user.id);
+getHabilidadesDesenvolver(@Req() req: AuthRequest, @Query('bimestre') bimestre?: number) {
+  return this.alunoService.getHabilidadesADesenvolver(req.user.id, bimestre ? Number(bimestre) : undefined);
 }
 
 @Roles(Role.ALUNO)
 @Get('dashboard/notas')
-getNotas(@Req() req: AuthRequest) {
-  return this.alunoService.getNotasDetalhadas(req.user.id);
+getNotas(@Req() req: AuthRequest, @Query('bimestre') bimestre?: number) {
+  return this.alunoService.getNotasDetalhadas(req.user.id, bimestre ? Number(bimestre) : undefined);
 }
 
 @Roles(Role.ALUNO)
 @Get('dashboard/disciplinas')
-getDesempenhoDisciplinas(@Req() req: AuthRequest) {
-  return this.alunoService.getDesempenhoPorDisciplina(req.user.id);
+getDesempenhoDisciplinas(@Req() req: AuthRequest, @Query('bimestre') bimestre?: number) {
+  return this.alunoService.getDesempenhoPorDisciplina(req.user.id, bimestre ? Number(bimestre) : undefined);
 }
-
 
 }

@@ -16,6 +16,7 @@ import { CreateAlunoDto } from './dto/create-aluno.dto';
 import { UpdateAlunoDto } from './dto/update-aluno.dto';
 import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 import { Habilidade } from 'src/disciplina/entities/habilidade.entity';
+import { Bimestre } from 'src/shared/enums/bimestre.enum';
 
 @Injectable()
 export class AlunoService {
@@ -240,80 +241,156 @@ export class AlunoService {
     turma: aluno.turma?.nome_turma ?? null,
   };
 }
-
-async getNotasDetalhadas(usuarioId: string) {
+async getResumoGeral(usuarioId: string, bimestre?: number) {
   const aluno = await this.alunoRepository.findOne({
     where: { usuario: { id: usuarioId } },
-    relations: ['notas', 'notas.disciplina', 'frequencias', 'frequencias.disciplina'],
+    relations: ['notas', 'frequencias', 'turma', 'turma.atividades'],
   });
 
   if (!aluno) throw new NotFoundException('Aluno não encontrado');
 
-  return aluno.notas.map(nota => {
-    const n1 = Number(nota.nota1);
-    const n2 = Number(nota.nota2);
-    
-    const totalFaltas = aluno.frequencias.filter(f => 
-      f.disciplina.id_disciplina === nota.disciplina.id_disciplina && 
-      f.status === 'falta'
-    ).length;
+  const mapaBimestres = {
+    1: Bimestre.PRIMEIRO,
+    2: Bimestre.SEGUNDO,
+    3: Bimestre.TERCEIRO,
+    4: Bimestre.QUARTO,
+  };
 
-    return {
-      disciplina: nota.disciplina.nome_disciplina,
-      avaliacao1: n1,
-      avaliacao2: n2,
-      media: Number(((n1 + n2) / 2).toFixed(2)),
-      faltas: totalFaltas,
-    };
-  });
-}
+  const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
 
-async getResumoGeral(usuarioId: string) {
-  const aluno = await this.alunoRepository.findOne({
-    where: { usuario: { id: usuarioId } },
-    relations: ['notas', 'frequencias'],
-  });
+  const notasFiltradas = bimestreSelecionado 
+    ? aluno.notas.filter(n => n.bimestre === bimestreSelecionado) 
+    : aluno.notas;
 
-  if (!aluno) throw new NotFoundException('Aluno não encontrado');
+  const atividadesFiltradas = (aluno.turma?.atividades || []).filter(a => 
+    !bimestreSelecionado || a.bimestre === bimestreSelecionado
+  );
 
-  const todasNotas = aluno.notas.flatMap(n => [Number(n.nota1), Number(n.nota2)]);
+  const todasNotas = [
+    ...notasFiltradas.flatMap(n => [Number(n.nota1), Number(n.nota2)]),
+    ...atividadesFiltradas.map(a => Number(a.valor || 0))
+  ];
+
   const mediaGeral = todasNotas.length > 0 
     ? todasNotas.reduce((s, n) => s + n, 0) / todasNotas.length 
     : 0;
 
   const totalAulas = aluno.frequencias.length || 1;
   const presencas = aluno.frequencias.filter(f => f.status === 'presente').length;
-  const frequenciaPercentual = (presencas / totalAulas) * 100;
-
+  
   return {
     mediaGeral: Number(mediaGeral.toFixed(1)),
-    frequencia: Math.round(frequenciaPercentual),
+    frequencia: Math.round((presencas / totalAulas) * 100),
+    atividadesContagem: atividadesFiltradas.length,
+    notasContagem: notasFiltradas.length
   };
 }
 
-async getDesempenhoPorHabilidade(usuarioId: string) {
+async getNotasDetalhadas(usuarioId: string, bimestre?: number) {
   const aluno = await this.alunoRepository.findOne({
     where: { usuario: { id: usuarioId } },
-    relations: ['notas'],
+    relations: [
+      'notas', 
+      'notas.disciplina', 
+      'frequencias', 
+      'frequencias.disciplina', 
+      'turma', 
+      'turma.atividades', 
+      'turma.atividades.disciplina'
+    ],
   });
 
   if (!aluno) throw new NotFoundException('Aluno não encontrado');
 
+  const mapaBimestres = {
+    1: Bimestre.PRIMEIRO,
+    2: Bimestre.SEGUNDO,
+    3: Bimestre.TERCEIRO,
+    4: Bimestre.QUARTO,
+  };
+
+  const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
+
+  const notasFiltradas = bimestreSelecionado 
+    ? aluno.notas.filter(n => n.bimestre === bimestreSelecionado)
+    : aluno.notas;
+
+  return notasFiltradas.map(nota => {
+    const n1 = Number(nota.nota1);
+    const n2 = Number(nota.nota2);
+    
+    const faltas = aluno.frequencias.filter(f => 
+      f.disciplina.id_disciplina === nota.disciplina.id_disciplina && 
+      f.status === 'falta'
+    ).length;
+
+    const atividadesDisc = (aluno.turma?.atividades || []).filter(a => 
+      a.disciplina?.id_disciplina === nota.disciplina.id_disciplina &&
+      (!bimestreSelecionado || a.bimestre === bimestreSelecionado)
+    );
+    
+    const somaAtividades = atividadesDisc.reduce((s, a) => s + Number(a.valor || 0), 0);
+    const mediaAtividades = atividadesDisc.length > 0 ? somaAtividades / atividadesDisc.length : 0;
+
+    return {
+      disciplina: nota.disciplina.nome_disciplina,
+      bimestre: nota.bimestre,
+      avaliacao1: n1,
+      avaliacao2: n2,
+      mediaAtividades: Number(mediaAtividades.toFixed(2)),
+      mediaFinal: Number(((n1 + n2 + mediaAtividades) / 3).toFixed(2)),
+      faltas,
+    };
+  });
+}
+
+async getDesempenhoPorHabilidade(usuarioId: string, bimestre?: number) {
+  const aluno = await this.alunoRepository.findOne({
+    where: { usuario: { id: usuarioId } },
+    relations: ['notas', 'turma', 'turma.atividades'],
+  });
+
+  if (!aluno) throw new NotFoundException('Aluno não encontrado');
+
+  const mapaBimestres = {
+    1: Bimestre.PRIMEIRO,
+    2: Bimestre.SEGUNDO,
+    3: Bimestre.TERCEIRO,
+    4: Bimestre.QUARTO,
+  };
+
+  const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
   const mapaNotas: Record<string, number[]> = {};
   const idsHabilidades = new Set<string>();
 
-  for (const nota of aluno.notas) {
-    if (nota.habilidades1) {
-      nota.habilidades1.forEach(id => {
+  const notasFiltradas = bimestreSelecionado 
+    ? aluno.notas.filter(n => n.bimestre === bimestreSelecionado) 
+    : aluno.notas;
+
+  const atividadesFiltradas = (aluno.turma?.atividades || []).filter(a => 
+    !bimestreSelecionado || a.bimestre === bimestreSelecionado
+  );
+
+  for (const nota of notasFiltradas) {
+    [nota.habilidades1, nota.habilidades2].forEach((habs, idx) => {
+      if (habs) {
+        const valorNota = idx === 0 ? Number(nota.nota1) : Number(nota.nota2);
+        habs.forEach(id => {
+          mapaNotas[id] ??= [];
+          mapaNotas[id].push(valorNota);
+          idsHabilidades.add(id);
+        });
+      }
+    });
+  }
+
+  // Se a sua Atividade tiver habilidades (campo habilidades no JSON)
+  for (const atividade of atividadesFiltradas) {
+    const habs = (atividade as any).habilidades; // Ajuste conforme o campo real na entidade Atividade
+    if (habs) {
+      habs.forEach((id: string) => {
         mapaNotas[id] ??= [];
-        mapaNotas[id].push(Number(nota.nota1));
-        idsHabilidades.add(id);
-      });
-    }
-    if (nota.habilidades2) {
-      nota.habilidades2.forEach(id => {
-        mapaNotas[id] ??= [];
-        mapaNotas[id].push(Number(nota.nota2));
+        mapaNotas[id].push(Number(atividade.valor || 0));
         idsHabilidades.add(id);
       });
     }
@@ -333,7 +410,8 @@ async getDesempenhoPorHabilidade(usuarioId: string) {
     percentual: Math.round((valores.reduce((s, v) => s + v, 0) / valores.length) * 10),
   }));
 }
-async getHabilidadesADesenvolver(usuarioId: string) {
+
+async getHabilidadesADesenvolver(usuarioId: string, bimestre?: number) {
   const aluno = await this.alunoRepository.findOne({
     where: { usuario: { id: usuarioId } },
     relations: ['notas', 'notas.disciplina'],
@@ -341,9 +419,22 @@ async getHabilidadesADesenvolver(usuarioId: string) {
 
   if (!aluno) throw new NotFoundException('Aluno não encontrado');
 
+  const mapaBimestres = {
+    1: Bimestre.PRIMEIRO,
+    2: Bimestre.SEGUNDO,
+    3: Bimestre.TERCEIRO,
+    4: Bimestre.QUARTO,
+  };
+
+  const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
+
+  const notasFiltradas = bimestreSelecionado 
+    ? aluno.notas.filter(n => n.bimestre === bimestreSelecionado)
+    : aluno.notas;
+
   const listaBruta: { habId: string; disciplina: string; nota: number }[] = [];
 
-  for (const nota of aluno.notas) {
+  for (const nota of notasFiltradas) {
     nota.habilidades1?.forEach(id => 
       listaBruta.push({ habId: id, disciplina: nota.disciplina.nome_disciplina, nota: Number(nota.nota1) })
     );
@@ -360,7 +451,6 @@ async getHabilidadesADesenvolver(usuarioId: string) {
   });
 
   const mapaNomes = new Map(habilidadesCadastradas.map(h => [h.id, h.nome]));
-
   const ordenadas = listaBruta.sort((a, b) => a.nota - b.nota);
   const unicas: { habilidade: string; disciplina: string }[] = [];
   const idsVistos = new Set<string>();
@@ -378,7 +468,7 @@ async getHabilidadesADesenvolver(usuarioId: string) {
   return unicas.slice(0, 3);
 }
 
-async getDesempenhoPorDisciplina(usuarioId: string) {
+async getDesempenhoPorDisciplina(usuarioId: string, bimestre?: number) {
   const aluno = await this.alunoRepository.findOne({
     where: { usuario: { id: usuarioId } },
     relations: ['notas', 'notas.disciplina'],
@@ -386,9 +476,22 @@ async getDesempenhoPorDisciplina(usuarioId: string) {
 
   if (!aluno) throw new NotFoundException('Aluno não encontrado');
 
+  const mapaBimestres = {
+    1: Bimestre.PRIMEIRO,
+    2: Bimestre.SEGUNDO,
+    3: Bimestre.TERCEIRO,
+    4: Bimestre.QUARTO,
+  };
+
+  const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
+
+  const notasFiltradas = bimestreSelecionado 
+    ? aluno.notas.filter(n => n.bimestre === bimestreSelecionado)
+    : aluno.notas;
+
   const mapa: Record<string, number[]> = {};
 
-  aluno.notas.forEach(nota => {
+  notasFiltradas.forEach(nota => {
     const nome = nota.disciplina.nome_disciplina;
     mapa[nome] ??= [];
     mapa[nome].push(Number(nota.nota1), Number(nota.nota2));
