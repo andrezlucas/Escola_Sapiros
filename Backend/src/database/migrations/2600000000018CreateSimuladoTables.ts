@@ -122,7 +122,7 @@ export class CreateSimuladoTables2600000000018 implements MigrationInterface {
       new TableForeignKey({
         columnNames: ['disciplina_id'],
         referencedTableName: 'disciplinas',
-        referencedColumnNames: ['id_disciplina'], // ✅ CORREÇÃO
+        referencedColumnNames: ['id_disciplina'], 
         onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
       }),
