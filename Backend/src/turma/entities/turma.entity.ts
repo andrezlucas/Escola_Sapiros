@@ -17,7 +17,7 @@ import { Aviso } from '../../avisos/entities/aviso.entity';
 import { Professor } from '../../professor/entities/professor.entity';
 import { Atividade } from '../../atividade/entities/atividade.entity';
 import { Frequencia } from '../../frequencia/entities/frequencia.entity';
-
+import { Simulado } from '../../atividade/entities/simulado.entity';
 @Entity('turmas')
 export class Turma {
   @PrimaryGeneratedColumn('uuid')
@@ -28,6 +28,10 @@ export class Turma {
 
   @OneToMany(() => Frequencia, (frequencia) => frequencia.turma)
   frequencias: Frequencia[];
+
+
+  @OneToMany(() => Simulado, (simulado) => simulado.turmas)
+  simulados: Simulado[];
 
   // 🔗 Aluno pertence a UMA turma
   @OneToMany(() => Aluno, (aluno) => aluno.turma)

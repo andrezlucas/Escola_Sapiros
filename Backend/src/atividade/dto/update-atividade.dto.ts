@@ -1,4 +1,3 @@
-// update-atividade.dto.ts
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateAtividadeDto } from './create-atividade.dto';
 
