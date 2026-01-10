@@ -1,4 +1,16 @@
-import { Column, ManyToMany, ManyToOne, CreateDateColumn, UpdateDateColumn, Entity, PrimaryColumn, OneToOne, JoinColumn, JoinTable, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  ManyToMany,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Entity,
+  PrimaryColumn,
+  OneToOne,
+  JoinColumn,
+  JoinTable,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Turma } from '../../turma/entities/turma.entity';
 import { Documentacao } from '../../documentacao/entities/documentacao.entity';
@@ -6,6 +18,7 @@ import { Sexo } from '../../usuario/entities/usuario.entity';
 import { OneToMany } from 'typeorm';
 import { Nota } from '../../nota/entities/nota.entity';
 import { Frequencia } from '../../frequencia/entities/frequencia.entity';
+import { Entrega } from 'src/atividade/entities/entrega.entity';
 
 @Entity('alunos')
 export class Aluno {
@@ -23,14 +36,12 @@ export class Aluno {
   documentacao?: Documentacao;
 
   @ManyToOne(() => Turma, (turma) => turma.alunos, {
-    nullable: true,          // aluno pode existir sem turma
-    onDelete: 'SET NULL',    // ao apagar a turma, o aluno não é deletado
+    nullable: true, // aluno pode existir sem turma
+    onDelete: 'SET NULL', // ao apagar a turma, o aluno não é deletado
     eager: true,
   })
   @JoinColumn({ name: 'turma_id' })
   turma?: Turma;
-
-
 
   @Column({ name: 'matricula_aluno', unique: true })
   matriculaAluno: string;
@@ -82,12 +93,12 @@ export class Aluno {
   responsavelDataNascimento: Date;
 
   @Column({
-  name: 'responsavel_sexo',
-  type: 'enum',
-  enum: Sexo,
-  default: Sexo.NAO_INFORMADO
-})
-responsavel_sexo: Sexo;
+    name: 'responsavel_sexo',
+    type: 'enum',
+    enum: Sexo,
+    default: Sexo.NAO_INFORMADO,
+  })
+  responsavel_sexo: Sexo;
 
   @Column({ name: 'responsavel_nacionalidade' })
   responsavelNacionalidade: string;
@@ -142,4 +153,7 @@ responsavel_sexo: Sexo;
 
   @OneToMany(() => Frequencia, (frequencia) => frequencia.aluno)
   frequencias: Frequencia[];
+
+  @OneToMany(() => Entrega, (entrega) => entrega.aluno)
+  entregas: Entrega[];
 }

@@ -7,11 +7,11 @@ import { useSearchParams } from "react-router-dom";
 import CardMuralDashboard from "../components/CardMuralDashboard";
 import Calendario from "./Calendario";
 import Mural from "./Mural";
-import Atividades from "./Atividades";
 import AtividadesAluno from "./AtividadesAluno";
 import CardAtividadesAluno from "../components/CardAtividadesAluno";
-import ListaMateriais from "../components/ListMateriais";
 import MateriaisAluno from "./MateriaisAluno";
+import DesempenhoAluno from "../components/DesempenhoAluno";
+import Vestibular from "./Vestibular";
 
 function DashboardAluno() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +35,10 @@ function DashboardAluno() {
         return <AtividadesAluno />;
       case "materiais":
         return <MateriaisAluno />;
+      case "desempenho":
+        return <DesempenhoAluno />;
+      case "vestibular":
+        return <Vestibular />;
       default:
         return null;
     }

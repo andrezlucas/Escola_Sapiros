@@ -112,7 +112,7 @@ export const SideBarOptions = {
 
       {
         icon: HiOutlineAcademicCap,
-        label: "Minhas Turmas",
+        label: "Turmas",
         viewName: "minhas turmas",
       },
 

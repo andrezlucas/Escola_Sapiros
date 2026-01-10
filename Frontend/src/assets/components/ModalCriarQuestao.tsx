@@ -42,7 +42,6 @@ export default function ModalCriarQuestao({
     { id: crypto.randomUUID(), texto: "", correta: false },
   ]);
 
-  // === Estados para IA ===
   const [temaIA, setTemaIA] = useState("");
   const [quantidadeIA, setQuantidadeIA] = useState(1);
   const [tipoQuestaoIA, setTipoQuestaoIA] = useState<
@@ -50,15 +49,11 @@ export default function ModalCriarQuestao({
   >("MULTIPLA_ESCOLHA");
   const [loadingIA, setLoadingIA] = useState(false);
 
-  // === Estados compartilhados ===
   const [habilidades, setHabilidades] = useState<Habilidade[]>([]);
   const [habilidadesSelecionadas, setHabilidadesSelecionadas] = useState<
     Habilidade[]
   >([]);
 
-  /* ==============================
-     INICIALIZA ALTERNATIVAS (manual)
-  ============================== */
   useEffect(() => {
     if (tipo === "MULTIPLA_ESCOLHA") {
       if (alternativas.length < 4) {
@@ -79,9 +74,6 @@ export default function ModalCriarQuestao({
     }
   }, [tipo]);
 
-  /* ==============================
-     BUSCAR HABILIDADES
-  ============================== */
   useEffect(() => {
     async function fetchHabilidades() {
       if (!disciplinaId) return;
@@ -101,9 +93,6 @@ export default function ModalCriarQuestao({
     fetchHabilidades();
   }, [disciplinaId]);
 
-  /* ==============================
-     FUNÇÕES COMUNS
-  ============================== */
   function adicionarHabilidade(habilidadeId: string) {
     const habilidade = habilidades.find((h) => h.id === habilidadeId);
     if (
@@ -140,9 +129,6 @@ export default function ModalCriarQuestao({
     setAlternativas((prev) => prev.filter((a) => a.id !== id));
   }
 
-  /* ==============================
-     SALVAR MANUAL
-  ============================== */
   async function salvarManual() {
     if (!enunciado.trim()) return toast.error("Digite o enunciado");
     if (!valor || valor <= 0)
@@ -266,7 +252,6 @@ export default function ModalCriarQuestao({
       <div className="w-full max-w-xl bg-white rounded-xl p-6 my-8 mx-4 shadow-xl">
         <h2 className="text-2xl font-bold mb-6">Adicionar Nova Questão</h2>
 
-        {/* Abas */}
         <div className="flex border-b mb-6">
           <button
             onClick={() => setAbaAtiva("manual")}
