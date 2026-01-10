@@ -124,4 +124,22 @@ getDesempenhoDisciplinas(@Req() req: AuthRequest, @Query('bimestre') bimestre?: 
   return this.alunoService.getDesempenhoPorDisciplina(req.user.id, bimestre ? Number(bimestre) : undefined);
 }
 
+@Roles(Role.ALUNO)
+@Get('dashboard/simulados/resumo')
+getResumoSimulados(@Req() req: AuthRequest) {
+  return this.alunoService.getResumoSimulados(req.user.id);
+}
+
+@Roles(Role.ALUNO)
+@Get('dashboard/simulados/historico')
+getHistoricoSimulados(@Req() req: AuthRequest) {
+  return this.alunoService.getHistoricoSimulados(req.user.id);
+}
+@Roles(Role.ALUNO)
+@Get('dashboard/simulados/desempenho')
+getDesempenhoSimulados(@Req() req: AuthRequest) {
+  return this.alunoService.getDesempenhoSimulados(req.user.id);
+}
+
+
 }

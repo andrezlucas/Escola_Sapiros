@@ -11,6 +11,7 @@ import { UsuarioModule } from '../usuario/usuario.module';
 import { MailModule } from '../mail/mail.module';
 import { DocumentacaoModule } from 'src/documentacao/documentacao.module';
 import { Habilidade } from '../disciplina/entities/habilidade.entity';
+import { TentativaSimulado } from 'src/simulado/entities/tentativa-simulado.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { Habilidade } from '../disciplina/entities/habilidade.entity';
       Turma,
       Documentacao,
       Habilidade,
+      TentativaSimulado,
     ]),
     
     forwardRef(() => AuthModule),

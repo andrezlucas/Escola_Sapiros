@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In, Not, IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { Aluno } from './entities/aluno.entity';
@@ -17,6 +17,7 @@ import { UpdateAlunoDto } from './dto/update-aluno.dto';
 import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 import { Habilidade } from 'src/disciplina/entities/habilidade.entity';
 import { Bimestre } from 'src/shared/enums/bimestre.enum';
+import { TentativaSimulado } from 'src/simulado/entities/tentativa-simulado.entity';
 
 @Injectable()
 export class AlunoService {
@@ -37,6 +38,8 @@ export class AlunoService {
 
     @InjectRepository(Habilidade)
     private readonly habilidadeRepository: Repository<Habilidade>,
+    @InjectRepository(TentativaSimulado)
+    private readonly tentativaSimuladoRepository: Repository<any>,
   ) {}
 
   async create(dto: CreateAlunoDto): Promise<Aluno> {
@@ -669,4 +672,105 @@ export class AlunoService {
       ),
     }));
   }
+
+  async getResumoSimulados(usuarioId: string) {
+  const aluno = await this.buscarAlunoPorUsuario(usuarioId);
+
+  const tentativas = await this.tentativaSimuladoRepository.find({
+    where: { aluno: { id: aluno.id } },
+    order: { entregueEm: 'DESC' },
+  });
+
+  const entregues = tentativas.filter(t => t.entregueEm);
+
+  const total = entregues.length;
+
+  const mediaGeral =
+    total > 0
+      ? Number(
+          (
+            entregues.reduce((acc, t) => acc + Number(t.notaFinal), 0) /
+            total
+          ).toFixed(1),
+        )
+      : 0;
+
+  const ultimoSimulado =
+    total > 0 ? Number(entregues[0].notaFinal) : 0;
+
+  return {
+    ultimoSimulado,
+    mediaGeral,
+    simuladosRealizados: total,
+  };
+}
+
+async getDesempenhoSimulados(usuarioId: string) {
+  const aluno = await this.buscarAlunoPorUsuario(usuarioId);
+
+  const tentativas = await this.tentativaSimuladoRepository.find({
+    where: {
+      aluno: { id: aluno.id },
+      entregueEm: Not(IsNull()),
+    },
+    relations: ['simulado', 'simulado.disciplina'],
+  });
+
+  const mapa = new Map<string, { total: number; qtd: number }>();
+
+  for (const t of tentativas) {
+    const disciplina = t.simulado.disciplina.nome_disciplina;
+
+    let atual = mapa.get(disciplina);
+
+    if (!atual) {
+      atual = { total: 0, qtd: 0 };
+      mapa.set(disciplina, atual);
+    }
+
+    atual.total += Number(t.notaFinal);
+    atual.qtd += 1;
+  }
+
+  return Array.from(mapa.entries()).map(([disciplina, dados]) => ({
+    disciplina,
+    media: Number((dados.total / dados.qtd).toFixed(1)),
+  }));
+}
+
+
+async getHistoricoSimulados(usuarioId: string) {
+  const aluno = await this.buscarAlunoPorUsuario(usuarioId);
+
+  const tentativas = await this.tentativaSimuladoRepository.find({
+    where: {
+      aluno: { id: aluno.id },
+      entregueEm: Not(IsNull()),
+    },
+    relations: ['simulado', 'simulado.disciplina'],
+    order: { entregueEm: 'DESC' },
+  });
+
+  return tentativas.map(t => ({
+    data: t.entregueEm,
+    disciplina: t.simulado.disciplina.nome_disciplina,
+    nota: Number(t.notaFinal),
+  }));
+}
+async buscarAlunoPorUsuario(usuarioId: string): Promise<Aluno> {
+    const aluno = await this.alunoRepository.findOne({
+      where: {
+        usuario: {
+          id: usuarioId,
+        },
+      },
+    });
+
+    if (!aluno) {
+      throw new NotFoundException('Aluno não encontrado para este usuário');
+    }
+
+    return aluno;
+  }
+
 }
