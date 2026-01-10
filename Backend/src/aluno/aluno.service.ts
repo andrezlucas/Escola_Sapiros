@@ -347,7 +347,13 @@ async getNotasDetalhadas(usuarioId: string, bimestre?: number) {
 async getDesempenhoPorHabilidade(usuarioId: string, bimestre?: number) {
   const aluno = await this.alunoRepository.findOne({
     where: { usuario: { id: usuarioId } },
-    relations: ['notas', 'turma', 'turma.atividades'],
+    // Acessamos as atividades via Turma, carregando as Disciplinas e Questões (onde costumam estar as habilidades)
+    relations: [
+      'notas', 
+      'turma', 
+      'turma.atividades', 
+      'turma.atividades.questoes'
+    ],
   });
 
   if (!aluno) throw new NotFoundException('Aluno não encontrado');
@@ -360,40 +366,53 @@ async getDesempenhoPorHabilidade(usuarioId: string, bimestre?: number) {
   };
 
   const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
-  const mapaNotas: Record<string, number[]> = {};
+  const mapaHabilidades: Record<string, { avaliacoes: number[], atividades: number[] }> = {};
   const idsHabilidades = new Set<string>();
 
+  // 1. PROCESSAR NOTAS (AVALIAÇÕES)
   const notasFiltradas = bimestreSelecionado 
     ? aluno.notas.filter(n => n.bimestre === bimestreSelecionado) 
     : aluno.notas;
 
-  const atividadesFiltradas = (aluno.turma?.atividades || []).filter(a => 
-    !bimestreSelecionado || a.bimestre === bimestreSelecionado
-  );
-
   for (const nota of notasFiltradas) {
     [nota.habilidades1, nota.habilidades2].forEach((habs, idx) => {
-      if (habs) {
+      if (habs && Array.isArray(habs)) {
         const valorNota = idx === 0 ? Number(nota.nota1) : Number(nota.nota2);
         habs.forEach(id => {
-          mapaNotas[id] ??= [];
-          mapaNotas[id].push(valorNota);
           idsHabilidades.add(id);
+          if (!mapaHabilidades[id]) mapaHabilidades[id] = { avaliacoes: [], atividades: [] };
+          mapaHabilidades[id].avaliacoes.push(valorNota);
         });
       }
     });
   }
 
-  // Se a sua Atividade tiver habilidades (campo habilidades no JSON)
+  // 2. PROCESSAR ATIVIDADES (VIA TURMA)
+  const atividadesDaTurma = aluno.turma?.atividades || [];
+  const atividadesFiltradas = atividadesDaTurma.filter(a => 
+    !bimestreSelecionado || a.bimestre === bimestreSelecionado
+  );
+
   for (const atividade of atividadesFiltradas) {
-    const habs = (atividade as any).habilidades; // Ajuste conforme o campo real na entidade Atividade
-    if (habs) {
-      habs.forEach((id: string) => {
-        mapaNotas[id] ??= [];
-        mapaNotas[id].push(Number(atividade.valor || 0));
-        idsHabilidades.add(id);
-      });
-    }
+    // Se as habilidades estiverem nas QUESTÕES da atividade:
+    const habilidadesDaAtividade = new Set<string>();
+    
+    // Coleta habilidades de todas as questões desta atividade
+    atividade.questoes?.forEach(q => {
+      // Ajuste 'habilidadeId' conforme o nome real do campo na sua entidade Questao
+      if ((q as any).habilidadeId) {
+        habilidadesDaAtividade.add((q as any).habilidadeId);
+      }
+    });
+
+    // Se a atividade em si tiver um array de habilidades (como campo JSON), use:
+    // const habsFixas = (atividade as any).habilidades || [];
+
+    habilidadesDaAtividade.forEach(id => {
+      idsHabilidades.add(id);
+      if (!mapaHabilidades[id]) mapaHabilidades[id] = { avaliacoes: [], atividades: [] };
+      mapaHabilidades[id].atividades.push(Number(atividade.valor || 0));
+    });
   }
 
   const idsArray = [...idsHabilidades];
@@ -405,67 +424,137 @@ async getDesempenhoPorHabilidade(usuarioId: string, bimestre?: number) {
 
   const mapaNomes = new Map(habilidadesCadastradas.map(h => [h.id, h.nome]));
 
-  return Object.entries(mapaNotas).map(([id, valores]) => ({
-    habilidade: mapaNomes.get(id) || id,
-    percentual: Math.round((valores.reduce((s, v) => s + v, 0) / valores.length) * 10),
-  }));
+  // 3. CÁLCULO DA MÉDIA DAS MÉDIAS (PESO IGUAL PARA OS DOIS TIPOS)
+  return Object.entries(mapaHabilidades).map(([id, dados]) => {
+    const mediaAvaliacoes = dados.avaliacoes.length > 0 
+      ? dados.avaliacoes.reduce((s, v) => s + v, 0) / dados.avaliacoes.length 
+      : null;
+
+    const mediaAtividades = dados.atividades.length > 0 
+      ? dados.atividades.reduce((s, v) => s + v, 0) / dados.atividades.length 
+      : null;
+
+    let mediaFinal = 0;
+
+    if (mediaAvaliacoes !== null && mediaAtividades !== null) {
+      mediaFinal = (mediaAvaliacoes + mediaAtividades) / 2;
+    } else {
+      mediaFinal = mediaAvaliacoes ?? mediaAtividades ?? 0;
+    }
+
+    return {
+      habilidade: mapaNomes.get(id) || id,
+      percentual: Math.round(mediaFinal * 10), // Converte de escala 0-10 para 0-100%
+    };
+  });
 }
 
 async getHabilidadesADesenvolver(usuarioId: string, bimestre?: number) {
   const aluno = await this.alunoRepository.findOne({
     where: { usuario: { id: usuarioId } },
-    relations: ['notas', 'notas.disciplina'],
+    relations: [
+      'notas', 
+      'notas.disciplina', 
+      'turma', 
+      'turma.atividades', 
+      'turma.atividades.disciplina', 
+      'turma.atividades.questoes'
+    ],
   });
 
   if (!aluno) throw new NotFoundException('Aluno não encontrado');
 
   const mapaBimestres = {
-    1: Bimestre.PRIMEIRO,
-    2: Bimestre.SEGUNDO,
-    3: Bimestre.TERCEIRO,
-    4: Bimestre.QUARTO,
+    1: Bimestre.PRIMEIRO, 2: Bimestre.SEGUNDO,
+    3: Bimestre.TERCEIRO, 4: Bimestre.QUARTO,
   };
-
   const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
 
+  // Mapa para separar os tipos de notas por habilidade
+  const consolidado: Record<string, { avaliacoes: number[], atividades: number[], disciplina: string }> = {};
+
+  // 1. Processar Avaliações (Notas)
   const notasFiltradas = bimestreSelecionado 
     ? aluno.notas.filter(n => n.bimestre === bimestreSelecionado)
     : aluno.notas;
 
-  const listaBruta: { habId: string; disciplina: string; nota: number }[] = [];
-
   for (const nota of notasFiltradas) {
-    nota.habilidades1?.forEach(id => 
-      listaBruta.push({ habId: id, disciplina: nota.disciplina.nome_disciplina, nota: Number(nota.nota1) })
-    );
-    nota.habilidades2?.forEach(id => 
-      listaBruta.push({ habId: id, disciplina: nota.disciplina.nome_disciplina, nota: Number(nota.nota2) })
-    );
+    const discNome = nota.disciplina.nome_disciplina;
+    [
+      { habs: nota.habilidades1, v: nota.nota1 },
+      { habs: nota.habilidades2, v: nota.nota2 }
+    ].forEach(item => {
+      item.habs?.forEach(habId => {
+        if (!consolidado[habId]) {
+          consolidado[habId] = { avaliacoes: [], atividades: [], disciplina: discNome };
+        }
+        consolidado[habId].avaliacoes.push(Number(item.v));
+      });
+    });
   }
 
-  const idsUnicos = [...new Set(listaBruta.map(item => item.habId))];
+  // 2. Processar Atividades
+  const atividadesFiltradas = (aluno.turma?.atividades || []).filter(a => 
+    !bimestreSelecionado || a.bimestre === bimestreSelecionado
+  );
+
+  for (const atividade of atividadesFiltradas) {
+    const discNome = atividade.disciplina?.nome_disciplina || 'Geral';
+    const habsAtividade = new Set<string>();
+    
+    atividade.questoes?.forEach(q => {
+      if ((q as any).habilidadeId) habsAtividade.add((q as any).habilidadeId);
+    });
+
+    habsAtividade.forEach(habId => {
+      if (!consolidado[habId]) {
+        consolidado[habId] = { avaliacoes: [], atividades: [], disciplina: discNome };
+      }
+      consolidado[habId].atividades.push(Number(atividade.valor || 0));
+    });
+  }
+
+  const idsUnicos = Object.keys(consolidado);
   if (idsUnicos.length === 0) return [];
-  
+
+  // 3. Buscar nomes das habilidades para o retorno
   const habilidadesCadastradas = await this.dataSource.getRepository(Habilidade).find({
     where: { id: In(idsUnicos) }
   });
-
   const mapaNomes = new Map(habilidadesCadastradas.map(h => [h.id, h.nome]));
-  const ordenadas = listaBruta.sort((a, b) => a.nota - b.nota);
-  const unicas: { habilidade: string; disciplina: string }[] = [];
-  const idsVistos = new Set<string>();
 
-  for (const item of ordenadas) {
-    if (!idsVistos.has(item.habId)) {
-      idsVistos.add(item.habId);
-      unicas.push({
-        habilidade: mapaNomes.get(item.habId) || item.habId,
-        disciplina: item.disciplina
-      });
+  // 4. Calcular a Média Ponderada (50% Prova / 50% Atividade)
+  const listaComMedia = Object.entries(consolidado).map(([id, dados]) => {
+    const mAvaliacao = dados.avaliacoes.length > 0 
+      ? dados.avaliacoes.reduce((a, b) => a + b, 0) / dados.avaliacoes.length 
+      : null;
+
+    const mAtividade = dados.atividades.length > 0 
+      ? dados.atividades.reduce((a, b) => a + b, 0) / dados.atividades.length 
+      : null;
+
+    let mediaFinal = 0;
+    if (mAvaliacao !== null && mAtividade !== null) {
+      mediaFinal = (mAvaliacao + mAtividade) / 2;
+    } else {
+      mediaFinal = mAvaliacao ?? mAtividade ?? 0;
     }
-  }
 
-  return unicas.slice(0, 3);
+    return {
+      habilidade: mapaNomes.get(id) || id,
+      disciplina: dados.disciplina,
+      mediaFinal
+    };
+  });
+
+  // 5. Ordenar pelas MENORES médias e retornar as 3 primeiras
+  return listaComMedia
+    .sort((a, b) => a.mediaFinal - b.mediaFinal)
+    .slice(0, 3)
+    .map(item => ({
+      habilidade: item.habilidade,
+      disciplina: item.disciplina
+    }));
 }
 
 async getDesempenhoPorDisciplina(usuarioId: string, bimestre?: number) {
