@@ -230,7 +230,7 @@ export class AlunoService {
   async getResumoGeral(usuarioId: string, bimestre?: number) {
     const aluno = await this.alunoRepository.findOne({
       where: { usuario: { id: usuarioId } },
-      relations: ['notas', 'frequencias', 'turma', 'turma.atividades'],
+      relations: ['notas', 'frequencias'],
     });
 
     if (!aluno) throw new NotFoundException('Aluno não encontrado');
@@ -248,14 +248,10 @@ export class AlunoService {
       ? aluno.notas.filter((n) => n.bimestre === bimestreSelecionado)
       : aluno.notas;
 
-    const atividadesFiltradas = (aluno.turma?.atividades || []).filter(
-      (a) => !bimestreSelecionado || a.bimestre === bimestreSelecionado,
-    );
-
-    const todasNotas = [
-      ...notasFiltradas.flatMap((n) => [Number(n.nota1), Number(n.nota2)]),
-      ...atividadesFiltradas.map((a) => Number(a.valor || 0)),
-    ];
+    const todasNotas = notasFiltradas
+      .flatMap((n) => [n.nota1, n.nota2])
+      .filter((n) => n !== null && n !== undefined)
+      .map(Number);
 
     const mediaGeral =
       todasNotas.length > 0
@@ -270,7 +266,6 @@ export class AlunoService {
     return {
       mediaGeral: Number(mediaGeral.toFixed(1)),
       frequencia: Math.round((presencas / totalAulas) * 100),
-      atividadesContagem: atividadesFiltradas.length,
       notasContagem: notasFiltradas.length,
     };
   }
@@ -283,9 +278,6 @@ export class AlunoService {
         'notas.disciplina',
         'frequencias',
         'frequencias.disciplina',
-        'turma',
-        'turma.atividades',
-        'turma.atividades.disciplina',
       ],
     });
 
@@ -305,8 +297,15 @@ export class AlunoService {
       : aluno.notas;
 
     return notasFiltradas.map((nota) => {
-      const n1 = Number(nota.nota1);
-      const n2 = Number(nota.nota2);
+      const n1 =
+        nota.nota1 !== null && nota.nota1 !== undefined
+          ? Number(nota.nota1)
+          : null;
+
+      const n2 =
+        nota.nota2 !== null && nota.nota2 !== undefined
+          ? Number(nota.nota2)
+          : null;
 
       const faltas = aluno.frequencias.filter(
         (f) =>
@@ -314,26 +313,19 @@ export class AlunoService {
           f.status === 'falta',
       ).length;
 
-      const atividadesDisc = (aluno.turma?.atividades || []).filter(
-        (a) =>
-          a.disciplina?.id_disciplina === nota.disciplina.id_disciplina &&
-          (!bimestreSelecionado || a.bimestre === bimestreSelecionado),
-      );
+      const notasValidas = [n1, n2].filter((n): n is number => n !== null);
 
-      const somaAtividades = atividadesDisc.reduce(
-        (s, a) => s + Number(a.valor || 0),
-        0,
-      );
-      const mediaAtividades =
-        atividadesDisc.length > 0 ? somaAtividades / atividadesDisc.length : 0;
+      const mediaFinal =
+        notasValidas.length > 0
+          ? notasValidas.reduce((s, n) => s + n, 0) / notasValidas.length
+          : null;
 
       return {
         disciplina: nota.disciplina.nome_disciplina,
         bimestre: nota.bimestre,
         avaliacao1: n1,
         avaliacao2: n2,
-        mediaAtividades: Number(mediaAtividades.toFixed(2)),
-        mediaFinal: Number(((n1 + n2 + mediaAtividades) / 3).toFixed(2)),
+        mediaFinal: mediaFinal !== null ? Number(mediaFinal.toFixed(2)) : null,
         faltas,
       };
     });
@@ -484,12 +476,11 @@ export class AlunoService {
       relations: [
         'notas',
         'notas.disciplina',
-        'turma',
-        'turma.atividades',
-        'turma.atividades.disciplina',
-        'turma.atividades.questoes',
         'entregas',
         'entregas.atividade',
+        'entregas.respostas',
+        'entregas.respostas.questao',
+        'entregas.respostas.questao.habilidades',
       ],
     });
 
@@ -501,90 +492,129 @@ export class AlunoService {
       3: Bimestre.TERCEIRO,
       4: Bimestre.QUARTO,
     };
+
     const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
 
     const consolidado: Record<
       string,
-      { avaliacoes: number[]; atividades: number[]; disciplina: string }
+      {
+        avaliacoes: number[];
+        obtidoAtividades: number;
+        maxAtividades: number;
+        disciplina: string;
+      }
     > = {};
 
+    /**
+     * =========================
+     * NOTAS (AVALIAÇÕES)
+     * =========================
+     */
     const notasFiltradas = bimestreSelecionado
       ? aluno.notas.filter((n) => n.bimestre === bimestreSelecionado)
       : aluno.notas;
 
     for (const nota of notasFiltradas) {
       const discNome = nota.disciplina.nome_disciplina;
+
       [
-        { habs: nota.habilidades1, v: nota.nota1 },
-        { habs: nota.habilidades2, v: nota.nota2 },
-      ].forEach((item) => {
-        item.habs?.forEach((habId) => {
+        { habs: nota.habilidades1, valor: nota.nota1 },
+        { habs: nota.habilidades2, valor: nota.nota2 },
+      ].forEach(({ habs, valor }) => {
+        habs?.forEach((habId) => {
           if (!consolidado[habId]) {
             consolidado[habId] = {
               avaliacoes: [],
-              atividades: [],
+              obtidoAtividades: 0,
+              maxAtividades: 0,
               disciplina: discNome,
             };
           }
-          consolidado[habId].avaliacoes.push(Number(item.v));
+          if (valor !== null && valor !== undefined) {
+            consolidado[habId].avaliacoes.push(Number(valor));
+          }
         });
       });
     }
 
-    const atividadesFiltradas = (aluno.turma?.atividades || []).filter(
-      (a) => !bimestreSelecionado || a.bimestre === bimestreSelecionado,
-    );
+    /**
+     * =========================
+     * ATIVIDADES (ENTREGAS)
+     * =========================
+     */
+    for (const entrega of aluno.entregas || []) {
+      const atividade = entrega.atividade;
+      if (!atividade) continue;
 
-    for (const atividade of atividadesFiltradas) {
-      const discNome = atividade.disciplina?.nome_disciplina || 'Geral';
-      const habsAtividade = new Set<string>();
+      if (bimestreSelecionado && atividade.bimestre !== bimestreSelecionado)
+        continue;
 
-      atividade.questoes?.forEach((q) => {
-        if ((q as any).habilidadeId) habsAtividade.add((q as any).habilidadeId);
-      });
+      const disciplina = atividade.disciplina?.nome_disciplina || 'Geral';
 
-      habsAtividade.forEach((habId) => {
-        if (!consolidado[habId]) {
-          consolidado[habId] = {
-            avaliacoes: [],
-            atividades: [],
-            disciplina: discNome,
-          };
-        }
-        consolidado[habId].atividades.push(Number(atividade.valor || 0));
-      });
+      for (const resposta of entrega.respostas || []) {
+        const questao = resposta.questao;
+        if (!questao || !questao.habilidades?.length) continue;
+
+        const valorQuestao = Number((questao as any).valor || 1);
+        const valorPorHabilidade = valorQuestao / questao.habilidades.length;
+
+        const notaObtida = Number(resposta.notaAtribuida || 0);
+        const ganhou = notaObtida > 0;
+
+        questao.habilidades.forEach((hab) => {
+          const habId = hab.id;
+
+          if (!consolidado[habId]) {
+            consolidado[habId] = {
+              avaliacoes: [],
+              obtidoAtividades: 0,
+              maxAtividades: 0,
+              disciplina,
+            };
+          }
+
+          consolidado[habId].maxAtividades += valorPorHabilidade;
+          if (ganhou) {
+            consolidado[habId].obtidoAtividades += valorPorHabilidade;
+          }
+        });
+      }
     }
 
-    const idsUnicos = Object.keys(consolidado);
-    if (idsUnicos.length === 0) return [];
+    const ids = Object.keys(consolidado);
+    if (ids.length === 0) return [];
 
-    const habilidadesCadastradas = await this.dataSource
-      .getRepository(Habilidade)
-      .find({
-        where: { id: In(idsUnicos) },
-      });
-    const mapaNomes = new Map(
-      habilidadesCadastradas.map((h) => [h.id, h.nome]),
-    );
+    const habilidades = await this.habilidadeRepository.find({
+      where: { id: In(ids) },
+    });
 
-    const listaComMedia = Object.entries(consolidado).map(([id, dados]) => {
-      const mAvaliacao =
+    const mapaNomes = new Map(habilidades.map((h) => [h.id, h.nome]));
+
+    /**
+     * =========================
+     * MÉDIA FINAL
+     * =========================
+     */
+    const lista = Object.entries(consolidado).map(([id, dados]) => {
+      const mediaAvaliacoes =
         dados.avaliacoes.length > 0
-          ? dados.avaliacoes.reduce((a, b) => a + b, 0) /
+          ? dados.avaliacoes.reduce((s, n) => s + n, 0) /
             dados.avaliacoes.length
           : null;
 
-      const mAtividade =
-        dados.atividades.length > 0
-          ? dados.atividades.reduce((a, b) => a + b, 0) /
-            dados.atividades.length
+      const percentualAtividades =
+        dados.maxAtividades > 0
+          ? dados.obtidoAtividades / dados.maxAtividades
           : null;
 
       let mediaFinal = 0;
-      if (mAvaliacao !== null && mAtividade !== null) {
-        mediaFinal = (mAvaliacao + mAtividade) / 2;
-      } else {
-        mediaFinal = mAvaliacao ?? mAtividade ?? 0;
+
+      if (mediaAvaliacoes !== null && percentualAtividades !== null) {
+        mediaFinal = mediaAvaliacoes * 0.6 + percentualAtividades * 10 * 0.4;
+      } else if (mediaAvaliacoes !== null) {
+        mediaFinal = mediaAvaliacoes;
+      } else if (percentualAtividades !== null) {
+        mediaFinal = percentualAtividades * 10;
       }
 
       return {
@@ -594,7 +624,7 @@ export class AlunoService {
       };
     });
 
-    return listaComMedia
+    return lista
       .sort((a, b) => a.mediaFinal - b.mediaFinal)
       .slice(0, 3)
       .map((item) => ({

@@ -1,11 +1,11 @@
 import { toast } from "react-toastify";
-import FormSimulado from "./FormSimulado"; // Seu componente de formulário para simulados (ajuste o nome/caminho se necessário)
-import { useEffect } from "react";
+import FormSimulado from "./FormSimulado"; 
+import { useEffect, useState } from "react";
 
 type ModalEditarSimuladoProps = {
   simulado: any;
   onClose: () => void;
-  onAtualizar: (simuladoAtualizado: any | null) => void; // Aceita null para exclusão
+  onAtualizar: (simuladoAtualizado: any | null) => void;
 };
 
 export default function ModalEditarSimulado({
@@ -13,6 +13,8 @@ export default function ModalEditarSimulado({
   onClose,
   onAtualizar,
 }: ModalEditarSimuladoProps) {
+  const [simuladoCompleto, setSimuladoCompleto] = useState<any>(null);
+
   async function excluirSimulado() {
     if (
       !confirm(
@@ -39,7 +41,7 @@ export default function ModalEditarSimulado({
       }
 
       toast.success("Simulado excluído com sucesso!");
-      onAtualizar(null); // Remove da lista
+      onAtualizar(null);
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Erro ao excluir simulado");
@@ -69,7 +71,6 @@ export default function ModalEditarSimulado({
 
       toast.success("Questão excluída com sucesso!");
 
-      // Atualiza o simulado localmente removendo a questão
       onAtualizar((prev: any) => ({
         ...prev,
         questoes: prev.questoes.filter((q: any) => q.id !== questaoId),
@@ -82,13 +83,27 @@ export default function ModalEditarSimulado({
   useEffect(() => {
     async function carregarDetalhes() {
       try {
+        const token = localStorage.getItem("token");
+
         const res = await fetch(
-          `http://localhost:3000/simulados/${simulado.id}`
+          `http://localhost:3000/simulados/${simulado.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
+
         if (!res.ok) throw new Error();
+
         const detalhes = await res.json();
-      } catch {}
+        setSimuladoCompleto(detalhes);
+      } catch {
+        toast.error("Erro ao carregar simulado");
+        onClose();
+      }
     }
+
     carregarDetalhes();
   }, [simulado.id]);
 
@@ -101,12 +116,11 @@ export default function ModalEditarSimulado({
           </h2>
         </div>
 
-        {/* Reutiliza o FormSimulado em modo edição */}
         <FormSimulado
           key={simulado.id}
-          simuladoId={simulado.id} // Passe o ID para modo edição
-          simuladoInicial={simulado} // Dados iniciais para preencher o form
-          onExcluirQuestao={excluirQuestao} // Função para excluir questão individual
+          simuladoId={simulado.id}
+          simuladoInicial={simuladoCompleto}
+          onExcluirQuestao={excluirQuestao}
           onSubmitCallback={(simuladoAtualizado) => {
             onAtualizar(simuladoAtualizado);
             onClose();

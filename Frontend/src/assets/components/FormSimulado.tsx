@@ -33,8 +33,8 @@ interface FormSimuladoData {
 }
 
 interface FormSimuladoProps {
-  simuladoId?: string; // Se existir → edição
-  simuladoInicial?: any; // Dados pré-carregados (para edição)
+  simuladoId?: string;
+  simuladoInicial?: any;
   onExcluirQuestao?: (questaoId: string) => void;
   onSubmitCallback?: (simuladoAtualizado: any) => void;
 }
@@ -75,7 +75,12 @@ function FormSimulado({
     });
   }
 
+  /* ============================
+     🔒 CARGA SEGURA DOS DADOS
+     ============================ */
   useEffect(() => {
+    let ativo = true;
+
     async function carregarDados() {
       try {
         const [discRes, turmaRes] = await Promise.all([
@@ -86,116 +91,106 @@ function FormSimulado({
         const discs = await discRes.json();
         const turms = await turmaRes.json();
 
-        setDisciplinas(discs);
-        setTurmas(turms);
+        if (!ativo) return;
 
-        // Sempre limpa estados antes de aplicar novos valores (evita sujeira antiga)
+        setDisciplinas(Array.isArray(discs) ? discs : []);
+        setTurmas(Array.isArray(turms) ? turms : []);
+
+        // 🔒 Sempre limpa antes
         setQuestoes([]);
         setDisciplinaSelecionada("");
         setTurmasSelecionadas([]);
 
         if (isEdicao && simuladoInicial) {
-          console.log("Carregando simulado para edição:", simuladoInicial); // Debug importante!
+          setValue("titulo", simuladoInicial.titulo ?? "");
+          setValue("tempoDuracao", simuladoInicial.tempoDuracao ?? 60);
+          setValue("bimestre", simuladoInicial.bimestre ?? "");
 
-          // Preenche campos do react-hook-form
-          setValue("titulo", simuladoInicial.titulo || "");
-          setValue("tempoDuracao", simuladoInicial.tempoDuracao || 60);
-          setValue("bimestre", simuladoInicial.bimestre || "");
-
-          // Datas: formatação segura e local
+          // Datas (NÃO USAR toISOString → causa troca de hora)
           if (simuladoInicial.dataInicio) {
-            const dt = new Date(simuladoInicial.dataInicio);
-            const formatted = dt
-              .toLocaleString("sv-SE", {
-                // Formato YYYY-MM-DDTHH:mm
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              })
-              .replace(" ", "T")
-              .slice(0, 16);
-            setValue("dataInicio", formatted);
+            const d = new Date(simuladoInicial.dataInicio);
+            if (!isNaN(d.getTime())) {
+              const local = d.toLocaleString("sv-SE").slice(0, 16);
+              setValue("dataInicio", local);
+            }
           }
 
           if (simuladoInicial.dataFim) {
-            const dt = new Date(simuladoInicial.dataFim);
-            const formatted = dt
-              .toLocaleString("sv-SE", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              })
-              .replace(" ", "T")
-              .slice(0, 16);
-            setValue("dataFim", formatted);
+            const d = new Date(simuladoInicial.dataFim);
+            if (!isNaN(d.getTime())) {
+              const local = d.toLocaleString("sv-SE").slice(0, 16);
+              setValue("dataFim", local);
+            }
           }
 
-          // Disciplina e turmas (sempre reaplicar!)
-          const discId = simuladoInicial.disciplina?.id_disciplina || "";
+          const discId = simuladoInicial.disciplina?.id_disciplina ?? "";
           setDisciplinaSelecionada(discId);
 
-          const turmasIds = simuladoInicial.turmas?.map((t: any) => t.id) || [];
+          const turmasIds = Array.isArray(simuladoInicial.turmas)
+            ? simuladoInicial.turmas.map((t: any) => t.id)
+            : [];
           setTurmasSelecionadas(turmasIds);
 
-          // Questões: sempre recarregar do simuladoInicial
-          const questoesFormatadas =
-            simuladoInicial.questoes?.map((q: any) => ({
-              id: q.id,
-              enunciado: q.enunciado,
-              tipo: q.tipo,
-              valor: q.valor,
-              alternativas:
-                q.alternativas?.map((a: any) => ({
-                  texto: a.texto,
-                  correta: a.correta,
-                })) || [],
-              habilidadesIds: q.habilidades?.map((h: any) => h.id) || [],
-              area: simuladoInicial.disciplina?.nome_disciplina || "Disciplina",
-            })) || [];
+          const questoesFormatadas: QuestaoLocal[] = Array.isArray(
+            simuladoInicial.questoes
+          )
+            ? simuladoInicial.questoes.map((q: any) => ({
+                id: q.id,
+                enunciado: q.enunciado ?? "",
+                tipo: q.tipo,
+                valor: Number(q.valor) || 0,
+                alternativas: Array.isArray(q.alternativas)
+                  ? q.alternativas.map((a: any) => ({
+                      texto: a.texto,
+                      correta: !!a.correta,
+                    }))
+                  : [],
+                habilidadesIds: Array.isArray(q.habilidades)
+                  ? q.habilidades.map((h: any) => h.id)
+                  : [],
+                area:
+                  simuladoInicial.disciplina?.nome_disciplina ?? "Disciplina",
+              }))
+            : [];
 
           setQuestoes(questoesFormatadas);
-          console.log("Questões carregadas:", questoesFormatadas); // Debug
         } else {
-          // Modo criação: reset total
           setValue("titulo", "");
           setValue("tempoDuracao", 60);
           setValue("bimestre", "");
           setValue("dataInicio", "");
           setValue("dataFim", "");
-          setDisciplinaSelecionada("");
-          setTurmasSelecionadas([]);
-          setQuestoes([]);
         }
       } catch (err) {
-        console.error("Erro ao carregar:", err);
+        console.error(err);
         toast.error("Erro ao carregar dados do simulado");
       } finally {
-        setLoading(false);
+        if (ativo) setLoading(false);
       }
     }
 
     carregarDados();
-  }, [isEdicao, simuladoInicial, setValue]); // Dependências corretas
+    return () => {
+      ativo = false;
+    };
+  }, [isEdicao, simuladoInicial, setValue]);
 
   const valorTotalPreview = questoes.reduce(
     (acc, q) => acc + (q.valor || 0),
     0
   );
 
+  /* ============================
+     ➕ CRIAR QUESTÃO
+     ============================ */
   const handleCriarQuestao = async (novaQuestao: any) => {
-    const questaoFormatada: QuestaoLocal = {
+    const questaoLocal: QuestaoLocal = {
       id: crypto.randomUUID(),
       enunciado: novaQuestao.enunciado,
       tipo: novaQuestao.tipo,
       valor: novaQuestao.valor || 1,
-      alternativas: novaQuestao.alternativas,
-      habilidadesIds: novaQuestao.habilidadesIds,
+      alternativas: novaQuestao.alternativas || [],
+      habilidadesIds: novaQuestao.habilidadesIds || [],
       area:
         disciplinas.find((d) => d.id_disciplina === disciplinaSelecionada)
           ?.nome_disciplina || "Disciplina",
@@ -203,41 +198,33 @@ function FormSimulado({
 
     if (isEdicao) {
       try {
-        const payload = {
-          enunciado: novaQuestao.enunciado,
-          tipo: novaQuestao.tipo,
-          valor: novaQuestao.valor || 1,
-          habilidadesIds: novaQuestao.habilidadesIds || [],
-          alternativas:
-            novaQuestao.alternativas?.map((a: any) => ({
-              texto: a.texto,
-              correta: a.correta,
-            })) || [],
-        };
-
         const res = await authFetch(
           `http://localhost:3000/simulados/${simuladoId}/questoes`,
           {
             method: "POST",
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+              enunciado: novaQuestao.enunciado,
+              tipo: novaQuestao.tipo,
+              valor: novaQuestao.valor || 1,
+              habilidadesIds: novaQuestao.habilidadesIds || [],
+              alternativas: novaQuestao.alternativas || [],
+            }),
           }
         );
 
-        if (!res.ok) throw new Error("Erro ao adicionar questão");
-
-        const questaoSalva = await res.json();
-        questaoFormatada.id = questaoSalva.id;
-        toast.success("Questão adicionada ao simulado!");
-      } catch (err) {
-        toast.error("Falha ao salvar questão no servidor");
+        if (!res.ok) throw new Error();
+        const salva = await res.json();
+        questaoLocal.id = salva.id;
+      } catch {
+        toast.error("Erro ao salvar questão");
         return;
       }
     }
 
-    setQuestoes((prev) => [...prev, questaoFormatada]);
+    setQuestoes((prev) => [...prev, questaoLocal]);
   };
 
-  const handleRemoverQuestao = async (id: string) => {
+  const handleRemoverQuestao = (id: string) => {
     if (isEdicao && onExcluirQuestao) {
       onExcluirQuestao(id);
     }
@@ -268,53 +255,32 @@ function FormSimulado({
     if (!isEdicao) {
       payload.disciplinaId = disciplinaSelecionada;
       payload.turmaIds = turmasSelecionadas;
-      payload.questoes = questoes.map((q) => ({
-        enunciado: q.enunciado,
-        tipo: q.tipo,
-        valor: q.valor,
-        habilidadesIds: q.habilidadesIds || [],
-        alternativas:
-          q.alternativas?.map((a) => ({
-            texto: a.texto,
-            correta: a.correta,
-          })) || [],
-      }));
+      payload.questoes = questoes;
     }
 
     try {
-      const url = isEdicao
-        ? `http://localhost:3000/simulados/${simuladoId}`
-        : "http://localhost:3000/simulados";
-
-      const res = await authFetch(url, {
-        method: isEdicao ? "PATCH" : "POST",
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Erro no servidor");
-      }
-
-      const resultado = await res.json();
-
-      toast.success(
-        isEdicao ? "Simulado atualizado!" : "Simulado criado com sucesso!"
+      const res = await authFetch(
+        isEdicao
+          ? `http://localhost:3000/simulados/${simuladoId}`
+          : "http://localhost:3000/simulados",
+        {
+          method: isEdicao ? "PATCH" : "POST",
+          body: JSON.stringify(payload),
+        }
       );
 
-      if (onSubmitCallback) {
-        onSubmitCallback(resultado);
-      }
+      if (!res.ok) throw new Error();
 
-      if (!isEdicao) {
-        setQuestoes([]);
-        setDisciplinaSelecionada("");
-        setTurmasSelecionadas([]);
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar simulado");
-      console.error(err);
+      const result = await res.json();
+      toast.success(isEdicao ? "Simulado atualizado!" : "Simulado criado!");
+      onSubmitCallback?.(result);
+    } catch {
+      toast.error("Erro ao salvar simulado");
     }
+  }
+
+  if (loading) {
+    return <div className="p-6">Carregando...</div>;
   }
 
   return (
@@ -410,20 +376,19 @@ function FormSimulado({
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-96 overflow-y-auto">
                 {questoes.map((q, index) => (
                   <div
                     key={q.id}
                     className="border rounded-lg p-3 flex justify-between items-start"
                   >
                     <div className="flex-1">
-                      <strong>
+                      <strong className="block">
                         Questão {index + 1}: {q.area || "Disciplina"} •{" "}
                         {q.valor} pts
                       </strong>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {q.enunciado.substring(0, 120)}
-                        {q.enunciado.length > 120 ? "..." : ""}
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                        {q.enunciado}
                       </p>
                     </div>
 
