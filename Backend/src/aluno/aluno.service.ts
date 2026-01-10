@@ -18,6 +18,11 @@ import { TransferirTurmaDto } from './dto/transferir-turma.dto';
 import { Habilidade } from 'src/disciplina/entities/habilidade.entity';
 import { Bimestre } from 'src/shared/enums/bimestre.enum';
 import { TentativaSimulado } from 'src/simulado/entities/tentativa-simulado.entity';
+import { Nota } from 'src/nota/entities/nota.entity';
+import { Frequencia } from 'src/frequencia/entities/frequencia.entity';
+import { Atividade } from 'src/atividade/entities/atividade.entity';
+import { Entrega } from 'src/atividade/entities/entrega.entity';
+import { StatusFrequencia} from 'src/frequencia/entities/frequencia.entity';
 
 @Injectable()
 export class AlunoService {
@@ -40,6 +45,12 @@ export class AlunoService {
     private readonly habilidadeRepository: Repository<Habilidade>,
     @InjectRepository(TentativaSimulado)
     private readonly tentativaSimuladoRepository: Repository<any>,
+    @InjectRepository(Nota)
+    private readonly notaRepository: Repository<Nota>,
+    @InjectRepository(Frequencia)
+    private readonly frequenciaRepository: Repository<Frequencia>,
+    @InjectRepository(Atividade)
+    private readonly atividadeRepository: Repository<Atividade>,
   ) {}
 
   async create(dto: CreateAlunoDto): Promise<Aluno> {
@@ -635,43 +646,109 @@ export class AlunoService {
         disciplina: item.disciplina,
       }));
   }
+async getDesempenhoPorDisciplina(
+  usuarioId: string,
+  bimestre?: number,
+) {
+  const aluno = await this.alunoRepository.findOne({
+    where: { usuario: { id: usuarioId } },
+    relations: [
+      'notas',
+      'notas.disciplina',
+      'frequencias',
+      'frequencias.disciplina',
+    ],
+  });
 
-  async getDesempenhoPorDisciplina(usuarioId: string, bimestre?: number) {
-    const aluno = await this.alunoRepository.findOne({
-      where: { usuario: { id: usuarioId } },
-      relations: ['notas', 'notas.disciplina'],
-    });
+  if (!aluno) {
+    throw new NotFoundException('Aluno não encontrado');
+  }
 
-    if (!aluno) throw new NotFoundException('Aluno não encontrado');
+  const mapaBimestres = {
+    1: Bimestre.PRIMEIRO,
+    2: Bimestre.SEGUNDO,
+    3: Bimestre.TERCEIRO,
+    4: Bimestre.QUARTO,
+  };
 
-    const mapaBimestres = {
-      1: Bimestre.PRIMEIRO,
-      2: Bimestre.SEGUNDO,
-      3: Bimestre.TERCEIRO,
-      4: Bimestre.QUARTO,
+  const bimestreSelecionado = bimestre
+    ? mapaBimestres[bimestre]
+    : null;
+
+  const notasFiltradas = bimestreSelecionado
+    ? aluno.notas.filter(
+        (n) => n.bimestre === bimestreSelecionado,
+      )
+    : aluno.notas;
+
+  const frequenciasFiltradas = aluno.frequencias;
+
+
+  const mapaNotas: Record<string, number[]> = {};
+  const mapaFrequencia: Record<
+    string,
+    { total: number; presencas: number }
+  > = {};
+
+  
+  notasFiltradas.forEach((nota) => {
+    const nome = nota.disciplina.nome_disciplina;
+
+    mapaNotas[nome] ??= [];
+    mapaNotas[nome].push(
+      Number(nota.nota1),
+      Number(nota.nota2),
+    );
+  });
+
+  //  Frequência (ACRÉSCIMO)
+  frequenciasFiltradas.forEach((freq) => {
+    const nome = freq.disciplina.nome_disciplina;
+
+    mapaFrequencia[nome] ??= {
+      total: 0,
+      presencas: 0,
     };
 
-    const bimestreSelecionado = bimestre ? mapaBimestres[bimestre] : null;
+    mapaFrequencia[nome].total++;
 
-    const notasFiltradas = bimestreSelecionado
-      ? aluno.notas.filter((n) => n.bimestre === bimestreSelecionado)
-      : aluno.notas;
+    if (freq.status === StatusFrequencia.PRESENTE) {
+      mapaFrequencia[nome].presencas++;
+    }
+  });
 
-    const mapa: Record<string, number[]> = {};
+  //  Retorno (ENRIQUECIDO, MAS COMPATÍVEL)
+  return Object.entries(mapaNotas).map(
+    ([disciplina, notas]) => {
+      const media = Number(
+        (
+          notas.reduce((s, n) => s + n, 0) /
+          notas.length
+        ).toFixed(2),
+      );
 
-    notasFiltradas.forEach((nota) => {
-      const nome = nota.disciplina.nome_disciplina;
-      mapa[nome] ??= [];
-      mapa[nome].push(Number(nota.nota1), Number(nota.nota2));
-    });
+      const freq = mapaFrequencia[disciplina];
+      const frequencia = freq
+        ? Math.round((freq.presencas / freq.total) * 100)
+        : 0;
 
-    return Object.entries(mapa).map(([disciplina, notas]) => ({
-      disciplina,
-      media: Number(
-        (notas.reduce((s, n) => s + n, 0) / notas.length).toFixed(2),
-      ),
-    }));
-  }
+      let status: 'BOM' | 'ATENCAO' | 'CRITICO' =
+        'CRITICO';
+
+      if (media >= 7) status = 'BOM';
+      else if (media >= 5) status = 'ATENCAO';
+
+      return {
+        disciplina,
+        media,
+        frequencia,
+        status,
+      };
+    },
+  );
+}
+
+
 
   async getResumoSimulados(usuarioId: string) {
   const aluno = await this.buscarAlunoPorUsuario(usuarioId);
@@ -772,5 +849,42 @@ async buscarAlunoPorUsuario(usuarioId: string): Promise<Aluno> {
 
     return aluno;
   }
+
+  async getAtividadesDisponiveis(usuarioId: string) {
+  const aluno = await this.alunoRepository.findOne({
+    where: { usuario: { id: usuarioId } },
+    relations: ['turma'],
+  });
+
+  if (!aluno || !aluno.turma) {
+    throw new NotFoundException('Aluno ou turma não encontrada');
+  }
+
+  const atividades = await this.dataSource
+    .getRepository(Atividade)
+    .createQueryBuilder('atividade')
+    .innerJoin('atividade.turmas', 'turma', 'turma.id = :turmaId', {
+      turmaId: aluno.turma.id,
+    })
+    .leftJoin(
+      Entrega,
+      'entrega',
+      'entrega.atividade_id = atividade.id AND entrega.aluno_id = :alunoId',
+      { alunoId: aluno.id },
+    )
+    .innerJoinAndSelect('atividade.disciplina', 'disciplina')
+    .where('atividade.ativa = true')
+    .andWhere('entrega.id IS NULL') // ainda não entregue
+    .orderBy('atividade.dataEntrega', 'ASC')
+    .getMany();
+
+  return atividades.map((a) => ({
+    id: a.id,
+    titulo: a.titulo,
+    disciplina: a.disciplina.nome_disciplina,
+    entregaEm: a.dataEntrega,
+  }));
+}
+
 
 }

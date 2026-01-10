@@ -120,9 +120,16 @@ getNotas(@Req() req: AuthRequest, @Query('bimestre') bimestre?: number) {
 
 @Roles(Role.ALUNO)
 @Get('dashboard/disciplinas')
-getDesempenhoDisciplinas(@Req() req: AuthRequest, @Query('bimestre') bimestre?: number) {
-  return this.alunoService.getDesempenhoPorDisciplina(req.user.id, bimestre ? Number(bimestre) : undefined);
+getDesempenhoDisciplinas(
+  @Req() req: AuthRequest,
+  @Query('bimestre') bimestre?: string,
+) {
+  return this.alunoService.getDesempenhoPorDisciplina(
+    req.user.id,
+    bimestre ? Number(bimestre) : undefined,
+  );
 }
+
 
 @Roles(Role.ALUNO)
 @Get('dashboard/simulados/resumo')
@@ -140,6 +147,12 @@ getHistoricoSimulados(@Req() req: AuthRequest) {
 getDesempenhoSimulados(@Req() req: AuthRequest) {
   return this.alunoService.getDesempenhoSimulados(req.user.id);
 }
+@Roles(Role.ALUNO)
+@Get('dashboard/atividades')
+getAtividadesDisponiveis(@Req() req: AuthRequest) {
+  return this.alunoService.getAtividadesDisponiveis(req.user.id);
+}
+
 
 
 }
