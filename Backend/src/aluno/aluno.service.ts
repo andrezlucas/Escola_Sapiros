@@ -886,5 +886,152 @@ async buscarAlunoPorUsuario(usuarioId: string): Promise<Aluno> {
   }));
 }
 
+  async getDashboardCompletoPorAlunoId(alunoId: string) {
+    const aluno = await this.alunoRepository.findOne({
+      where: { id: alunoId }, 
+      relations: [
+        'usuario',
+        'turma',
+        'notas',
+        'frequencias',
+        'entregas',
+        'notas.disciplina',
+        'turma.atividades',
+        'turma.atividades.questoes',
+        'turma.atividades.questoes.habilidades',
+        'entregas.atividade',
+        'entregas.respostas',
+        'entregas.respostas.questao',
+        'entregas.respostas.questao.habilidades',
+      ],
+    });
+
+    if (!aluno) throw new NotFoundException('Aluno não encontrado');
+    const todasNotas = aluno.notas
+      .flatMap((n) => [n.nota1, n.nota2])
+      .filter((n) => n !== null && n !== undefined)
+      .map(Number);
+
+    const mediaGeral =
+      todasNotas.length > 0
+        ? todasNotas.reduce((s, n) => s + n, 0) / todasNotas.length
+        : 0;
+
+    let statusAluno = 'Regular';
+    if (mediaGeral >= 8) statusAluno = 'Excelente';
+    else if (mediaGeral < 6) statusAluno = 'Crítico';
+
+    const totalAulas = aluno.frequencias.length || 1;
+    const presencas = aluno.frequencias.filter(
+      (f) => f.status === StatusFrequencia.PRESENTE,
+    ).length;
+    const percentualFrequencia = Math.round((presencas / totalAulas) * 100);
+    const totalAtividades = aluno.turma?.atividades?.filter(a => a.ativa).length || 0;
+    const entregues = aluno.entregas?.length || 0; 
+    const mapaHabilidades: Record<
+      string,
+      { nome: string; obtido: number; maximo: number; avaliacoes: number[] }
+    > = {};
+    for (const nota of aluno.notas) {
+      [
+        { habs: nota.habilidades1, valor: Number(nota.nota1 || 0) },
+        { habs: nota.habilidades2, valor: Number(nota.nota2 || 0) },
+      ].forEach(({ habs, valor }) => {
+        habs?.forEach(async (habId) => {
+          if (!mapaHabilidades[habId]) {
+             mapaHabilidades[habId] = { nome: '', obtido: 0, maximo: 0, avaliacoes: [] };
+          }
+          mapaHabilidades[habId].avaliacoes.push(valor);
+        });
+      });
+    }
+    const entregasAluno = aluno.entregas || [];
+    for (const entrega of entregasAluno) {
+        const atividade = entrega.atividade;
+        if (!atividade) continue;
+        
+        for (const resposta of entrega.respostas || []) {
+            const questao = resposta.questao;
+            if (!questao) continue;
+
+            const notaObtidaTotal = Number(resposta.notaAtribuida || 0);
+            const valorQuestaoTotal = Number((questao as any).valor || 1);
+            const habilidades = questao.habilidades || [];
+            
+            if (habilidades.length === 0) continue;
+
+            const valorPorHabilidade = valorQuestaoTotal / habilidades.length;
+            const notaPorHabilidade = notaObtidaTotal > 0 ? valorPorHabilidade : 0;
+
+            habilidades.forEach(h => {
+                if (!mapaHabilidades[h.id]) {
+                    mapaHabilidades[h.id] = { nome: h.nome, obtido: 0, maximo: 0, avaliacoes: [] };
+                } else if (!mapaHabilidades[h.id].nome) {
+                    mapaHabilidades[h.id].nome = h.nome;
+                }
+                mapaHabilidades[h.id].obtido += notaPorHabilidade;
+                mapaHabilidades[h.id].maximo += valorPorHabilidade;
+            });
+        }
+    }
+    const idsSemNome = Object.keys(mapaHabilidades).filter(id => !mapaHabilidades[id].nome);
+    if (idsSemNome.length > 0) {
+        const habsDb = await this.habilidadeRepository.find({ where: { id: In(idsSemNome) } });
+        habsDb.forEach(h => {
+            if (mapaHabilidades[h.id]) mapaHabilidades[h.id].nome = h.nome;
+        });
+    }
+    const listaCompetencias = Object.values(mapaHabilidades).map(dados => {
+        const mediaAvaliacoes = dados.avaliacoes.length > 0
+          ? dados.avaliacoes.reduce((s, v) => s + v, 0) / dados.avaliacoes.length
+          : null;
+        const percentualAtividades = dados.maximo > 0 ? dados.obtido / dados.maximo : null;
+        
+        let final = 0;
+        if (mediaAvaliacoes !== null && percentualAtividades !== null) {
+            final = percentualAtividades * 0.7 + (mediaAvaliacoes / 10) * 0.3;
+        } else if (percentualAtividades !== null) {
+            final = percentualAtividades;
+        } else if (mediaAvaliacoes !== null) {
+            final = mediaAvaliacoes / 10;
+        }
+
+        return {
+            nome: dados.nome || 'Competência Geral',
+            percentual: Math.round(final * 100)
+        };
+    });
+
+    const sortedCompetencias = [...listaCompetencias].sort((a, b) => b.percentual - a.percentual);
+
+    const pontosFortes = sortedCompetencias
+        .filter(c => c.percentual >= 70) // Regra de negócio: acima de 70% é forte
+        .slice(0, 3)
+        .map(c => `Domínio em ${c.nome}`);
+    const pontosAtencao = sortedCompetencias
+        .filter(c => c.percentual < 60) // Regra de negócio: abaixo de 60% é atenção
+        .slice(-3) 
+        .map(c => `Dificuldade em ${c.nome}`);
+    if (pontosFortes.length === 0 && sortedCompetencias.length > 0) pontosFortes.push(sortedCompetencias[0].nome); 
+    return {
+      header: {
+        nome: aluno.usuario.nome,
+        matricula: aluno.matriculaAluno,
+        status: statusAluno, 
+        foto: 'url_da_foto_se_tiver', 
+      },
+      kpis: {
+        mediaGeral: Number(mediaGeral.toFixed(1)),
+        frequencia: percentualFrequencia,
+        tarefasEntregues: entregues,
+        tarefasTotal: totalAtividades
+      },
+      competencias: listaCompetencias, 
+      insights: {
+        fortes: pontosFortes.length ? pontosFortes : ['Nenhum dado suficiente registrado'],
+        atencao: pontosAtencao.length ? pontosAtencao : ['Nenhum ponto crítico identificado']
+      }
+    };
+  }
 
 }

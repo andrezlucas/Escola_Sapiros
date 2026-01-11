@@ -28,5 +28,6 @@ import { IaModule } from 'src/ia/ia.module';
   ],
   controllers: [AtividadeController],
   providers: [AtividadeService],
+  exports: [AtividadeService],
 })
 export class AtividadeModule {}

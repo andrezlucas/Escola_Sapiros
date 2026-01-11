@@ -153,6 +153,11 @@ getAtividadesDisponiveis(@Req() req: AuthRequest) {
   return this.alunoService.getAtividadesDisponiveis(req.user.id);
 }
 
+@Roles(Role.COORDENACAO, Role.PROFESSOR)
+@Get(':id/dashboard-view')
+  async getDashboardAlunoView(
+    @Param('id') id: string, // ID do Aluno clicado na listagem
+  ) {
+    return await this.alunoService.getDashboardCompletoPorAlunoId(id);
 
-
-}
+}}

@@ -59,10 +59,7 @@ import { SimuladoModule } from './simulado/simulado.module';
     AtividadeModule,
     RelatoriosHabilidadesModule,
     MaterialModule,
-    SimuladoModule,
-   
-
-    
+    SimuladoModule,    
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource } from 'typeorm';
+import { Repository, In, DataSource, MoreThanOrEqual } from 'typeorm';
 
 import { Atividade } from './entities/atividade.entity';
 import { Questao } from './entities/questao.entity';
@@ -22,6 +22,7 @@ import { IaQuestoesService } from 'src/ia/ia-questoes.service';
 import { GerarQuestoesIaDto } from './dto/gerar-questoes-ia.dto';
 import { UpdateQuestaoDto } from './dto/update-questao.dto';
 import { CreateQuestaoDto } from './dto/create-questao.dto';
+import { DashboardProximaAtividadeDto } from 'src/turma/dto/dashboard-pedagogico.dto';
 
 export enum StatusAtividade {
   PENDENTE = 'PENDENTE',
@@ -629,6 +630,39 @@ export class AtividadeService {
         where: { id: questaoSalva.id },
         relations: ['alternativas', 'habilidades'],
       });
+    });
+  }
+
+   async listarProximasDoProfessor(professorId: string): Promise<DashboardProximaAtividadeDto[]> {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const atividades = await this.atividadeRepository.find({
+      where: {
+        professor: { id: professorId },
+        ativa: true,
+        dataEntrega: MoreThanOrEqual(hoje), // Apenas futuras ou de hoje
+      },
+      relations: ['turmas'], // Precisamos do nome da turma
+      order: {
+        dataEntrega: 'ASC', // As mais urgentes primeiro
+      },
+      take: 4, // Limita a 4 itens para o card
+    });
+
+    return atividades.map(atv => {
+      // Pega o nome da primeira turma vinculada (ou concatena se forem várias)
+      const nomeTurma = atv.turmas.length > 0 
+        ? atv.turmas[0].nome_turma 
+        : 'Sem Turma';
+
+      return {
+        id: atv.id,
+        titulo: atv.titulo,
+        turma: nomeTurma,
+        dataEntrega: atv.dataEntrega,
+        dia: new Date(atv.dataEntrega).getDate() // Extrai o dia para o ícone quadrado
+      };
     });
   }
 }
