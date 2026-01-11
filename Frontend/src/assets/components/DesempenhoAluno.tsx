@@ -30,9 +30,9 @@ type NotaDisciplina = {
   avaliacao1: number | null;
   avaliacao2: number | null;
   media: number;
-  mediaAtividades?: number
-  mediaFinal?: number
-  bimestre?: number
+  mediaAtividades?: number;
+  mediaFinal?: number;
+  bimestre?: number;
   faltas: number;
 };
 
@@ -252,7 +252,7 @@ function DesempenhoAluno() {
               <h2 className="font-poppins font-bold text-lg text-[#1D5D7F]  mb-4">
                 Desempenho por Habilidade
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
                 {habilidades.map((h) => (
                   <div key={h.habilidade}>
                     <div className="flex justify-between text-sm mb-1">
@@ -290,7 +290,9 @@ function DesempenhoAluno() {
               <p className="font-poppins font-normal text-[#1D5D7F]">
                 Visualize suas notas por avaliação em cada disciplina
               </p>
-              <Tabela dados={notasDetalhadas} colunas={colunasNotas} />
+              <div className="max-h-[350px] overflow-y-auto">
+                <Tabela dados={notasDetalhadas} colunas={colunasNotas} />
+              </div>
             </div>
 
             <div
@@ -343,7 +345,7 @@ function DesempenhoAluno() {
               <h3 className="text-lg font-semibold mb-3">
                 Habilidades a desenvolver
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2">
                 {habilidadesADesenvolver.map((h) => (
                   <div
                     key={h.habilidade}

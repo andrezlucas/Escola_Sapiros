@@ -12,10 +12,38 @@ import CardAtividadesAluno from "../components/CardAtividadesAluno";
 import MateriaisAluno from "./MateriaisAluno";
 import DesempenhoAluno from "../components/DesempenhoAluno";
 import Vestibular from "./Vestibular";
+import CardHabilidade from "../components/CardHabilidade";
+import { useEffect, useState } from "react";
+import CardPreparacaoVestibular from "../components/CardPreparacaoVestibular";
+import { CardDesempenhoAcademico } from "../components/CardDesempenhoAcademico";
+
+export type Habilidade = {
+  habilidade: string;
+  percentual: number;
+};
+
+export type ResumoSimulados = {
+  ultimoSimulado: number;
+  mediaGeral: number;
+  simuladosRealizados: number;
+};
+
+export type NotaDashboard = {
+  disciplina: string;
+  mediaFinal: number;
+  faltas: number;
+};
 
 function DashboardAluno() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentView = searchParams.get("view") || "home";
+  const [habilidades, setHabilidades] = useState<Habilidade[]>([]);
+  const [loadingHabilidades, setLoadingHabilidades] = useState(true);
+  const [resumoSimulados, setResumoSimulados] =
+    useState<ResumoSimulados | null>(null);
+  const [loadingResumo, setLoadingResumo] = useState(true);
+  const [notas, setNotas] = useState<NotaDashboard[]>([]);
+  const [loadingNotas, setLoadingNotas] = useState(true);
 
   const navigateTo = (view: string) => {
     setSearchParams({ view }, { replace: true });
@@ -43,6 +71,82 @@ function DashboardAluno() {
         return null;
     }
   };
+
+  useEffect(() => {
+    const carregarHabilidades = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:3000/alunos/dashboard/habilidades",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        setHabilidades(data);
+      } catch (error) {
+        console.error("Erro ao carregar habilidades", error);
+      } finally {
+        setLoadingHabilidades(false);
+      }
+    };
+
+    carregarHabilidades();
+  }, []);
+
+  useEffect(() => {
+    const carregarResumoSimulados = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:3000/alunos/dashboard/simulados/resumo",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        setResumoSimulados(data);
+      } catch (error) {
+        console.error("Erro ao carregar resumo dos simulados", error);
+      } finally {
+        setLoadingResumo(false);
+      }
+    };
+
+    carregarResumoSimulados();
+  }, []);
+
+  useEffect(() => {
+    const carregarNotas = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:3000/alunos/dashboard/notas",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        setNotas(data);
+      } catch (error) {
+        console.error("Erro ao carregar notas", error);
+      } finally {
+        setLoadingNotas(false);
+      }
+    };
+
+    carregarNotas();
+  }, []);
+
+  const habilidadesDashboard = habilidades
+    .sort((a, b) => a.percentual - b.percentual)
+    .slice(0, 5);
 
   return (
     <div className="flex h-screen">
@@ -78,11 +182,18 @@ function DashboardAluno() {
                   />
                 </div>
 
-                <CardMural type="full" />
+                {!loadingHabilidades && (
+                  <CardHabilidade
+                    habilidades={habilidadesDashboard}
+                    onVerTodas={() => navigateTo("desempenho")}
+                  />
+                )}
 
-                <CardMural type="mini"></CardMural>
+                {!loadingResumo && resumoSimulados && (
+                  <CardPreparacaoVestibular resumo={resumoSimulados} />
+                )}
 
-                <CardMural type="full"></CardMural>
+                {!loadingNotas && <CardDesempenhoAcademico notas={notas} />}
               </div>
 
               <div className="col-span-2 flex flex-col space-y-6">

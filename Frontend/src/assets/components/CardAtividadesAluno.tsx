@@ -113,7 +113,7 @@ const CardMuralAtividades: React.FC<CardMuralAtividadesProps> = ({
     >
       {!isFull ? (
         <>
-          <h3 className="font-poppins font-normal text-[20px] leading-7 text-[#3D7E8F] mb-3 text-center">
+          <h3 className=" font-bold  leading-9 text-[#1D5D7F] mb-4 text-center">
             Próximas Atividades
           </h3>
 

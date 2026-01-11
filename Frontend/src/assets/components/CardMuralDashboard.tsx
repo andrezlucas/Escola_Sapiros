@@ -42,7 +42,7 @@ export default function CardMuralDashboard({
 
   return (
     <div className="w-full h-full p-6 rounded-xl bg-white shadow-md">
-      <h2 className="font-poppins font-normal text-[24px] leading-9 text-[#3D7E8F] mb-4 text-center">
+      <h2 className="font-bold  leading-9 text-[#1D5D7F] mb-4 text-center">
         Mural de Avisos
       </h2>
 
@@ -53,11 +53,7 @@ export default function CardMuralDashboard({
       <div className="space-y-3">
         {!loading &&
           avisos.map((aviso) => (
-            <ItemAviso
-              key={aviso.id}
-              aviso={aviso}
-              onVerMural={onVerMural}
-            />
+            <ItemAviso key={aviso.id} aviso={aviso} onVerMural={onVerMural} />
           ))}
       </div>
     </div>

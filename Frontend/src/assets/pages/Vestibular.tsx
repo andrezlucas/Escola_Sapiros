@@ -2,6 +2,16 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import ResponderSimulado from "./ResponderSimulado";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
 type SimuladoDisponivel = {
   id: string;
@@ -14,17 +24,33 @@ type SimuladoDisponivel = {
   disciplina?: { nome_disciplina: string };
 };
 
+type HistoricoSimulado = {
+  data: string;
+  disciplina: string;
+  nota: number;
+};
+
 export default function DesempenhoSimuladosAluno() {
-  const [ultimaRedacao, setUltimaRedacao] = useState(0);
+  const [ultimaSimulado, setUltimaSimuladp] = useState(0);
   const [mediaGeral, setMediaGeral] = useState(0);
   const [simuladosRealizados, setSimuladosRealizados] = useState(0);
   const [simuladoAberto, setSimuladoAberto] = useState<string | null>(null);
 
-  const [historico] = useState([
-    { data: "11 de Junho, 2024", notaGeral: 680.9 },
-    { data: "24 de Agosto, 2024", notaGeral: 780.5 },
-    { data: "4 de Outubro, 2024", notaGeral: 840.8 },
-  ]);
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+  );
+
+  const [historicoCompleto, setHistoricoCompleto] = useState<
+    HistoricoSimulado[]
+  >([]);
+  const [pagina, setPagina] = useState(1);
+
+  const LIMITE_POR_PAGINA = 5;
 
   const [simuladosDisponiveis, setSimuladosDisponiveis] = useState<
     SimuladoDisponivel[]
@@ -86,16 +112,128 @@ export default function DesempenhoSimuladosAluno() {
     carregarSimuladosDisponiveis();
     setModalDisponiveisAberto(true);
   };
+  const [desempenhoVestibular, setDesempenhoVestibular] = useState<
+    { disciplina: string; media: number }[]
+  >([]);
+  const dataGraficoVestibular = {
+    labels: desempenhoVestibular.map((item) => item.disciplina),
+    datasets: [
+      {
+        label: "Média por Disciplina",
+        data: desempenhoVestibular.map((item) => item.media),
+        backgroundColor: "#1D5D7F",
+        borderRadius: 8,
+        maxBarThickness: 50,
+      },
+    ],
+  };
 
-  const desempenhoSemanal = [
-    { dia: "Sun", valor: 45 },
-    { dia: "Mon", valor: 85 },
-    { dia: "Tue", valor: 65 },
-    { dia: "Wed", valor: 120 },
-    { dia: "Thu", valor: 70 },
-    { dia: "Fri", valor: 95 },
-    { dia: "Sat", valor: 50 },
-  ];
+  const opcoesGraficoVestibular = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => `Nota: ${context.raw}`,
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 1000,
+        ticks: {
+          stepSize: 100,
+        },
+      },
+    },
+  };
+
+  const carregarDesempenhoVestibular = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:3000/alunos/dashboard/simulados/desempenho",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Erro ao carregar desempenho do vestibular");
+      }
+
+      const data = await res.json();
+
+      setDesempenhoVestibular(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao carregar gráfico do vestibular");
+    }
+  };
+  const carregarDesempenhoAluno = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:3000/alunos/dashboard/simulados/resumo",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Erro ao carregar desempenho");
+      }
+
+      const data = await res.json();
+
+      setUltimaSimuladp(data.ultimoSimulado ?? 0);
+      setMediaGeral(data.mediaGeral ?? 0);
+      setSimuladosRealizados(data.simuladosRealizados ?? 0);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao carregar desempenho do aluno");
+    }
+  };
+
+  const carregarHistoricoSimulados = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:3000/alunos/dashboard/simulados/historico",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      setHistoricoCompleto(data);
+    } catch (error) {
+      toast.error("Erro ao carregar histórico");
+    }
+  };
+
+  useEffect(() => {
+    carregarDesempenhoAluno();
+    carregarDesempenhoVestibular();
+    carregarHistoricoSimulados();
+  }, []);
+
+  const inicio = (pagina - 1) * LIMITE_POR_PAGINA;
+  const fim = inicio + LIMITE_POR_PAGINA;
+
+  const historicoPaginado = historicoCompleto.slice(inicio, fim);
+
+  const totalPaginas = Math.ceil(historicoCompleto.length / LIMITE_POR_PAGINA);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 rounded-xl">
@@ -110,9 +248,11 @@ export default function DesempenhoSimuladosAluno() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow p-6 text-center">
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              Última Redação
+              Último Simulado
             </h3>
-            <p className="text-4xl font-bold text-[#1D5D7F]"></p>
+            <p className="text-4xl font-bold text-[#1D5D7F]">
+              {ultimaSimulado.toFixed(1)}
+            </p>
           </div>
 
           <div className="bg-white rounded-xl shadow p-6 text-center">
@@ -120,7 +260,7 @@ export default function DesempenhoSimuladosAluno() {
               Média Geral
             </h3>
             <p className="text-4xl font-bold text-[#1D5D7F]">
-              {mediaGeral.toFixed(1)}
+              {mediaGeral.toFixed(2)}
             </p>
           </div>
 
@@ -136,18 +276,18 @@ export default function DesempenhoSimuladosAluno() {
 
         <div className="bg-white rounded-xl shadow p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Desempenho Geral
+            Desempenho por Disciplina (Vestibular)
           </h2>
-          <div className="flex justify-between items-end h-64">
-            {desempenhoSemanal.map((item, i) => (
-              <div key={i} className="flex flex-col items-center flex-1">
-                <div
-                  className="w-10 bg-[#1D5D7F] rounded-t-md"
-                  style={{ height: `${item.valor}%` }}
-                />
-                <span className="text-xs text-gray-600 mt-2">{item.dia}</span>
-              </div>
-            ))}
+
+          <div className="h-64">
+            {desempenhoVestibular.length === 0 ? (
+              <p className="text-gray-500 text-sm">Nenhum dado disponível</p>
+            ) : (
+              <Bar
+                data={dataGraficoVestibular}
+                options={opcoesGraficoVestibular}
+              />
+            )}
           </div>
         </div>
 
@@ -168,32 +308,51 @@ export default function DesempenhoSimuladosAluno() {
                     Nota Geral
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Nota Redação
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Ações
+                    Disciplina
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {historico.map((item, i) => (
-                  <tr key={i}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.data}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.notaGeral.toFixed(1)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"></td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button className="text-[#1D5D7F] hover:underline">
-                        Ver detalhes
-                      </button>
+                {historicoPaginado.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-6 text-gray-500">
+                      Nenhum simulado encontrado
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  historicoPaginado.map((item, i) => (
+                    <tr key={i}>
+                      <td className="px-6 py-4">
+                        {new Date(item.data).toLocaleDateString("pt-BR")}
+                      </td>
+                      <td className="px-6 py-4">{item.nota}</td>
+                      <td className="px-6 py-4">{item.disciplina}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
+            <div className="flex justify-between items-center px-6 py-4">
+              <button
+                disabled={pagina === 1}
+                onClick={() => setPagina(pagina - 1)}
+                className="px-4 py-2 border rounded disabled:opacity-50"
+              >
+                Anterior
+              </button>
+
+              <span className="text-sm text-gray-600">
+                Página {pagina} de {totalPaginas || 1}
+              </span>
+
+              <button
+                disabled={pagina === totalPaginas}
+                onClick={() => setPagina(pagina + 1)}
+                className="px-4 py-2 border rounded disabled:opacity-50"
+              >
+                Próxima
+              </button>
+            </div>
           </div>
         </div>
 
