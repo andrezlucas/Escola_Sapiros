@@ -557,9 +557,12 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     });
   }
 
-  async getDashboardCompetencias(turmaId: string): Promise<DashboardHabilidadeDto[]> {
-    return this.calcularStatsHabilidades(turmaId);
-  }
+ async getDashboardCompetencias(
+  turmaId: string,
+): Promise<DashboardHabilidadeDto[]> {
+  return this.calcularStatsHabilidades(turmaId);
+}
+
 
   private calcularMediaAluno(notas: Nota[]): number | null {
     if (!notas || notas.length === 0) return null;
@@ -577,101 +580,109 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     return Number((soma / valoresValidos.length).toFixed(1));
   }
 
-  private async calcularStatsHabilidades(turmaId: string): Promise<DashboardHabilidadeDto[]> {
-    const stats: Record<string, { soma: number; count: number }> = {};
-    const habilidadesIds = new Set<string>();
+private async calcularStatsHabilidades(
+  turmaId: string,
+): Promise<DashboardHabilidadeDto[]> {
 
-    const notasDaTurma = await this.notaRepository.find({
-      where: { aluno: { turma: { id: turmaId } } },
-    });
+  const stats: Record<string, { soma: number; count: number }> = {};
+  const habilidadesIds = new Set<string>();
 
-    notasDaTurma.forEach((nota) => {
-      if (nota.nota1 !== null && nota.habilidades1 && Array.isArray(nota.habilidades1)) {
-        nota.habilidades1.forEach((hId) => {
-          habilidadesIds.add(hId);
-          if (!stats[hId]) stats[hId] = { soma: 0, count: 0 };
-          stats[hId].soma += Number(nota.nota1);
-          stats[hId].count += 1;
-        });
-      }
+  const notas = await this.notaRepository.find({
+    where: {
+      aluno: { turma: { id: turmaId } },
+    },
+  });
 
-      if (nota.nota2 !== null && nota.habilidades2 && Array.isArray(nota.habilidades2)) {
-        nota.habilidades2.forEach((hId) => {
-          habilidadesIds.add(hId);
-          if (!stats[hId]) stats[hId] = { soma: 0, count: 0 };
-          stats[hId].soma += Number(nota.nota2);
-          stats[hId].count += 1;
-        });
-      }
-    });
-
-    const atividadesDaTurma = await this.atividadeRepository.find({
-      where: { turmas: { id: turmaId }, ativa: true },
-      
-    });
-
-    for (const atv of atividadesDaTurma) {
-      if (!atv.questoes || atv.questoes.length === 0) continue;
-
-      const habilidadesDaAtividade = new Set<string>();
-      
-      atv.questoes.forEach((q) => {
-        if (q.habilidades && Array.isArray(q.habilidades)) {
-         q.habilidades.forEach(h => habilidadesDaAtividade.add(h.id));
-    }
-      });
-
-      if (habilidadesDaAtividade.size === 0) continue;
-
-      const entregas = await this.entregaRepository.find({
-        where: { atividade: { id: atv.id } }
-      });
-
-      if (entregas.length === 0) continue;
-
-      const valorAtividade = Number(atv.valor);
-      const valorMaximo = valorAtividade > 0 ? valorAtividade : 10;
-
-      for (const entrega of entregas) {
-        if (entrega.notaFinal === null || entrega.notaFinal === undefined) continue;
-
-        const notaNormalizada = (Number(entrega.notaFinal) / valorMaximo) * 10;
-
-        habilidadesDaAtividade.forEach((hId) => {
-          habilidadesIds.add(hId);
-          
-          if (!stats[hId]) stats[hId] = { soma: 0, count: 0 };
-          
-          stats[hId].soma += notaNormalizada;
-          stats[hId].count += 1;
-        });
+  for (const nota of notas) {
+    if (nota.nota1 && Array.isArray(nota.habilidades1)) {
+      for (const hId of nota.habilidades1) {
+        habilidadesIds.add(hId);
+        stats[hId] ??= { soma: 0, count: 0 };
+        stats[hId].soma += Number(nota.nota1);
+        stats[hId].count += 1;
       }
     }
 
-    const idsArray = Array.from(habilidadesIds);
-    if (idsArray.length === 0) return [];
-
-    const habilidadesDb = await this.habilidadeRepository.find({
-      where: { id: In(idsArray) },
-    });
-    const mapaNomes = new Map(habilidadesDb.map((h) => [h.id, h.nome]));
-
-    return Object.entries(stats).map(([id, dados]) => {
-      const mediaCalculada = dados.soma / dados.count;
-      const mediaPercentual = mediaCalculada <= 10 ? mediaCalculada * 10 : mediaCalculada;
-
-      let status: 'BOM' | 'ATENCAO' | 'CRITICO' = 'REGULAR' as any;
-      if (mediaPercentual >= 80) status = 'BOM';
-      else if (mediaPercentual < 60) status = 'CRITICO';
-      else status = 'ATENCAO';
-
-      return {
-        habilidade: mapaNomes.get(id) || 'Habilidade Geral',
-        media: Math.round(mediaPercentual),
-        status,
-      };
-    });
+    if (nota.nota2 && Array.isArray(nota.habilidades2)) {
+      for (const hId of nota.habilidades2) {
+        habilidadesIds.add(hId);
+        stats[hId] ??= { soma: 0, count: 0 };
+        stats[hId].soma += Number(nota.nota2);
+        stats[hId].count += 1;
+      }
+    }
   }
+
+  const atividades = await this.atividadeRepository.find({
+    where: {
+      turmas: { id: turmaId },
+      ativa: true,
+    },
+    relations: ['questoes', 'questoes.habilidades'],
+  });
+
+  for (const atividade of atividades) {
+    if (!atividade.questoes?.length) continue;
+
+    const habilidadesAtividade = new Set<string>();
+
+    for (const questao of atividade.questoes) {
+      questao.habilidades?.forEach(h => habilidadesAtividade.add(h.id));
+    }
+
+    if (!habilidadesAtividade.size) continue;
+
+    const entregas = await this.entregaRepository.find({
+      where: { atividade: { id: atividade.id } },
+    });
+
+    if (!entregas.length) continue;
+
+    const valorMaximo =
+      atividade.valor && Number(atividade.valor) > 0
+        ? Number(atividade.valor)
+        : 10;
+
+    for (const entrega of entregas) {
+      if (entrega.notaFinal == null) continue;
+
+      const notaNormalizada =
+        (Number(entrega.notaFinal) / valorMaximo) * 10;
+
+      for (const hId of habilidadesAtividade) {
+        habilidadesIds.add(hId);
+        stats[hId] ??= { soma: 0, count: 0 };
+        stats[hId].soma += notaNormalizada;
+        stats[hId].count += 1;
+      }
+    }
+  }
+
+  if (!habilidadesIds.size) return [];
+
+  const habilidades = await this.habilidadeRepository.find({
+    where: { id: In([...habilidadesIds]) },
+  });
+
+  const mapaNomes = new Map(habilidades.map(h => [h.id, h.nome]));
+
+  return Object.entries(stats).map(([habilidadeId, dados]) => {
+    const media10 = dados.soma / dados.count;
+    const percentual = Math.round(media10 * 10);
+
+    let status: 'BOM' | 'ATENCAO' | 'CRITICO';
+
+    if (percentual >= 80) status = 'BOM';
+    else if (percentual < 60) status = 'CRITICO';
+    else status = 'ATENCAO';
+
+    return {
+      habilidade: mapaNomes.get(habilidadeId) ?? 'Habilidade',
+      media: percentual,
+      status,
+    };
+  });
+}
 
   async getHabilidadesCriticasProfessor(usuarioId: string): Promise<HabilidadeDestaqueDto[]> {
     const professor = await this.professorRepository.findOne({
