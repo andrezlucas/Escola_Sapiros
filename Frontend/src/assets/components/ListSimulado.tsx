@@ -30,8 +30,8 @@ type Simulado = {
   atualizadoem: string;
   disciplina?: Disciplina;
   turmas?: Turma[];
-  questoes?: any[]; // para contar quantidade
-  tentativas?: any[]; // placeholder - carregar quando tiver endpoint
+  questoes?: any[];
+  tentativas?: any[];
 };
 
 export default function ListSimulado() {
@@ -57,8 +57,6 @@ export default function ListSimulado() {
 
       const simuladosData: Simulado[] = await res.json();
 
-      // Opcional: carregar detalhes completos (incluindo tentativas, se vierem)
-      // Por enquanto usamos só a lista básica
       return simuladosData;
     } catch (error: any) {
       console.error("Erro ao carregar simulados:", error);
@@ -118,8 +116,6 @@ export default function ListSimulado() {
   const handleAbrirTentativas = (simulado: Simulado) => {
     setSimuladoSelecionado(simulado);
     setModalTentativasAberto(true);
-    // Quando tiver endpoint de tentativas, carregue aqui:
-    // fetch(`http://localhost:3000/simulados/${simulado.id}/tentativas`...)
   };
 
   return (
@@ -158,7 +154,6 @@ export default function ListSimulado() {
           onClose={() => setModalEditarAberto(false)}
           onAtualizar={(simuladoAtualizado) => {
             if (simuladoAtualizado === null) {
-              // Foi excluído
               setSimulados((prev) =>
                 prev.filter((s) => s.id !== simuladoSelecionado.id)
               );
@@ -178,7 +173,6 @@ export default function ListSimulado() {
         <ModalTentativasAluno
           simulado={simuladoSelecionado}
           onClose={() => setModalTentativasAberto(false)}
-          // Quando tiver endpoint, pode atualizar tentativas aqui
         />
       )}
 

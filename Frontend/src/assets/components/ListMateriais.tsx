@@ -215,7 +215,7 @@ export default function ListaMateriais({
 
   return (
     <div className="">
-      <h1 className="text-3xl font-bold text-[#1D5D7F] mb-2">
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">
         Materiais de Estudo
       </h1>
       <p className="text-gray-600 mb-8">

@@ -356,7 +356,7 @@ export default function FrequenciaList() {
 
   return (
     <div className="p-4">
-      <h1 className="text-3xl font-bold text-[#1D5D7F] mb-4">
+      <h1 className="text-3xl font-medium text-[#1D5D7F] mb-4">
         Registro de Frequência
       </h1>
 

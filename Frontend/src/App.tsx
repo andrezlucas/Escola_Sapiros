@@ -13,6 +13,7 @@ import RedefinirSenha from "./assets/pages/RedefinirSenha";
 import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
 import DashboardCoordenacao from "./assets/pages/DashboardCoordenacao";
 import NaoAutorizado from "./assets/pages/NaoAutorizado";
+import Configuracao from "./assets/pages/Configuracao";
 
 
 function App() {
@@ -68,6 +69,15 @@ function App() {
           element={
             <PrivateRoute allowedRoles={["coordenacao", "aluno", "professor"]}>
               <Mural />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/configuracao"
+          element={
+            <PrivateRoute allowedRoles={["coordenacao", "aluno", "professor"]}>
+              <Configuracao />
             </PrivateRoute>
           }
         />

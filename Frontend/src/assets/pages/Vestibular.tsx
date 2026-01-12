@@ -238,7 +238,7 @@ export default function DesempenhoSimuladosAluno() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 rounded-xl">
       <div className="">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">
           Preparação para Vestibular
         </h1>
         <p className="text-gray-600 mb-8">

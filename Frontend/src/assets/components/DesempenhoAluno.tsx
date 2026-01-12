@@ -223,7 +223,7 @@ function DesempenhoAluno() {
     <div className="w-full h-auto p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
       <div className="">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-4xl font-normal text-[#1D5D7F]">Desempenho</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">Desempenho</h1>
 
           <div className="flex items-center gap-3">
             <label className="text-[#1D5D7F] font-medium">
