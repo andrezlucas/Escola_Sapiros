@@ -163,16 +163,22 @@ export class ProfessorService {
     await this.professorRepository.remove(professor);
   }
 
-    async findTurmas(professorId: string) {
-    return this.turmaRepository
-      .createQueryBuilder('turma')
-      .innerJoin('turma.professor', 'professor', 'professor.id = :id', {
-        id: professorId,
-      })
-      .select(['turma.id', 'turma.nome_turma'])
-      .orderBy('turma.nome_turma', 'ASC')
-      .getMany();
-  }
+async findTurmas(professorId: string) {
+  return this.turmaRepository
+    .createQueryBuilder('turma')
+    .innerJoin('turma.professor', 'professor', 'professor.id = :id', {
+      id: professorId,
+    })
+    .leftJoin('turma.disciplinas', 'disciplina')
+    .select([
+      'turma.id',
+      'turma.nome_turma',
+      'turma.turno',
+    ])
+    .addSelect(['disciplina.id_disciplina', 'disciplina.nome_disciplina'])
+    .orderBy('turma.nome_turma', 'ASC')
+    .getMany();
+}
 
   async findDisciplinas(professorId: string) {
     return this.disciplinaRepository
