@@ -167,14 +167,12 @@ function DashboardAluno() {
             <div className="grid grid-cols-5 gap-6 h-full">
               <div className="col-span-3 flex flex-col space-y-6">
                 <div className="w-full p-6 bg-white rounded-xl shadow-md flex items-center justify-between border-2 border-[#1D5D7F]">
-                  <div>
-                    <h1 className="text-2xl font-bold text-[#1D5D7F]">
-                      Olá, <span className="text-[#1D5D7F]">{nome}!</span>!
-                    </h1>
-                    <p className="text-[#1D5D7F]">
-                      Aqui está um resumo do seu progresso. Continue assim!
-                    </p>
-                  </div>
+                  <h1 className="text-2xl font-bold text-[#1D5D7F]">
+                    Olá, <span className="text-[#1D5D7F]">{nome}!</span>!
+                  </h1>
+                  <p className="text-[#1D5D7F]">
+                    Aqui está um resumo do seu progresso. Continue assim!
+                  </p>
                   <img
                     src={ImagenPortal}
                     alt="Ícone do portal"

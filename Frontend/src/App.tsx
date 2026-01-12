@@ -6,7 +6,6 @@ import Mural from "./assets/pages/Mural";
 import { ToastContainer } from "react-toastify";
 import Calendario from "./assets/pages/Calendario";
 import DashboardAluno from "./assets/pages/DashboardAluno";
-
 import DashboardProfessor from "./assets/pages/DashboardProfessor";
 import Login from "./assets/pages/Login";
 import NovaSenha from "./assets/pages/NovaSenha";
@@ -14,7 +13,7 @@ import RedefinirSenha from "./assets/pages/RedefinirSenha";
 import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
 import DashboardCoordenacao from "./assets/pages/DashboardCoordenacao";
 import NaoAutorizado from "./assets/pages/NaoAutorizado";
-import ResponderAtividade from "./assets/pages/ResponderAtividade";
+
 
 function App() {
   return (

@@ -42,7 +42,7 @@ export default function CardMuralDashboard({
 
   return (
     <div className="w-full h-full p-6 rounded-xl bg-white shadow-md">
-      <h2 className="font-bold  leading-9 text-[#1D5D7F] mb-4 text-center">
+      <h2 className="text-xl font-bold text-[#1D5D7F] text-center pb-10">
         Mural de Avisos
       </h2>
 

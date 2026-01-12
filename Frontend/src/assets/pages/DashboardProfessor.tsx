@@ -11,11 +11,24 @@ import Atividades from "./Atividades";
 import Materiais from "./Materiais";
 import Turmas from "./Turmas";
 import Registro from "./Registro";
+import VisaoGeralTurma from "./VisaoGeralTurma";
+import CardHabilidadeDestaque from "../components/CardHabilidadeDestaque";
+import VisaoAluno from "./VisaoAluno";
+import { CardDesempenhoHabilidade } from "../components/CardDesempenhoHabilidade";
+import CardMinhasTurmas from "../components/CardMinhasTurmas";
+import CardEvolucaoTurma from "../components/CardEvolucaoTurma";
+import { useEffect, useState } from "react";
+
+interface TurmaProfessor {
+  id: string;
+  nome_turma: string;
+}
 
 function DashboardProfessor() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentView = searchParams.get("view") || "home";
-
+  const turmaId = searchParams.get("id");
+  const alunoId = searchParams.get("aluno");
   const navigateTo = (view: string) => {
     setSearchParams({ view }, { replace: true });
   };
@@ -23,6 +36,54 @@ function DashboardProfessor() {
   const role = "professor";
   const options = SideBarOptions[role];
   const nome = localStorage.getItem("nome") || "Professor";
+  const [turmas, setTurmas] = useState<TurmaProfessor[]>([]);
+  const [turmaSelecionada, setTurmaSelecionada] = useState<string>("");
+  const [turmaDesempenho, setTurmaDesempenho] = useState<string>("");
+  const [turmaEvolucao, setTurmaEvolucao] = useState<string>("");
+
+  const updateParams = (params: Record<string, string>) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        Object.entries(params).forEach(([key, value]) => {
+          next.set(key, value);
+        });
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  useEffect(() => {
+    const fetchTurmas = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(
+          "http://localhost:3000/professores/turmas",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        setTurmas(data);
+
+        if (data.length > 0) {
+          setTurmaSelecionada(data[0].id);
+          setTurmaDesempenho(data[0].id);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar turmas", err);
+      }
+    };
+
+    fetchTurmas();
+  }, []);
 
   const renderContent = () => {
     switch (currentView) {
@@ -36,6 +97,38 @@ function DashboardProfessor() {
         return <Materiais />;
       case "minhas turmas":
         return <Turmas />;
+      case "turma":
+        return (
+          <VisaoGeralTurma
+            turmaId={turmaId}
+            onVerAluno={(alunoId: string) => {
+              console.log("Aluno selecionado:", alunoId);
+
+              updateParams({
+                view: "aluno",
+                aluno: alunoId,
+              });
+            }}
+          />
+        );
+
+      case "aluno":
+        return alunoId ? (
+          <>
+            <button
+              onClick={() =>
+                updateParams({
+                  view: "turma",
+                })
+              }
+              className="mb-4 text-[#1D5D7F] font-semibold hover:underline"
+            >
+              ← Voltar para visão da turma
+            </button>
+
+            <VisaoAluno alunoId={alunoId} />
+          </>
+        ) : null;
       case "registro":
         return <Registro />;
       default:
@@ -75,28 +168,70 @@ function DashboardProfessor() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6 pb-8">
                   <div className="h-48">
-                    <CardMural type="mini" />
+                    <div className="h-48">
+                      <div className="flex items-center gap-4 mb-4">
+                        <label className="text-sm font-medium text-[#1D5D7F]">
+                          Selecionar turma:
+                        </label>
+
+                        <select
+                          value={turmaDesempenho}
+                          onChange={(e) => setTurmaDesempenho(e.target.value)}
+                          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
+                        >
+                          {turmas.map((turma) => (
+                            <option key={turma.id} value={turma.id}>
+                              {turma.nome_turma}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <CardDesempenhoHabilidade turmaId={turmaDesempenho} />
+                    </div>
                   </div>
 
                   <div className="h-96">
-                    <CardMural type="mini" />
+                    <div className="flex items-center gap-4 mb-4">
+                      <label className="text-sm font-medium text-[#1D5D7F]">
+                        Selecionar turma:
+                      </label>
+
+                      <select
+                        value={turmaSelecionada}
+                        onChange={(e) => setTurmaSelecionada(e.target.value)}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
+                      >
+                        {turmas.map((turma) => (
+                          <option key={turma.id} value={turma.id}>
+                            {turma.nome_turma}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <CardEvolucaoTurma turmaId={turmaSelecionada} />
                   </div>
                 </div>
 
                 <div className="h-64">
-                  <CardMural type="full" />
+                  <CardMinhasTurmas
+                    onVerDetalhes={() => navigateTo("minhas turmas")}
+                    onVerMaterial={() => navigateTo("atividades")}
+                  />
                 </div>
               </div>
 
               <div className="col-span-2 flex flex-col space-y-6">
-                <div className="h-90">
+                <div className="h-90 ">
                   <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
                 </div>
 
                 <div className="h-96">
-                  <CardMural type="mini" />
+                  <CardHabilidadeDestaque
+                    onVerRelatorio={() => navigateTo("minhas turmas")}
+                  />
                 </div>
               </div>
             </div>
