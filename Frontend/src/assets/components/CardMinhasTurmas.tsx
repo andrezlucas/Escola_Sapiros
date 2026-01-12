@@ -5,8 +5,13 @@ import { FaChalkboardTeacher } from "react-icons/fa";
 interface Turma {
   id?: string | number;
   nome_turma: string;
-  disciplina: string;
+  disciplinas: Disciplina[];
   turno: string;
+}
+
+interface Disciplina {
+  id_disciplina: string;
+  nome_disciplina: string;
 }
 
 interface CardMinhasTurmasDashboardProps {
@@ -51,15 +56,7 @@ function CardMinhasTurmas({
         }
 
         const data = await response.json();
-
-        const turmasComDisciplinaMock: Turma[] = Array.isArray(data)
-          ? data.map((turma) => ({
-              ...turma,
-              disciplina: "Matemática",
-            }))
-          : [];
-
-        setTurmas(turmasComDisciplinaMock);
+        setTurmas(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro desconhecido");
       } finally {
@@ -73,7 +70,7 @@ function CardMinhasTurmas({
   const turmasVisiveis = turmas.slice(0, 2);
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-6 flex flex-col gap-6 pb">
+    <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-6 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-[#1D5D7F]">Minhas Turmas</h3>
 
@@ -107,14 +104,18 @@ function CardMinhasTurmas({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h4 className="font-semibold text-[#1D5D7F] text-lg">
-                      {turma.disciplina}
+                      {turma.disciplinas.length > 0
+                        ? turma.disciplinas[0].nome_disciplina
+                        : "Sem disciplina"}
                     </h4>
                     <p className="flex items-center gap-2 text-sm text-gray-700 mt-1">
                       <FaChalkboardTeacher size={16} />
                       {turma.nome_turma}
                     </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Turno: {turma.turno}
+                    </p>
                   </div>
-
                   <button className="text-gray-500 hover:text-[#1D5D7F]">
                     <MoreVertical size={20} />
                   </button>
