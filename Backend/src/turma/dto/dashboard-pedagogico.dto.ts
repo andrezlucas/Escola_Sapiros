@@ -40,6 +40,12 @@ export class DashboardAlunoDto {
 
   @ApiProperty({ example: 'ATENCAO', enum: ['BOM', 'REGULAR', 'ATENCAO'] })
   status: 'BOM' | 'REGULAR' | 'ATENCAO';
+
+  @ApiProperty({
+    example: 'http://localhost:3000/uploads/fotos/foto1.jpeg',
+    required: false,
+  })
+  foto: string | null;
 }
 
 export class DashboardHabilidadeDto {
@@ -57,7 +63,10 @@ export class HabilidadeDestaqueDto {
   @ApiProperty({ example: 'Interpretação de Gráficos' })
   habilidade: string;
 
-  @ApiProperty({ example: 38, description: 'Média geral desta habilidade em todas as turmas' })
+  @ApiProperty({
+    example: 38,
+    description: 'Média geral desta habilidade em todas as turmas',
+  })
   media: number;
 
   @ApiProperty({ example: 'CRITICO', enum: ['CRITICO', 'ATENCAO'] })
@@ -76,7 +85,10 @@ export class DashboardProximaAtividadeDto {
 
   @ApiProperty({ example: '2024-10-31T23:59:00Z' })
   dataEntrega: Date;
-  
-  @ApiProperty({ example: 31, description: 'Dia do mês para exibição no ícone' })
+
+  @ApiProperty({
+    example: 31,
+    description: 'Dia do mês para exibição no ícone',
+  })
   dia: number;
 }

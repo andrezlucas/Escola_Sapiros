@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import Cropper from "react-easy-crop";
+import { RecorteImagem } from "../utils/RecorteImagem";
 
 interface Usuario {
   nome: string;
   email: string;
   telefone: string;
   role: string;
+  fotoPerfil?: string;
 }
 
 interface Turma {
@@ -32,6 +35,15 @@ const FormEditarPerfil: React.FC = () => {
     email: "",
     telefone: "",
   });
+
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [showCrop, setShowCrop] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -67,6 +79,8 @@ const FormEditarPerfil: React.FC = () => {
           telefone: data.usuario?.telefone || "",
         });
 
+        if (data.usuario.fotoPerfil) setFotoPreview(data.usuario.fotoPerfil);
+
         if (
           data.usuario.role.toLowerCase() === "aluno" &&
           data.perfil?.turma?.nome_turma
@@ -92,6 +106,38 @@ const FormEditarPerfil: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFotoFile(file);
+      setFotoPreview(URL.createObjectURL(file));
+      setShowCrop(true);
+    }
+  };
+
+  const onCropComplete = (croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropSave = async () => {
+    if (!fotoFile || !croppedAreaPixels || !fotoPreview) return;
+    try {
+      const croppedBlob = await RecorteImagem(fotoPreview, croppedAreaPixels);
+      const croppedFile = new File([croppedBlob], fotoFile.name, {
+        type: fotoFile.type,
+      });
+      setFotoFile(croppedFile);
+      setFotoPreview(URL.createObjectURL(croppedFile));
+      setShowCrop(false);
+    } catch (err) {
+      console.error("Erro ao recortar imagem:", err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -101,13 +147,15 @@ const FormEditarPerfil: React.FC = () => {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Não autenticado");
 
-      const payload: any = {};
+      const formPayload = new FormData();
       if (formData.nome && formData.nome !== usuario?.nome)
-        payload.nome = formData.nome;
+        formPayload.append("nome", formData.nome);
       if (formData.email && formData.email !== usuario?.email)
-        payload.email = formData.email;
+        formPayload.append("email", formData.email);
       if (formData.telefone && formData.telefone !== usuario?.telefone)
-        payload.telefone = formData.telefone;
+        formPayload.append("telefone", formData.telefone);
+
+      if (fotoFile) formPayload.append("foto", fotoFile);
 
       const response = await fetch(
         "http://localhost:3000/configuracoes/perfil",
@@ -115,9 +163,8 @@ const FormEditarPerfil: React.FC = () => {
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
-          body: JSON.stringify(payload),
+          body: formPayload,
         }
       );
 
@@ -126,8 +173,19 @@ const FormEditarPerfil: React.FC = () => {
         throw new Error(errData.message || "Erro ao atualizar perfil");
       }
 
+      const updatedData = await response.json();
       setSuccess("Perfil atualizado com sucesso!");
-      setUsuario((prev) => (prev ? { ...prev, nome: formData.nome } : null));
+      setUsuario((prev) => (prev ? { ...prev, ...updatedData.usuario } : null));
+      if (updatedData.usuario.fotoPerfil) {
+        setFotoPreview(updatedData.usuario.fotoPerfil);
+        localStorage.setItem("fotoPerfil", updatedData.usuario.fotoPerfil);
+
+        window.dispatchEvent(
+          new CustomEvent("fotoPerfilAtualizada", {
+            detail: updatedData.usuario.fotoPerfil,
+          })
+        );
+      }
     } catch (err: any) {
       setError(err.message || "Falha na atualização do perfil");
     }
@@ -148,9 +206,27 @@ const FormEditarPerfil: React.FC = () => {
   return (
     <div className="flex-1 bg-white rounded-xl p-8 shadow-md">
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-20 h-20 rounded-full bg-[#1D5D7F] flex items-center justify-center text-white text-3xl font-bold">
-          FOTO
+        <div
+          className="w-20 h-20 rounded-full bg-[#1D5D7F] flex items-center justify-center text-white text-3xl font-bold overflow-hidden cursor-pointer"
+          onClick={handleFotoClick}
+        >
+          {fotoPreview ? (
+            <img
+              src={fotoPreview}
+              alt="Foto de perfil"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            "FOTO"
+          )}
         </div>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFotoChange}
+        />
         <div>
           <h2 className="font-bold text-2xl text-[#1D5D7F]">
             {usuario?.nome || formData.nome || "Nome"}
@@ -160,6 +236,36 @@ const FormEditarPerfil: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {showCrop && fotoPreview && (
+        <div className="relative w-full h-64 mb-6 bg-gray-100 rounded-lg overflow-hidden">
+          <Cropper
+            image={fotoPreview}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={onCropComplete}
+          />
+          <div className="absolute bottom-2 right-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCrop(false)}
+              className="px-4 py-2 bg-gray-300 rounded"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleCropSave}
+              className="px-4 py-2 bg-[#1D5D7F] text-white rounded"
+            >
+              Salvar
+            </button>
+          </div>
+        </div>
+      )}
 
       <h3 className="font-bold text-xl mb-6 text-[#1D5D7F]">Editar Perfil</h3>
 

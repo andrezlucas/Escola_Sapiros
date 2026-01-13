@@ -202,13 +202,13 @@ function FormPrivacidadeSeguranca() {
     <div className="flex-1 bg-white rounded-xl p-8 shadow-md space-y-6">
       <div>
         <p className="font-bold text-2xl text-[#1D5D7F]">E-mail</p>
-        <p className="text-lg font-medium">{email || "Carregando..."}</p>
+        <p className="text-lg font-medium">{email || "Carregando..."}:</p>
       </div>
 
       <hr />
 
       <div className="space-y-4">
-        <h4 className="text-lg font-semibold">
+        <h4 className="font-bold text-2xl text-[#1D5D7F]">
           Verificação em duas etapas (2FA)
         </h4>
 

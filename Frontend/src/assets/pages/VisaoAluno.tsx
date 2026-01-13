@@ -108,13 +108,17 @@ function VisaoAluno({ alunoId }: VisaoAlunoProps) {
     return "bg-red-500";
   };
 
+  const fotoUrl = header.foto
+    ? `http://localhost:3000/${header.foto.replace(/\\/g, "/")}`
+    : null;
+
   return (
     <div className="w-full h-auto p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-md flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-6 border-b border-gray-200">
         <div className="w-28 h-28 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-[#1D5D7F]/30">
-          {header.foto ? (
+          {fotoUrl ? (
             <img
-              src={header.foto}
+              src={fotoUrl}
               alt={header.nome}
               className="w-full h-full object-cover"
             />
@@ -141,7 +145,7 @@ function VisaoAluno({ alunoId }: VisaoAlunoProps) {
         <div className="bg-[#f0f7fa] border border-[#1D5D7F]/20 rounded-xl p-6 text-center shadow-sm">
           <div className="flex justify-center mb-3">
             <div className="w-14 h-14 bg-[#1D5D7F]/10 rounded-full flex items-center justify-center text-3xl">
-              <FaChartLine/>
+              <FaChartLine />
             </div>
           </div>
           <h3 className="text-lg font-semibold text-[#1D5D7F]">Média Geral</h3>
@@ -153,7 +157,7 @@ function VisaoAluno({ alunoId }: VisaoAlunoProps) {
         <div className="bg-[#f0f7fa] border border-[#1D5D7F]/20 rounded-xl p-6 text-center shadow-sm">
           <div className="flex justify-center mb-3">
             <div className="w-14 h-14 bg-[#1D5D7F]/10 rounded-full flex items-center justify-center text-3xl">
-              <FaUserCheck/>
+              <FaUserCheck />
             </div>
           </div>
           <h3 className="text-lg font-semibold text-[#1D5D7F]">Frequência</h3>
@@ -165,7 +169,7 @@ function VisaoAluno({ alunoId }: VisaoAlunoProps) {
         <div className="bg-[#f0f7fa] border border-[#1D5D7F]/20 rounded-xl p-6 text-center shadow-sm">
           <div className="flex justify-center mb-3">
             <div className="w-14 h-14 bg-[#1D5D7F]/10 rounded-full flex items-center justify-center text-3xl">
-             <FaClipboardCheck />
+              <FaClipboardCheck />
             </div>
           </div>
           <h3 className="text-lg font-semibold text-[#1D5D7F]">
@@ -206,9 +210,7 @@ function VisaoAluno({ alunoId }: VisaoAlunoProps) {
         </div>
       </div>
 
-      {/* Pontos Fortes e Atenção */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Pontos Fortes */}
         <div className="bg-green-50 border border-green-200 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-5">
             <FaCheckCircle className="text-green-600 text-3xl" />
@@ -227,7 +229,6 @@ function VisaoAluno({ alunoId }: VisaoAlunoProps) {
           </ul>
         </div>
 
-        {/* Pontos de Atenção */}
         <div className="bg-red-50 border border-red-200 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-5">
             <FaExclamationTriangle className="text-red-600 text-3xl" />

@@ -85,6 +85,7 @@ export class UsuarioController {
 
       twoFactorEnabled: usuario.twoFactorEnabled,
       ultimoLoginEm: usuario.ultimoLoginEm,
+      fotoPerfil: usuario.fotoPerfil
     };
   }
 

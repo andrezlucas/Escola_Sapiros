@@ -318,7 +318,7 @@ function FormTermoUso() {
         <p className="text-red-600 mt-4 text-center font-medium">{error}</p>
       )}
       {success && (
-        <p className="text-green-600 mt-4 text-center font-medium">{success}</p>
+        <p className="text-[#1D5D7F] mt-4 text-center font-medium">{success}</p>
       )}
 
       <div className="flex items-center mt-6 gap-3">

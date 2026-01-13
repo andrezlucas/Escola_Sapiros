@@ -21,6 +21,14 @@ interface AvisoBackend {
   destinatarioAlunoId?: string | null;
 }
 
+interface UsuarioLogado {
+  id: string;
+  nome: string;
+  email: string;
+  role: string;
+  fotoPerfil?: string | null;
+}
+
 export default function CalendarioPage() {
   const [eventos, setEventos] = useState<EventInput[]>([]);
   const [avisosBackend, setAvisosBackend] = useState<AvisoBackend[]>([]);
@@ -31,6 +39,36 @@ export default function CalendarioPage() {
   const [avisoVisualizar, setAvisoVisualizar] = useState<AvisoBackend | null>(
     null
   );
+  const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
+
+  async function carregarUsuario() {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch("http://localhost:3000/usuarios/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        console.error("Erro ao carregar usuário logado");
+        return;
+      }
+
+      const data = await response.json();
+      setUsuario(data);
+      localStorage.setItem("nome", data.nome);
+      localStorage.setItem("role", data.role);
+      if (data.fotoPerfil) {
+        const urlFoto = data.fotoPerfil.startsWith("http")
+          ? data.fotoPerfil
+          : `http://localhost:3000/${data.fotoPerfil.replace(/\\/g, "/")}`;
+        setUsuario((prev) => (prev ? { ...prev, fotoPerfil: urlFoto } : prev));
+      }
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+    }
+  }
 
   function getCorPorCategoria(categoria: string): string {
     const cores: Record<string, string> = {
@@ -65,12 +103,11 @@ export default function CalendarioPage() {
       segundosUTC === 0 &&
       !isEndOfDay
     ) {
-      const dataLocal = new Date(
+      return new Date(
         data.getUTCFullYear(),
         data.getUTCMonth(),
         data.getUTCDate()
       );
-      return dataLocal;
     }
 
     if (
@@ -79,7 +116,7 @@ export default function CalendarioPage() {
       minutosUTC === 59 &&
       segundosUTC === 59
     ) {
-      const dataLocal = new Date(
+      return new Date(
         data.getUTCFullYear(),
         data.getUTCMonth(),
         data.getUTCDate(),
@@ -87,7 +124,6 @@ export default function CalendarioPage() {
         59,
         59
       );
-      return dataLocal;
     }
 
     return data;
@@ -97,12 +133,7 @@ export default function CalendarioPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-
-      if (!token) {
-        console.error("Token não encontrado");
-        setLoading(false);
-        return;
-      }
+      if (!token) return;
 
       const inicioSemana = new Date(currentDate);
       inicioSemana.setDate(currentDate.getDate() - currentDate.getDay());
@@ -112,29 +143,14 @@ export default function CalendarioPage() {
       fimSemana.setDate(fimSemana.getDate() + 6);
       fimSemana.setHours(23, 59, 59, 999);
 
-      const inicioISO = inicioSemana.toISOString();
-      const fimISO = fimSemana.toISOString();
-
       const response = await fetch(
-        `http://localhost:3000/avisos/calendario?inicio=${inicioISO}&fim=${fimISO}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        `http://localhost:3000/avisos/calendario?inicio=${inicioSemana.toISOString()}&fim=${fimSemana.toISOString()}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("Response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Erro na resposta:", errorText);
-        throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
-      }
+      if (!response.ok) throw new Error("Erro ao carregar avisos");
 
       const data = await response.json();
-      console.log("Avisos recebidos do backend:", data);
       setAvisosBackend(data);
 
       const eventosConvertidos = data.map((aviso: any) => {
@@ -210,9 +226,7 @@ export default function CalendarioPage() {
         `http://localhost:3000/avisos/${avisoId}/confirmar`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -230,6 +244,7 @@ export default function CalendarioPage() {
   }
 
   useEffect(() => {
+    carregarUsuario();
     carregarAvisosCalendario();
   }, [currentDate]);
 
@@ -304,11 +319,8 @@ export default function CalendarioPage() {
 
     setEventos((prev) => {
       const existe = prev.find((e) => e.id === novoEvento.id);
-
-      if (existe) {
+      if (existe)
         return prev.map((ev) => (ev.id === novoEvento.id ? novoEvento : ev));
-      }
-
       return [...prev, novoEvento];
     });
 
@@ -327,9 +339,6 @@ export default function CalendarioPage() {
     return texto.charAt(0).toUpperCase() + texto.slice(1);
   };
 
-  const nome = localStorage.getItem("nome");
-  const role = localStorage.getItem("role");
-
   function abrirModalVisualizarAviso(aviso: AvisoBackend) {
     setAvisoVisualizar(aviso);
   }
@@ -339,24 +348,35 @@ export default function CalendarioPage() {
       <div className="p-2">
         <div className="p-2">
           <header className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4 bg-white rounded-lg border border-gray-200 h-15">
-              <div>
-                <p className="px-2 font-semibold">{nome}</p>
-                <p className="px-2 text-sm text-gray-500">
-                  {LetraMaiuscula(role)}
-                </p>
+            <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 h-15 p-2">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                {usuario?.fotoPerfil ? (
+                  <img
+                    src={usuario.fotoPerfil}
+                    alt={usuario.nome}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-medium text-lg">
+                    {usuario?.nome?.charAt(0) || <MdEvent size={20} />}
+                  </span>
+                )}
               </div>
-              <div className="ml-160">
-                <span className="px-3 py-2text-sm ">
-                  {LetraMaiuscula(role)}
-                </span>
+
+              <div className="flex flex-col">
+                <p className="font-semibold text-gray-800">
+                  {usuario?.nome || "Usuário"}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {LetraMaiuscula(usuario?.role) || "Visitante"}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2 h-15">
               <button
                 aria-label="Anterior"
-                className="px-1 text-gray-600 hover:text-gray-900"
+                className="px-2 text-gray-600 hover:text-gray-900"
                 onClick={semanaAnterior}
               >
                 &lt;
@@ -364,7 +384,7 @@ export default function CalendarioPage() {
               <span className="font-medium text-gray-700 px-2">Semana</span>
               <button
                 aria-label="Próximo"
-                className="px-1 text-gray-600 hover:text-gray-900"
+                className="px-2 text-gray-600 hover:text-gray-900"
                 onClick={proximaSemana}
               >
                 &gt;
@@ -443,7 +463,7 @@ export default function CalendarioPage() {
                       <ModalVisualizarAviso
                         aviso={avisoVisualizar}
                         onClose={() => setAvisoVisualizar(null)}
-                      ></ModalVisualizarAviso>
+                      />
                     )}
                   </div>
                 )}

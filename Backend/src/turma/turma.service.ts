@@ -16,11 +16,16 @@ import { TurmaDashboardDto } from './dto/turma-dashboard.dto';
 import { TurmaGraficoAlunosDto } from './dto/turma-grafico-alunos.dto';
 import { Habilidade } from 'src/disciplina/entities/habilidade.entity';
 import { Nota } from 'src/nota/entities/nota.entity';
-import { DashboardResumoDto, DashboardEvolucaoDto, DashboardAlunoDto, DashboardHabilidadeDto, HabilidadeDestaqueDto } from './dto/dashboard-pedagogico.dto';
+import {
+  DashboardResumoDto,
+  DashboardEvolucaoDto,
+  DashboardAlunoDto,
+  DashboardHabilidadeDto,
+  HabilidadeDestaqueDto,
+} from './dto/dashboard-pedagogico.dto';
 import { Atividade } from 'src/atividade/entities/atividade.entity';
 import { Entrega } from 'src/atividade/entities/entrega.entity';
 import { Bimestre } from 'src/shared/enums/bimestre.enum';
-
 
 @Injectable()
 export class TurmaService {
@@ -373,7 +378,7 @@ export class TurmaService {
       },
     };
   }
-async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
+  async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     const turma = await this.turmaRepository.findOne({
       where: { id: turmaId },
       relations: ['alunos', 'alunos.notas'],
@@ -387,20 +392,21 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
 
     for (const aluno of turma.alunos) {
       const mediaAluno = this.calcularMediaAluno(aluno.notas);
-      
+
       if (mediaAluno !== null) {
         somaMediasTurma += mediaAluno;
         countAlunosComNota++;
-        
+
         if (mediaAluno < 6.0) {
           alunosEmRisco++;
         }
       }
     }
 
-    const mediaGeral = countAlunosComNota > 0 
-      ? Number((somaMediasTurma / countAlunosComNota).toFixed(1)) 
-      : 0;
+    const mediaGeral =
+      countAlunosComNota > 0
+        ? Number((somaMediasTurma / countAlunosComNota).toFixed(1))
+        : 0;
 
     const competencias = await this.calcularStatsHabilidades(turmaId);
     const melhor = competencias.sort((a, b) => b.media - a.media)[0];
@@ -417,10 +423,9 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
   }
 
   async getDashboardEvolucao(
-    turmaId: string, 
-    periodo: 'bimestral' | 'trimestral' | 'semestral'
+    turmaId: string,
+    periodo: 'bimestral' | 'trimestral' | 'semestral',
   ): Promise<DashboardEvolucaoDto[]> {
-    
     if (periodo === 'bimestral') {
       return this.calcularEvolucaoBimestral(turmaId);
     }
@@ -432,7 +437,9 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     return this.calcularEvolucaoSemanal(turmaId, dataLimite);
   }
 
-  private async calcularEvolucaoBimestral(turmaId: string): Promise<DashboardEvolucaoDto[]> {
+  private async calcularEvolucaoBimestral(
+    turmaId: string,
+  ): Promise<DashboardEvolucaoDto[]> {
     const atividades = await this.atividadeRepository.find({
       where: { turmas: { id: turmaId }, ativa: true },
     });
@@ -447,10 +454,12 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     const resultado: DashboardEvolucaoDto[] = [];
 
     for (const b of mapaBimestres) {
-      const atividadesBimestre = atividades.filter(a => a.bimestre === b.enum);
-      
+      const atividadesBimestre = atividades.filter(
+        (a) => a.bimestre === b.enum,
+      );
+
       if (atividadesBimestre.length === 0) {
-        continue; 
+        continue;
       }
 
       let somaNotas = 0;
@@ -458,38 +467,45 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
 
       for (const atv of atividadesBimestre) {
         const entregas = await this.entregaRepository.find({
-          where: { atividade: { id: atv.id } }
+          where: { atividade: { id: atv.id } },
         });
-        
+
         if (entregas.length > 0) {
-           const somaAtividade = entregas.reduce((acc, e) => acc + Number(e.notaFinal), 0);
-           const mediaAtividade = (somaAtividade / entregas.length);
-           const mediaNormalizada = atv.valor > 0 ? (mediaAtividade / atv.valor) * 10 : 0;
-           
-           somaNotas += mediaNormalizada;
-           totalEntregas++;
+          const somaAtividade = entregas.reduce(
+            (acc, e) => acc + Number(e.notaFinal),
+            0,
+          );
+          const mediaAtividade = somaAtividade / entregas.length;
+          const mediaNormalizada =
+            atv.valor > 0 ? (mediaAtividade / atv.valor) * 10 : 0;
+
+          somaNotas += mediaNormalizada;
+          totalEntregas++;
         }
       }
 
       if (totalEntregas > 0) {
         resultado.push({
-          semana: b.label, 
-          media: Number((somaNotas / totalEntregas).toFixed(1))
+          semana: b.label,
+          media: Number((somaNotas / totalEntregas).toFixed(1)),
         });
       }
     }
 
     if (resultado.length === 0) {
-        return [
-            { semana: '1º Bim', media: 0 }, 
-            { semana: '2º Bim', media: 0 }
-        ];
+      return [
+        { semana: '1º Bim', media: 0 },
+        { semana: '2º Bim', media: 0 },
+      ];
     }
 
     return resultado;
   }
 
-  private async calcularEvolucaoSemanal(turmaId: string, dataLimite: Date): Promise<DashboardEvolucaoDto[]> {
+  private async calcularEvolucaoSemanal(
+    turmaId: string,
+    dataLimite: Date,
+  ): Promise<DashboardEvolucaoDto[]> {
     const atividades = await this.atividadeRepository
       .createQueryBuilder('atividade')
       .innerJoin('atividade.turmas', 'turma')
@@ -514,10 +530,13 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
           mediaBruta = (mediaBruta / atv.valor) * 10;
         }
 
-        const dataLabel = new Date(atv.dataEntrega).toLocaleDateString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-        });
+        const dataLabel = new Date(atv.dataEntrega).toLocaleDateString(
+          'pt-BR',
+          {
+            day: '2-digit',
+            month: '2-digit',
+          },
+        );
 
         evolucao.push({
           semana: dataLabel,
@@ -525,7 +544,7 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
         });
       }
     }
-    
+
     if (evolucao.length === 0) return [{ semana: 'Inicio', media: 0 }];
 
     return evolucao;
@@ -535,7 +554,7 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     const turma = await this.turmaRepository.findOne({
       where: { id: turmaId },
       relations: ['alunos', 'alunos.usuario', 'alunos.notas'],
-      order: { alunos: { usuario: { nome: 'ASC' } } } as any
+      order: { alunos: { usuario: { nome: 'ASC' } } } as any,
     });
 
     if (!turma) throw new NotFoundException('Turma não encontrada');
@@ -553,16 +572,18 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
         matricula: aluno.matriculaAluno,
         desempenhoGeral: media,
         status,
+        foto: aluno.usuario.fotoPerfil
+          ? `http://localhost:3000/${aluno.usuario.fotoPerfil.replace(/\\/g, '/')}`
+          : null,
       };
     });
   }
 
- async getDashboardCompetencias(
-  turmaId: string,
-): Promise<DashboardHabilidadeDto[]> {
-  return this.calcularStatsHabilidades(turmaId);
-}
-
+  async getDashboardCompetencias(
+    turmaId: string,
+  ): Promise<DashboardHabilidadeDto[]> {
+    return this.calcularStatsHabilidades(turmaId);
+  }
 
   private calcularMediaAluno(notas: Nota[]): number | null {
     if (!notas || notas.length === 0) return null;
@@ -570,8 +591,10 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     const valoresValidos: number[] = [];
 
     notas.forEach((n) => {
-      if (n.nota1 !== null && n.nota1 !== undefined) valoresValidos.push(Number(n.nota1));
-      if (n.nota2 !== null && n.nota2 !== undefined) valoresValidos.push(Number(n.nota2));
+      if (n.nota1 !== null && n.nota1 !== undefined)
+        valoresValidos.push(Number(n.nota1));
+      if (n.nota2 !== null && n.nota2 !== undefined)
+        valoresValidos.push(Number(n.nota2));
     });
 
     if (valoresValidos.length === 0) return null;
@@ -580,111 +603,111 @@ async getDashboardResumo(turmaId: string): Promise<DashboardResumoDto> {
     return Number((soma / valoresValidos.length).toFixed(1));
   }
 
-private async calcularStatsHabilidades(
-  turmaId: string,
-): Promise<DashboardHabilidadeDto[]> {
+  private async calcularStatsHabilidades(
+    turmaId: string,
+  ): Promise<DashboardHabilidadeDto[]> {
+    const stats: Record<string, { soma: number; count: number }> = {};
+    const habilidadesIds = new Set<string>();
 
-  const stats: Record<string, { soma: number; count: number }> = {};
-  const habilidadesIds = new Set<string>();
-
-  const notas = await this.notaRepository.find({
-    where: {
-      aluno: { turma: { id: turmaId } },
-    },
-  });
-
-  for (const nota of notas) {
-    if (nota.nota1 && Array.isArray(nota.habilidades1)) {
-      for (const hId of nota.habilidades1) {
-        habilidadesIds.add(hId);
-        stats[hId] ??= { soma: 0, count: 0 };
-        stats[hId].soma += Number(nota.nota1);
-        stats[hId].count += 1;
-      }
-    }
-
-    if (nota.nota2 && Array.isArray(nota.habilidades2)) {
-      for (const hId of nota.habilidades2) {
-        habilidadesIds.add(hId);
-        stats[hId] ??= { soma: 0, count: 0 };
-        stats[hId].soma += Number(nota.nota2);
-        stats[hId].count += 1;
-      }
-    }
-  }
-
-  const atividades = await this.atividadeRepository.find({
-    where: {
-      turmas: { id: turmaId },
-      ativa: true,
-    },
-    relations: ['questoes', 'questoes.habilidades'],
-  });
-
-  for (const atividade of atividades) {
-    if (!atividade.questoes?.length) continue;
-
-    const habilidadesAtividade = new Set<string>();
-
-    for (const questao of atividade.questoes) {
-      questao.habilidades?.forEach(h => habilidadesAtividade.add(h.id));
-    }
-
-    if (!habilidadesAtividade.size) continue;
-
-    const entregas = await this.entregaRepository.find({
-      where: { atividade: { id: atividade.id } },
+    const notas = await this.notaRepository.find({
+      where: {
+        aluno: { turma: { id: turmaId } },
+      },
     });
 
-    if (!entregas.length) continue;
+    for (const nota of notas) {
+      if (nota.nota1 && Array.isArray(nota.habilidades1)) {
+        for (const hId of nota.habilidades1) {
+          habilidadesIds.add(hId);
+          stats[hId] ??= { soma: 0, count: 0 };
+          stats[hId].soma += Number(nota.nota1);
+          stats[hId].count += 1;
+        }
+      }
 
-    const valorMaximo =
-      atividade.valor && Number(atividade.valor) > 0
-        ? Number(atividade.valor)
-        : 10;
-
-    for (const entrega of entregas) {
-      if (entrega.notaFinal == null) continue;
-
-      const notaNormalizada =
-        (Number(entrega.notaFinal) / valorMaximo) * 10;
-
-      for (const hId of habilidadesAtividade) {
-        habilidadesIds.add(hId);
-        stats[hId] ??= { soma: 0, count: 0 };
-        stats[hId].soma += notaNormalizada;
-        stats[hId].count += 1;
+      if (nota.nota2 && Array.isArray(nota.habilidades2)) {
+        for (const hId of nota.habilidades2) {
+          habilidadesIds.add(hId);
+          stats[hId] ??= { soma: 0, count: 0 };
+          stats[hId].soma += Number(nota.nota2);
+          stats[hId].count += 1;
+        }
       }
     }
+
+    const atividades = await this.atividadeRepository.find({
+      where: {
+        turmas: { id: turmaId },
+        ativa: true,
+      },
+      relations: ['questoes', 'questoes.habilidades'],
+    });
+
+    for (const atividade of atividades) {
+      if (!atividade.questoes?.length) continue;
+
+      const habilidadesAtividade = new Set<string>();
+
+      for (const questao of atividade.questoes) {
+        questao.habilidades?.forEach((h) => habilidadesAtividade.add(h.id));
+      }
+
+      if (!habilidadesAtividade.size) continue;
+
+      const entregas = await this.entregaRepository.find({
+        where: { atividade: { id: atividade.id } },
+      });
+
+      if (!entregas.length) continue;
+
+      const valorMaximo =
+        atividade.valor && Number(atividade.valor) > 0
+          ? Number(atividade.valor)
+          : 10;
+
+      for (const entrega of entregas) {
+        if (entrega.notaFinal == null) continue;
+
+        const notaNormalizada = (Number(entrega.notaFinal) / valorMaximo) * 10;
+
+        for (const hId of habilidadesAtividade) {
+          habilidadesIds.add(hId);
+          stats[hId] ??= { soma: 0, count: 0 };
+          stats[hId].soma += notaNormalizada;
+          stats[hId].count += 1;
+        }
+      }
+    }
+
+    if (!habilidadesIds.size) return [];
+
+    const habilidades = await this.habilidadeRepository.find({
+      where: { id: In([...habilidadesIds]) },
+    });
+
+    const mapaNomes = new Map(habilidades.map((h) => [h.id, h.nome]));
+
+    return Object.entries(stats).map(([habilidadeId, dados]) => {
+      const media10 = dados.soma / dados.count;
+      const percentual = Math.round(media10 * 10);
+
+      let status: 'BOM' | 'ATENCAO' | 'CRITICO';
+
+      if (percentual >= 80) status = 'BOM';
+      else if (percentual < 60) status = 'CRITICO';
+      else status = 'ATENCAO';
+
+      return {
+        habilidade: mapaNomes.get(habilidadeId) ?? 'Habilidade',
+        media: percentual,
+        status,
+      };
+    });
   }
 
-  if (!habilidadesIds.size) return [];
-
-  const habilidades = await this.habilidadeRepository.find({
-    where: { id: In([...habilidadesIds]) },
-  });
-
-  const mapaNomes = new Map(habilidades.map(h => [h.id, h.nome]));
-
-  return Object.entries(stats).map(([habilidadeId, dados]) => {
-    const media10 = dados.soma / dados.count;
-    const percentual = Math.round(media10 * 10);
-
-    let status: 'BOM' | 'ATENCAO' | 'CRITICO';
-
-    if (percentual >= 80) status = 'BOM';
-    else if (percentual < 60) status = 'CRITICO';
-    else status = 'ATENCAO';
-
-    return {
-      habilidade: mapaNomes.get(habilidadeId) ?? 'Habilidade',
-      media: percentual,
-      status,
-    };
-  });
-}
-
-  async getHabilidadesCriticasProfessor(usuarioId: string): Promise<HabilidadeDestaqueDto[]> {
+  async getHabilidadesCriticasProfessor(
+    usuarioId: string,
+  ): Promise<HabilidadeDestaqueDto[]> {
     const professor = await this.professorRepository.findOne({
       where: { usuario: { id: usuarioId } },
     });
@@ -698,62 +721,65 @@ private async calcularStatsHabilidades(
     });
 
     notasProfessor.forEach((nota) => {
-        const computarNota = (habs: any[], valor: number) => {
-            if (habs && Array.isArray(habs) && valor !== null) {
-                habs.forEach((hId) => {
-                    habilidadesIds.add(hId);
-                    if (!stats[hId]) stats[hId] = { soma: 0, count: 0 };
-                    stats[hId].soma += Number(valor);
-                    stats[hId].count += 1;
-                });
-            }
-        };
-        computarNota(nota.habilidades1, Number(nota.nota1));
-        computarNota(nota.habilidades2, Number(nota.nota2));
+      const computarNota = (habs: any[], valor: number) => {
+        if (habs && Array.isArray(habs) && valor !== null) {
+          habs.forEach((hId) => {
+            habilidadesIds.add(hId);
+            if (!stats[hId]) stats[hId] = { soma: 0, count: 0 };
+            stats[hId].soma += Number(valor);
+            stats[hId].count += 1;
+          });
+        }
+      };
+      computarNota(nota.habilidades1, Number(nota.nota1));
+      computarNota(nota.habilidades2, Number(nota.nota2));
     });
 
     const atividadesProfessor = await this.atividadeRepository.find({
-        where: { professor: { id: professor.id }, ativa: true }, 
-        relations: ['questoes', 'questoes.habilidades'] 
+      where: { professor: { id: professor.id }, ativa: true },
+      relations: ['questoes', 'questoes.habilidades'],
     });
 
     for (const atv of atividadesProfessor) {
-        if (!atv.questoes || atv.questoes.length === 0) continue;
+      if (!atv.questoes || atv.questoes.length === 0) continue;
 
-        const habilidadesDaAtividade = new Set<string>();
-        atv.questoes.forEach((q) => {
-            if (q.habilidades && Array.isArray(q.habilidades)) {
-                q.habilidades.forEach(h => habilidadesDaAtividade.add(h.id));
-            }
-        });
-
-        if (habilidadesDaAtividade.size === 0) continue;
-
-        const entregas = await this.entregaRepository.find({
-            where: { atividade: { id: atv.id } }
-        });
-
-        const valorAtividade = Number(atv.valor);
-        const valorMaximo = valorAtividade > 0 ? valorAtividade : 10;
-
-        for (const entrega of entregas) {
-            if (entrega.notaFinal === null || entrega.notaFinal === undefined) continue;
-
-            const notaNormalizada = (Number(entrega.notaFinal) / valorMaximo) * 10;
-
-            habilidadesDaAtividade.forEach(hId => {
-                habilidadesIds.add(hId);
-                if (!stats[hId]) stats[hId] = { soma: 0, count: 0 };
-                stats[hId].soma += notaNormalizada;
-                stats[hId].count += 1;
-            });
+      const habilidadesDaAtividade = new Set<string>();
+      atv.questoes.forEach((q) => {
+        if (q.habilidades && Array.isArray(q.habilidades)) {
+          q.habilidades.forEach((h) => habilidadesDaAtividade.add(h.id));
         }
+      });
+
+      if (habilidadesDaAtividade.size === 0) continue;
+
+      const entregas = await this.entregaRepository.find({
+        where: { atividade: { id: atv.id } },
+      });
+
+      const valorAtividade = Number(atv.valor);
+      const valorMaximo = valorAtividade > 0 ? valorAtividade : 10;
+
+      for (const entrega of entregas) {
+        if (entrega.notaFinal === null || entrega.notaFinal === undefined)
+          continue;
+
+        const notaNormalizada = (Number(entrega.notaFinal) / valorMaximo) * 10;
+
+        habilidadesDaAtividade.forEach((hId) => {
+          habilidadesIds.add(hId);
+          if (!stats[hId]) stats[hId] = { soma: 0, count: 0 };
+          stats[hId].soma += notaNormalizada;
+          stats[hId].count += 1;
+        });
+      }
     }
 
     const idsArray = Array.from(habilidadesIds);
     if (idsArray.length === 0) return [];
 
-    const habilidadesDb = await this.habilidadeRepository.find({ where: { id: In(idsArray) } });
+    const habilidadesDb = await this.habilidadeRepository.find({
+      where: { id: In(idsArray) },
+    });
     const mapaNomes = new Map(habilidadesDb.map((h) => [h.id, h.nome]));
 
     const resultado: HabilidadeDestaqueDto[] = [];
@@ -773,5 +799,4 @@ private async calcularStatsHabilidades(
 
     return resultado.sort((a, b) => a.media - b.media).slice(0, 4);
   }
- 
 }

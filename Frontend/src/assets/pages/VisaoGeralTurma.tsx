@@ -21,6 +21,7 @@ interface Aluno {
   media: number;
   status: "Atenção" | "Regular" | "Bom";
   corStatus: "bg-red-500" | "bg-yellow-500" | "bg-green-500";
+  foto: string;
 }
 
 interface Disciplina {
@@ -133,6 +134,7 @@ function VisaoGeralTurma({ turmaId, onVerAluno }: VisaoGeralTurmaProps) {
                   : media < 7
                   ? "bg-yellow-500"
                   : "bg-green-500",
+              foto: aluno.foto || null,
             };
           }),
         });
@@ -298,8 +300,18 @@ function VisaoGeralTurma({ turmaId, onVerAluno }: VisaoGeralTurmaProps) {
                 >
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-medium">
-                        {aluno.nome.charAt(0)}
+                      <div className="w-10 h-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                        {aluno.foto ? (
+                          <img
+                            src={aluno.foto}
+                            alt={aluno.nome}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-white font-medium">
+                            {aluno.nome.charAt(0)}
+                          </span>
+                        )}
                       </div>
                       <div>
                         <p className="font-medium">{aluno.nome}</p>
