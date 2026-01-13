@@ -16,13 +16,14 @@ export class Coordenacao {
     enum: FuncaoCoordenacao,
   })
   funcao: FuncaoCoordenacao;
-  
-  @CreateDateColumn()
-  CoordenacaocriadoEm: Date;
 
-  @UpdateDateColumn()
-  coordenacaoatualizadoEm: Date;
+  @CreateDateColumn({ name: 'criado_em' })
+  criadoEm: Date;
+
+  @UpdateDateColumn({ name: 'atualizado_em' })
+  atualizadoEm: Date;
 }
+
 
 
 
