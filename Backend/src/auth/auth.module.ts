@@ -11,6 +11,7 @@ import { AlunoModule } from '../aluno/aluno.module';
 import { MailService } from '../mail/mail.service';
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { ResetPasswordToken } from './entities/reset-password-token.entity';
+import { Usuario } from 'src/usuario/entities/usuario.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ResetPasswordToken } from './entities/reset-password-token.entity';
     forwardRef(() => UsuarioModule),
     forwardRef(() => AlunoModule),
     PassportModule,
-    TypeOrmModule.forFeature([Aluno, ResetPasswordToken]),
+    TypeOrmModule.forFeature([Aluno, ResetPasswordToken, Usuario]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

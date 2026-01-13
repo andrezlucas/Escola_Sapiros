@@ -18,6 +18,7 @@ import { AtividadeModule } from './atividade/atividade.module';
 import { RelatoriosHabilidadesModule } from './relatorio/relatorios-habilidades.module';
 import { MaterialModule } from './material/material.module';
 import { SimuladoModule } from './simulado/simulado.module';
+import { ConfiguracoesModule } from './configurações/configuracoes.module';
 
 
 @Module({
@@ -59,7 +60,8 @@ import { SimuladoModule } from './simulado/simulado.module';
     AtividadeModule,
     RelatoriosHabilidadesModule,
     MaterialModule,
-    SimuladoModule,    
+    SimuladoModule,
+    ConfiguracoesModule,    
   ],
   controllers: [AppController],
   providers: [AppService],

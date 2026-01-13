@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from '../usuario/usuario.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,8 @@ import { MailService } from '../mail/mail.service';
 import { ResetPasswordToken } from './entities/reset-password-token.entity';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import { createHash } from 'crypto';
+import { gerarCodigoReserva } from 'src/shared/security/codigo-reserva.util';
 
 @Injectable()
 export class AuthService {
@@ -20,13 +22,15 @@ export class AuthService {
     private readonly alunoRepository: Repository<Aluno>,
     @InjectRepository(ResetPasswordToken)
     private readonly tokenRepository: Repository<ResetPasswordToken>,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
   ) {}
 
 async login(dto: any) {
-  const identificador: string = dto.identificador;
+  const { identificador, senha, codigo2fa, codigoReserva } = dto;
 
-  if (!identificador) {
-    throw new UnauthorizedException('Identificador é obrigatório');
+  if (!identificador || !senha) {
+    throw new UnauthorizedException('Credenciais inválidas');
   }
 
   let usuario: Usuario | null = null;
@@ -42,66 +46,107 @@ async login(dto: any) {
     turmaId = aluno.turma?.id || null;
   } else {
     usuario = await this.usuarioService.findByCpfOrEmail(identificador);
-    if (usuario) {
-      const alunoRelacionado = await this.alunoRepository.findOne({
-        where: { usuario: { id: usuario.id } },
-        relations: ['turma'],
-      });
-      turmaId = alunoRelacionado?.turma?.id || null;
-    }
   }
 
   if (!usuario) {
     throw new UnauthorizedException('Usuário não encontrado');
   }
 
-  const senhaValida = await bcrypt.compare(dto.senha, usuario.senha);
+  if (usuario.bloqueadoAte && usuario.bloqueadoAte > new Date()) {
+    throw new UnauthorizedException('Conta temporariamente bloqueada');
+  }
+
+  const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
   if (!senhaValida) {
-    throw new UnauthorizedException('Senha incorreta');
-  }
-  
-  if (usuario.isBlocked) {
-    throw new UnauthorizedException(
-      'Conta temporariamente bloqueada. Complete o cadastro de documentos para liberar o acesso.',
-    );
-  }
+    usuario.tentativasLoginFalhas += 1;
 
-  const senhaPadrao = 'Sapiros@123';
-  const isSenhaPadrao = await bcrypt.compare(senhaPadrao, usuario.senha);
-
-  if (isSenhaPadrao) {
-    try {
-      await this.requestPasswordReset(usuario.email);
-    } catch (err) {
-      console.error('Erro ao enviar email de redefinição:', err.message);
+    if (usuario.tentativasLoginFalhas >= 5) {
+      usuario.bloqueadoAte = new Date(Date.now() + 15 * 60 * 1000);
+      usuario.tentativasLoginFalhas = 0;
     }
 
-    throw new UnauthorizedException(
-      'Senha temporária detectada. Enviamos um email para redefinição.'
-    );
+    await this.usuarioRepository.save(usuario);
+    throw new UnauthorizedException('Senha incorreta');
   }
 
-  if (usuario.senhaExpiraEm && new Date() > new Date(usuario.senhaExpiraEm)) {
-    throw new UnauthorizedException('A senha expirou. Redefina sua senha.');
+  usuario.tentativasLoginFalhas = 0;
+  usuario.bloqueadoAte = undefined;
+
+  if (usuario.isBlocked) {
+    throw new UnauthorizedException('Conta bloqueada');
   }
 
-  const payload = {
+  if (usuario.senhaExpiraEm && new Date() > usuario.senhaExpiraEm) {
+    throw new UnauthorizedException('Senha expirada');
+  }
+
+  if (usuario.twoFactorEnabled) {
+    if (!codigo2fa && !codigoReserva) {
+      return {
+        requires2FA: true,
+        message: 'Informe o código do autenticador ou reserva',
+      };
+    }
+
+    if (codigoReserva) {
+      await this.validarCodigoReserva(usuario, codigoReserva);
+    } else {
+      await this.validarTotp(usuario, codigo2fa);
+    }
+  }
+
+  const basePayload = {
     sub: usuario.id,
     role: usuario.role,
-    turmaId: turmaId,
-    senhaExpiraEm: usuario.senhaExpiraEm,
+    tokenVersion: usuario.tokenVersion,
+    turmaId,
   };
+
+  const accessToken = this.jwtService.sign(
+    { ...basePayload, type: 'access' },
+    { expiresIn: '15m' },
+  );
+
+  const refreshToken = this.jwtService.sign(
+    { ...basePayload, type: 'refresh' },
+    { expiresIn: '30d' },
+  );
+
+  usuario.refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+  usuario.refreshTokenExpiraEm = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  usuario.ultimoLoginEm = new Date();
+
+  await this.usuarioRepository.save(usuario);
 
   return {
     usuario: {
       id: usuario.id,
       nome: usuario.nome,
       role: usuario.role,
-      turmaId: turmaId,
+      turmaId,
     },
-    token: this.jwtService.sign(payload),
+    accessToken,
+    refreshToken,
   };
 }
+
+async logout(usuarioId: string) {
+  const usuario = await this.usuarioRepository.findOne({
+    where: { id: usuarioId },
+  });
+
+  if (!usuario) {
+    return;
+  }
+
+  usuario.tokenVersion += 1;
+  usuario.refreshTokenHash = undefined;
+  usuario.refreshTokenExpiraEm = undefined;
+
+  await this.usuarioRepository.save(usuario);
+}
+
 
 
   async requestPasswordReset(email: string) {
@@ -147,4 +192,196 @@ async login(dto: any) {
     await this.tokenRepository.remove(resetToken);
     return { message: 'Senha alterada com sucesso' };
   }
+
+
+private hashCodigo(codigo: string): string {
+  return createHash('sha256').update(codigo).digest('hex');
+}
+
+async validarCodigoReserva(usuario: Usuario, codigoInformado: string) {
+  if (!usuario.codigosReserva?.length) {
+    throw new UnauthorizedException('Nenhum código disponível');
+  }
+
+  for (const item of usuario.codigosReserva) {
+    if (item.usado) continue;
+
+    const valido = await bcrypt.compare(codigoInformado, item.codigo);
+
+    if (valido) {
+      item.usado = true;
+      item.usadoEm = new Date();
+
+      await this.usuarioRepository.save(usuario);
+      return true;
+    }
+  }
+
+  throw new UnauthorizedException('Código de reserva inválido');
+}
+
+
+async validarTotp(usuario: Usuario, codigo: string) {
+  const speakeasy = require('speakeasy');
+
+  const valido = speakeasy.totp.verify({
+    secret: usuario.twoFactorSecret,
+    encoding: 'base32',
+    token: codigo,
+    window: 1,
+  });
+
+  if (!valido) {
+    throw new UnauthorizedException('Código 2FA inválido');
+  }
+}
+async refresh(refreshToken: string) {
+  if (!refreshToken) {
+    throw new UnauthorizedException('Refresh token não fornecido');
+  }
+
+  let payload: any;
+
+  try {
+    payload = this.jwtService.verify(refreshToken);
+  } catch {
+    throw new UnauthorizedException('Refresh token inválido ou expirado');
+  }
+
+  if (payload.type !== 'refresh') {
+    throw new UnauthorizedException();
+  }
+
+  const usuario = await this.usuarioRepository.findOne({
+    where: { id: payload.sub },
+  });
+
+  if (
+    !usuario ||
+    !usuario.refreshTokenHash ||
+    !usuario.refreshTokenExpiraEm ||
+    usuario.refreshTokenExpiraEm < new Date()
+  ) {
+    throw new UnauthorizedException();
+  }
+
+  const valido = await bcrypt.compare(
+    refreshToken,
+    usuario.refreshTokenHash,
+  );
+
+  if (!valido || usuario.tokenVersion !== payload.tokenVersion) {
+    throw new UnauthorizedException();
+  }
+
+  const accessToken = this.jwtService.sign(
+    {
+      sub: usuario.id,
+      role: usuario.role,
+      tokenVersion: usuario.tokenVersion,
+      type: 'access',
+    },
+    { expiresIn: '15m' },
+  );
+
+  return { accessToken };
+}
+
+
+
+async gerar2FA(usuarioId: string) {
+  const speakeasy = require('speakeasy');
+  const qrcode = require('qrcode');
+
+  const secret = speakeasy.generateSecret({
+    name: `Sapiros (${usuarioId})`,
+  });
+
+  const qrCode = await qrcode.toDataURL(secret.otpauth_url);
+
+  return {
+    qrCode,
+    base32: secret.base32, // frontend NÃO salva
+  };
+}
+
+async ativar2FA(usuarioId: string, codigo: string, secret: string) {
+  const speakeasy = require('speakeasy');
+
+  const valido = speakeasy.totp.verify({
+    secret,
+    encoding: 'base32',
+    token: codigo,
+    window: 1,
+  });
+
+  if (!valido) {
+    throw new UnauthorizedException('Código inválido');
+  }
+
+  const usuario = await this.usuarioRepository.findOne({
+    where: { id: usuarioId },
+  });
+
+  if (!usuario) {
+    throw new NotFoundException('Usuário não encontrado');
+  }
+
+  // 🔐 ativa 2FA
+  usuario.twoFactorSecret = secret;
+  usuario.twoFactorEnabled = true;
+
+  // 🔑 gera códigos reserva
+  const codigos = Array.from({ length: 10 }).map(() =>
+    gerarCodigoReserva(),
+  );
+
+ usuario.codigosReserva = await Promise.all(
+  codigos.map(async codigo => ({
+    codigo: await bcrypt.hash(codigo, 10),
+    usado: false,
+  })),
+);
+
+
+  // 🔐 invalida sessões existentes
+  usuario.tokenVersion += 1;
+
+  await this.usuarioRepository.save(usuario);
+
+  return {
+    message: '2FA ativado com sucesso',
+    codigosReserva: codigos, // ⚠️ mostrar só UMA vez no frontend
+  };
+}
+async desativar2FA(usuarioId: string, senha: string) {
+  const usuario = await this.usuarioRepository.findOne({
+    where: { id: usuarioId },
+  });
+
+  if (!usuario) {
+    throw new NotFoundException('Usuário não encontrado');
+  }
+
+  const senhaValida = await bcrypt.compare(senha, usuario.senha);
+  if (!senhaValida) {
+    throw new UnauthorizedException('Senha inválida');
+  }
+
+  usuario.twoFactorEnabled = false;
+  usuario.twoFactorSecret = undefined;
+  usuario.codigosReserva = [];
+
+  // 🔐 invalida tokens
+  usuario.tokenVersion += 1;
+
+  await this.usuarioRepository.save(usuario);
+
+  return {
+    message:
+      '2FA desativado com sucesso. Todos os dispositivos foram desconectados.',
+  };
+}
+
+
 }

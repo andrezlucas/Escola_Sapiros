@@ -90,4 +90,47 @@ export class Usuario {
 
   @UpdateDateColumn({ name: 'atualizado_em' })
   atualizadoEm: Date;
+
+  @Column({ default: false })
+  termosAceitos: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  termosAceitosEm: Date;
+
+  @Column({ nullable: true })
+  twoFactorSecret?: string;
+
+  @Column({ default: false })
+  twoFactorEnabled: boolean;
+
+  @Column('json', { nullable: true })
+  codigosReserva?: {
+    codigo: string;
+    usado: boolean;
+    usadoEm?: Date;
+  }[];
+
+
+  @Column({ default: 0 })
+  tokenVersion: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  ultimoLoginEm?: Date;
+
+  @Column({ nullable: true })
+  ultimoLoginIp?: string;
+ 
+  @Column({ nullable: true })
+  refreshTokenHash?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  refreshTokenExpiraEm?: Date;
+
+  @Column({ default: 0 })
+  tentativasLoginFalhas: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  bloqueadoAte?: Date;
+
+
 }
