@@ -1,18 +1,71 @@
 import { useState, useRef, useEffect } from "react";
 
+interface TermosStatus {
+  termosAceitos: boolean;
+  termosAceitosEm: string | null;
+}
+
 function FormTermoUso() {
   const [concordou, setConcordou] = useState(false);
   const [rolouTudo, setRolouTudo] = useState(false);
+  const [termosStatus, setTermosStatus] = useState<TermosStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const termoRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const checkTermos = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("Sessão não encontrada. Faça login novamente.");
+          return;
+        }
+
+        const res = await fetch(
+          "http://localhost:3000/configuracoes/termos-de-uso",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(
+            `Erro ao verificar termos: ${res.status} - ${errText}`
+          );
+        }
+
+        const data: TermosStatus = await res.json();
+        setTermosStatus(data);
+
+        if (data.termosAceitos) {
+          setConcordou(true);
+        }
+      } catch (err: any) {
+        console.error("Erro ao carregar status dos termos:", err);
+        setError(err.message || "Falha ao verificar status dos termos");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkTermos();
+  }, []);
 
   const handleScroll = () => {
     const el = termoRef.current;
     if (!el) return;
 
     const chegouNoFinal =
-      el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
-
+      el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
     if (chegouNoFinal) {
       setRolouTudo(true);
     }
@@ -20,12 +73,76 @@ function FormTermoUso() {
 
   useEffect(() => {
     const el = termoRef.current;
-    if (!el) return;
-
-    if (el.scrollHeight <= el.clientHeight) {
+    if (el && el.scrollHeight <= el.clientHeight + 10) {
       setRolouTudo(true);
     }
   }, []);
+
+  const handleAceitar = async () => {
+    if (!concordou) return;
+
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Sessão não encontrada");
+
+      const res = await fetch(
+        "http://localhost:3000/configuracoes/termos-de-uso",
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ aceito: true }),
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Erro ao aceitar os termos");
+      }
+
+      const data = await res.json();
+      setTermosStatus(data);
+      setSuccess("Termos aceitos com sucesso!");
+      setConcordou(true);
+    } catch (err: any) {
+      setError(err.message || "Falha ao registrar aceite dos termos");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 bg-white rounded-xl p-8 shadow-md flex items-center justify-center">
+        <p className="text-gray-600">Carregando termos de uso...</p>
+      </div>
+    );
+  }
+
+  if (termosStatus?.termosAceitos) {
+    const dataAceite = termosStatus.termosAceitosEm
+      ? new Date(termosStatus.termosAceitosEm).toLocaleString("pt-BR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        })
+      : "Data não disponível";
+
+    return (
+      <div className="flex-1 bg-white rounded-xl p-8 shadow-md text-center">
+        <h2 className="text-2xl font-bold text-green-700 mb-4">
+          Termos de Uso aceitos
+        </h2>
+        <p className="text-gray-700 mb-2">Você concordou com os termos em:</p>
+        <p className="text-lg font-medium text-gray-800">{dataAceite}</p>
+        <p className="mt-6 text-gray-600">
+          Pode continuar utilizando a plataforma normalmente.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-white rounded-xl p-8 shadow-md">
@@ -36,7 +153,7 @@ function FormTermoUso() {
       <div
         ref={termoRef}
         onScroll={handleScroll}
-        className="h-[500px] overflow-y-auto text-gray-700 text-sm leading-relaxed pr-2 border rounded-md p-4"
+        className="h-[500px] overflow-y-auto text-gray-700 text-sm leading-relaxed pr-4 border border-gray-300 rounded-md p-6 bg-gray-50"
       >
         <p className="mb-4 font-medium">
           Ao utilizar esta plataforma, você declara estar ciente e de acordo com
@@ -197,19 +314,28 @@ function FormTermoUso() {
         </p>
       </div>
 
-      <div className="flex items-center mt-4 gap-2">
+      {error && (
+        <p className="text-red-600 mt-4 text-center font-medium">{error}</p>
+      )}
+      {success && (
+        <p className="text-green-600 mt-4 text-center font-medium">{success}</p>
+      )}
+
+      <div className="flex items-center mt-6 gap-3">
         <input
           type="checkbox"
           id="concordo"
           disabled={!rolouTudo}
           checked={concordou}
           onChange={(e) => setConcordou(e.target.checked)}
-          className="cursor-pointer"
+          className="w-5 h-5 text-[#1D5D7F] border-gray-300 rounded cursor-pointer disabled:cursor-not-allowed"
         />
         <label
           htmlFor="concordo"
-          className={`text-sm ${
-            !rolouTudo ? "text-gray-400" : "text-gray-700"
+          className={`text-sm font-medium ${
+            !rolouTudo
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-700 cursor-pointer"
           }`}
         >
           Li e concordo com os Termos de Uso
@@ -217,11 +343,12 @@ function FormTermoUso() {
       </div>
 
       <button
+        onClick={handleAceitar}
         disabled={!concordou}
-        className={`mt-6 px-6 py-2 rounded-md text-white transition
+        className={`mt-8 w-full md:w-auto px-10 py-3 rounded-lg text-white font-medium transition
           ${
             concordou
-              ? "bg-blue-600 hover:bg-blue-700"
+              ? "bg-[#1D5D7F] hover:bg-[#1D5D7F]/90"
               : "bg-gray-400 cursor-not-allowed"
           }`}
       >
