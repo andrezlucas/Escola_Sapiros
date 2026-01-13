@@ -132,5 +132,9 @@ export class Usuario {
   @Column({ type: 'timestamp', nullable: true })
   bloqueadoAte?: Date;
 
+  @Column({ name: 'foto_perfil', nullable: true })
+  fotoPerfil?: string;
+
+
 
 }

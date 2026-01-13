@@ -27,47 +27,55 @@ export class ConfiguracoesService {
     private readonly coordenacaoRepository: Repository<Coordenacao>,
   ) {}
 
-  async getPerfil(usuarioId: string) {
-    const usuario = await this.usuarioRepository.findOne({
-      where: { id: usuarioId },
-    });
+async getPerfil(usuarioId: string) {
+  const usuario = await this.usuarioRepository.findOne({
+    where: { id: usuarioId },
+  });
 
-    if (!usuario) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    let perfil: any = null;
-
-    if (usuario.role === Role.ALUNO) {
-      perfil = await this.alunoRepository.findOne({
-        where: { usuario: { id: usuarioId } },
-        relations: ['turma'],
-      });
-    }
-
-    if (usuario.role === Role.PROFESSOR) {
-      perfil = await this.professorRepository.findOne({
-        where: { usuario: { id: usuarioId } },
-        relations: ['disciplinas'],
-      });
-    }
-
-    if (usuario.role === Role.COORDENACAO) {
-      perfil = await this.coordenacaoRepository.findOne({
-        where: { usuario: { id: usuarioId } },
-      });
-    }
-
-    return {
-      usuario: {
-        nome: usuario.nome,
-        email: usuario.email,
-        telefone: usuario.telefone,
-        role: usuario.role,
-      },
-      perfil,
-    };
+  if (!usuario) {
+    throw new NotFoundException('Usuário não encontrado');
   }
+
+  let perfil: any = null;
+
+  if (usuario.role === Role.ALUNO) {
+    perfil = await this.alunoRepository.findOne({
+      where: { usuario: { id: usuarioId } },
+      relations: ['turma'],
+    });
+  }
+
+  if (usuario.role === Role.PROFESSOR) {
+    perfil = await this.professorRepository.findOne({
+      where: { usuario: { id: usuarioId } },
+      relations: ['disciplinas'],
+    });
+  }
+
+  if (usuario.role === Role.COORDENACAO) {
+    perfil = await this.coordenacaoRepository.findOne({
+      where: { usuario: { id: usuarioId } },
+    });
+  }
+
+  // Converte caminho da foto para URL pública
+  const fotoPerfilUrl = usuario.fotoPerfil
+    ? `${process.env.BASE_URL ?? 'http://localhost:3000'}/${usuario.fotoPerfil.replace(/\\/g, '/')}`
+    : null;
+
+  return {
+    usuario: {
+      nome: usuario.nome,
+      email: usuario.email,
+      telefone: usuario.telefone,
+      role: usuario.role,
+      fotoPerfil: fotoPerfilUrl,
+    },
+    perfil,
+  };
+}
+
+
 
   async updatePerfil(usuarioId: string, dto: UpdatePerfilDto) {
     const usuario = await this.usuarioRepository.findOne({
@@ -78,10 +86,13 @@ export class ConfiguracoesService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
+    // Atualização de campos opcionais
     if (dto.nome !== undefined) usuario.nome = dto.nome;
     if (dto.email !== undefined) usuario.email = dto.email;
     if (dto.telefone !== undefined) usuario.telefone = dto.telefone;
+    if (dto.fotoPerfil !== undefined) usuario.fotoPerfil = dto.fotoPerfil;
 
+    // Atualização de senha
     if (dto.senha) {
       usuario.senha = await bcrypt.hash(dto.senha, 10);
       usuario.senhaAtualizadaEm = new Date();
@@ -93,10 +104,21 @@ export class ConfiguracoesService {
       usuario.tokenVersion += 1;
     }
 
+    // Salva alterações
     await this.usuarioRepository.save(usuario);
 
-    return { message: 'Perfil atualizado com sucesso' };
+    // Retorna dados atualizados
+    return {
+      message: 'Perfil atualizado com sucesso',
+      usuario: {
+        nome: usuario.nome,
+        email: usuario.email,
+        telefone: usuario.telefone,
+        fotoPerfil: usuario.fotoPerfil,
+      },
+    };
   }
+
 
   async aceitarTermos(usuarioId: string, aceito: boolean) {
     const usuario = await this.usuarioRepository.findOne({

@@ -10,14 +10,18 @@ import {
   Req,
   Query,
   Param,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-
+import * as fs from 'fs';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { ConfiguracoesService } from './configuracoes.service';
 import { UpdatePerfilDto } from './dto/update-perfil.dto';
 import { AceiteTermoDto } from './dto/aceite-termo.dto';
-import { AlterarSenhaDto } from './dto/alterar-senha.dto';
-
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
@@ -45,11 +49,50 @@ export class ConfiguracoesController {
   @Roles(Role.ALUNO, Role.PROFESSOR, Role.COORDENACAO)
   @Patch('perfil')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  @UseInterceptors(
+    FileInterceptor('foto', {
+      storage: diskStorage({
+        destination: (req, file, callback) => {
+          const uploadPath = './uploads/fotos';
+          // Cria a pasta se não existir
+          if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+          }
+          callback(null, uploadPath);
+        },
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `foto-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(new BadRequestException('Apenas imagens são permitidas!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
   async updatePerfil(
     @Req() req: AuthRequest,
+    @UploadedFile() file: Express.Multer.File,
     @Body() dto: UpdatePerfilDto,
   ) {
-    return this.configuracoesService.updatePerfil(req.user.id, dto);
+    // Se houver arquivo, adiciona o caminho da foto ao DTO
+    if (file) {
+      dto.fotoPerfil = file.path;
+    }
+
+    const resultado = await this.configuracoesService.updatePerfil(req.user.id, dto);
+
+    // Converte o caminho do arquivo em URL pública
+    if (resultado.usuario.fotoPerfil) {
+      resultado.usuario.fotoPerfil = `${process.env.BASE_URL ?? 'http://localhost:3000'}/${resultado.usuario.fotoPerfil.replace(/\\/g, '/')}`;
+    }
+
+    return resultado;
   }
 
 

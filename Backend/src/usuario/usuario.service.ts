@@ -148,4 +148,16 @@ export class UsuarioService {
 
     return this.usuarioRepository.save(usuario);
   }
+
+    async updateFotoPerfil(usuarioId: string, caminhoFoto: string) {
+    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    if (!usuario) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    usuario.fotoPerfil = caminhoFoto;
+    await this.usuarioRepository.save(usuario);
+
+    return { message: 'Foto de perfil atualizada com sucesso', fotoPerfil: caminhoFoto };
+  }
 }

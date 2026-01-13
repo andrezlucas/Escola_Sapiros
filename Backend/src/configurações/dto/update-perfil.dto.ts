@@ -17,4 +17,8 @@ export class UpdatePerfilDto {
   @IsString()
   @MinLength(6)
   senha?: string;
+
+  @IsOptional()
+  @IsString()
+  fotoPerfil?: string;
 }

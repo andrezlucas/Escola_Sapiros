@@ -10,6 +10,9 @@ import {
   ParseUUIDPipe,
   BadRequestException,
   Req,
+  UseInterceptors,
+  UploadedFile,
+  NotFoundException,
 } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { Usuario, Role } from './entities/usuario.entity';
@@ -20,6 +23,10 @@ import { Roles } from '../auth/roles/roles.decorator';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { SenhaExpiradaGuard } from 'src/auth/senha-expirada/senha-expirada.guard';
 import { UpdateUsuarioBlockDto } from './dto/UpdateUsuarioBlockDto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import * as fs from 'fs';
 
 type UsuarioResponse = Omit<
   Usuario,
@@ -149,5 +156,52 @@ export class UsuarioController {
   ): Promise<UsuarioResponse> {
     const usuario = await this.usuarioService.setBlocked(id, dto.isBlocked);
     return formatarUsuario(usuario);
+  }
+
+  @Post(':id/foto-perfil')
+  @UseInterceptors(
+    FileInterceptor('foto', {
+      storage: diskStorage({
+        destination: (req, file, callback) => {
+          const uploadPath = './uploads/fotos';
+          // Cria a pasta se não existir
+          if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+          }
+          callback(null, uploadPath);
+        },
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `foto-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(new BadRequestException('Apenas imagens são permitidas!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
+  async uploadFotoPerfil(
+    @Param('id') usuarioId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new NotFoundException('Arquivo não enviado');
+    }
+
+    // Atualiza o caminho da foto no banco
+    await this.usuarioService.updateFotoPerfil(usuarioId, file.path);
+
+    // Retorna URL completa da imagem
+    const fotoUrl = `${process.env.BASE_URL ?? 'http://localhost:3000'}/${file.path.replace(/\\/g, '/')}`;
+
+    return {
+      message: 'Foto de perfil atualizada com sucesso',
+      fotoPerfilUrl: fotoUrl,
+    };
   }
 }
