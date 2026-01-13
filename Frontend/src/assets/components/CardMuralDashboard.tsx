@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FaChevronRight } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+
 
 interface AvisoDashboard {
   id: string;

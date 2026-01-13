@@ -6,7 +6,7 @@ import {
   HiOutlineArrowLeftStartOnRectangle,
 } from "react-icons/hi2";
 import { FaRegEdit } from "react-icons/fa";
-import { IoHomeOutline } from "react-icons/io5";
+import { IoDocumentOutline, IoHomeOutline } from "react-icons/io5";
 import { IoMdTv } from "react-icons/io";
 import { MdOutlineManageAccounts } from "react-icons/md";
 import { FaRegFolderOpen } from "react-icons/fa";
@@ -67,6 +67,7 @@ export const SideBarOptions = {
         label: "Materiais",
         viewName: "materiais",
       },
+      { icon: IoDocumentOutline, label: "Documentos", viewName: "documentos" },
       {
         icon: HiOutlineCalendarDateRange,
         label: "Calendário",

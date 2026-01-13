@@ -17,7 +17,7 @@ function Mural() {
   return (
     <div className="w-full h-auto p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-md space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">
+        <h1 className="text-4xl text-[#1D5D7F]">
           Mural de Avisos
         </h1>
         {role === "coordenacao" && (

@@ -45,6 +45,9 @@ export default function NotaList() {
   const [tipoFeedback, setTipoFeedback] = useState<"1" | "2">("1");
   const [feedbackTexto, setFeedbackTexto] = useState("");
   const [savingIndividual, setSavingIndividual] = useState<string | null>(null);
+  const [mapaMatriculas, setMapaMatriculas] = useState<Record<string, string>>(
+    {}
+  );
 
   function authFetch(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem("token");
@@ -95,6 +98,26 @@ export default function NotaList() {
       setDisciplinas(data);
     };
     fetchDisciplinas();
+  }, [turmaId]);
+
+  useEffect(() => {
+    if (!turmaId) return;
+
+    const fetchMatriculas = async () => {
+      const res = await authFetch(`${API_BASE}/turmas/${turmaId}`);
+      if (!res?.ok) return;
+
+      const data = await res.json();
+
+      const mapa: Record<string, string> = {};
+      data.alunos.forEach((aluno: any) => {
+        mapa[aluno.id] = aluno.matriculaAluno;
+      });
+
+      setMapaMatriculas(mapa);
+    };
+
+    fetchMatriculas();
   }, [turmaId]);
 
   useEffect(() => {
@@ -156,7 +179,7 @@ export default function NotaList() {
 
         const tabela: LinhaTabela[] = data.map((item: any) => ({
           alunoId: item.alunoId,
-          matriculaAluno: item.matriculaAluno || "N/I",
+          matriculaAluno: mapaMatriculas[item.alunoId] || "N/I",
           nome: item.nome || "Sem nome",
 
           nota1: item.nota1 || null,
@@ -203,22 +226,24 @@ export default function NotaList() {
   }, [turmaId, disciplinaId, bimestre, habilidades]);
 
   const atualizarNota1 = (alunoId: string, valor: string) => {
-    const num = valor === "" ? null : parseFloat(valor);
+    const nota = validarNota(valor);
+
     setDadosTabela((prev) =>
       prev.map((item) =>
         item.alunoId === alunoId
-          ? { ...item, nota1: num, status: "pendente" }
+          ? { ...item, nota1: nota, status: "pendente" }
           : item
       )
     );
   };
 
   const atualizarNota2 = (alunoId: string, valor: string) => {
-    const num = valor === "" ? null : parseFloat(valor);
+    const nota = validarNota(valor);
+
     setDadosTabela((prev) =>
       prev.map((item) =>
         item.alunoId === alunoId
-          ? { ...item, nota2: num, status: "pendente" }
+          ? { ...item, nota2: nota, status: "pendente" }
           : item
       )
     );
@@ -316,6 +341,21 @@ export default function NotaList() {
       setSaving(false);
     }
   };
+
+  function validarNota(valor: string): number | null {
+    if (valor === "") return null;
+
+    const num = Number(valor);
+
+    if (isNaN(num)) return null;
+
+    if (num < 0 || num > 10) {
+      toast.error("A nota deve estar entre 0 e 10");
+      return null;
+    }
+
+    return Number(num.toFixed(1));
+  }
 
   const salvarIndividual = async (linha: LinhaTabela) => {
     setSavingIndividual(linha.alunoId);

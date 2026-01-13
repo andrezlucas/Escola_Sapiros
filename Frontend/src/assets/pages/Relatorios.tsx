@@ -228,7 +228,7 @@ export default function Relatorios() {
   return (
     <div className="w-full h-auto p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">
+        <h1 className="text-4xl text-[#1D5D7F]">
           Relatórios de Desempenho por Habilidades
         </h1>
         <p className="text-[#333333] mt-2">

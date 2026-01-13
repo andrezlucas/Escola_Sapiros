@@ -50,7 +50,7 @@ function MinhasAtividades() {
   return (
     <div className="w-full h-auto p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[#1D5D7F]">Minhas Atividades</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">Minhas Atividades</h1>
         <p className="text-gray-600">
           Veja e gerencie todas as suas atividades pendentes, entregues ou
           expiradas.

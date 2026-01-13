@@ -16,6 +16,8 @@ import CardHabilidade from "../components/CardHabilidade";
 import { useEffect, useState } from "react";
 import CardPreparacaoVestibular from "../components/CardPreparacaoVestibular";
 import { CardDesempenhoAcademico } from "../components/CardDesempenhoAcademico";
+import Configuracao from "./Configuracao";
+import DocumentosAluno from "./DocumentosAluno";
 
 export type Habilidade = {
   habilidade: string;
@@ -67,6 +69,11 @@ function DashboardAluno() {
         return <DesempenhoAluno />;
       case "vestibular":
         return <Vestibular />;
+
+      case "configuracoes":
+        return <Configuracao />;
+      case "documentos":
+        return <DocumentosAluno />;
       default:
         return null;
     }

@@ -22,6 +22,8 @@ import { toast } from "react-toastify";
 import IndicadorCircular from "../components/IndicadorCircular";
 import CardMuralDashboard from "../components/CardMuralDashboard";
 import Relatorios from "./Relatorios";
+import Configuracao from "./Configuracao";
+import DocumentoCoordenacao from "./DocumentoCoordenacao";
 
 interface TurmaGrafico {
   turmaId: string;
@@ -41,11 +43,7 @@ interface DashboardEstatisticasResponse {
   indicadores: IndicadoresDashboard;
 }
 
-const DocumentosPage = () => (
-  <div className="w-full h-full p-8 bg-white rounded-xl shadow-md flex items-center justify-center">
-    <h1 className="text-4xl text-[#3d7e8f]">Página de Documentos Teste</h1>
-  </div>
-);
+
 
 function DashboardCoordenacao() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -102,7 +100,7 @@ function DashboardCoordenacao() {
   const renderContent = () => {
     switch (currentView) {
       case "documentos":
-        return <DocumentosPage />;
+        return <DocumentoCoordenacao />;
       case "matriculas":
         return <Matricula />;
       case "calendario":
@@ -113,6 +111,8 @@ function DashboardCoordenacao() {
         return <Mural />;
       case "relatorios":
         return <Relatorios />;
+      case "configuracoes":
+        return <Configuracao />;
       default:
         return null;
     }

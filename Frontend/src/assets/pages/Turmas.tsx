@@ -17,9 +17,16 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
+type Disciplina = {
+  id_disciplina: string;
+  nome_disciplina: string;
+};
+
 type TurmaProfessor = {
   id: string;
   nome_turma: string;
+  turno: string;
+  disciplinas: Disciplina[];
 };
 
 export function getIconByDisciplina(disciplina?: string) {
@@ -41,8 +48,6 @@ export function getIconByDisciplina(disciplina?: string) {
 
   return FaBook;
 }
-
-//const IconeDisciplina = getIconByDisciplina(turma.disciplina);
 
 //<IconeDisciplina className="w-10 h-10 text-[#1D5D7F]" />
 
@@ -115,36 +120,52 @@ function Turmas() {
 
         {!loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-            {turmasFiltradas.map((turma) => (
-              <div
-                key={turma.id}
-                className="border border-gray-300 rounded-xl p-5 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <FaCube className="w-10 h-10 text-[#1D5D7F]" />
+            {turmasFiltradas.map((turma) => {
+              const nomeDisciplina =
+                turma.disciplinas && turma.disciplinas.length > 0
+                  ? turma.disciplinas[0].nome_disciplina
+                  : undefined;
 
-                  <div>
-                    <h3 className="font-bold text-[#1D5D7F] text-lg">
-                      {turma.nome_turma}
-                    </h3>
-                    <p className="text-gray-700">
-                      Turma vinculada ao professor
-                    </p>
-                  </div>
-                </div>
+              const IconeDisciplina = getIconByDisciplina(nomeDisciplina);
 
-                <div className="space-y-2 text-gray-500 text-sm">
-                  <p>Informações detalhadas em atualização</p>
-                </div>
-
-                <button
-                  onClick={() => navigate(`/dashboard/professor?view=turma&id=${turma.id}`)}
-                  className="mt-5 w-full bg-[#1D5D7F] text-white py-2.5 rounded-lg hover:bg-[#164c68] transition-colors"
+              return (
+                <div
+                  key={turma.id}
+                  className="border border-gray-300 rounded-xl p-5 hover:shadow-md transition-shadow"
                 >
-                  Visualizar Turma
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center gap-4 mb-4">
+                    <IconeDisciplina className="w-10 h-10 text-[#1D5D7F]" />
+
+                    <div>
+                      <h3 className="font-bold text-[#1D5D7F] text-lg">
+                        {turma.nome_turma}
+                      </h3>
+
+                      <p className="text-gray-700 text-sm">
+                        {turma.disciplinas?.length > 0
+                          ? turma.disciplinas
+                              .map((d) => d.nome_disciplina)
+                              .join(", ")
+                          : "Sem disciplina"}
+                      </p>
+
+                      <p className="text-xs text-gray-500">
+                        Turno: {turma.turno}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      navigate(`/dashboard/professor?view=turma&id=${turma.id}`)
+                    }
+                    className="mt-5 w-full bg-[#1D5D7F] text-white py-2.5 rounded-lg hover:bg-[#164c68] transition-colors"
+                  >
+                    Visualizar Turma
+                  </button>
+                </div>
+              );
+            })}
 
             {turmasFiltradas.length === 0 && !loading && (
               <p className="text-gray-500 text-sm">Nenhuma turma encontrada.</p>

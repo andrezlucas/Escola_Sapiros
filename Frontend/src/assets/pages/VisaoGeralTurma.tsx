@@ -23,6 +23,18 @@ interface Aluno {
   corStatus: "bg-red-500" | "bg-yellow-500" | "bg-green-500";
 }
 
+interface Disciplina {
+  id_disciplina: string;
+  nome_disciplina: string;
+}
+
+interface TurmaInfo {
+  id: string;
+  nome_turma: string;
+  turno: string;
+  disciplinas?: Disciplina[];
+}
+
 interface TurmaData {
   serie: string;
   disciplina: string;
@@ -55,6 +67,19 @@ function VisaoGeralTurma({ turmaId, onVerAluno }: VisaoGeralTurmaProps) {
           "Content-Type": "application/json",
         };
 
+        const turmasRes = await fetch(
+          `http://localhost:3000/professores/turmas`,
+          { headers }
+        );
+
+        const turmas: TurmaInfo[] = await turmasRes.json();
+
+        const turma = turmas.find((t) => t.id === turmaId);
+
+        if (!turma) {
+          throw new Error("Turma não encontrada para o professor");
+        }
+
         const resumoRes = await fetch(
           `http://localhost:3000/turmas/${turmaId}/dashboard/resumo`,
           { headers }
@@ -74,9 +99,14 @@ function VisaoGeralTurma({ turmaId, onVerAluno }: VisaoGeralTurmaProps) {
         const alunos = await alunosRes.json();
 
         setDados({
-          serie: "3ºA", // backend ainda não envia
-          disciplina: "Matemática", // backend ainda não envia
-          turno: "Manhã", // backend ainda não envia
+          serie: turma.nome_turma,
+
+          disciplina:
+            turma.disciplinas && turma.disciplinas.length > 0
+              ? turma.disciplinas[0].nome_disciplina
+              : "Sem disciplina",
+
+          turno: turma.turno,
 
           mediaGeral: resumo.mediaGeral,
           variacao: resumo.tendencia === "up" ? "↑" : "↓",
@@ -96,9 +126,9 @@ function VisaoGeralTurma({ turmaId, onVerAluno }: VisaoGeralTurmaProps) {
               nome: aluno.nome,
               matricula: aluno.matricula,
               media,
-              status: media < 5 ? "Atenção" : media < 7 ? "Regular" : "Bom",
+              status: media < 6 ? "Atenção" : media < 7 ? "Regular" : "Bom",
               corStatus:
-                media < 5
+                media < 6
                   ? "bg-red-500"
                   : media < 7
                   ? "bg-yellow-500"

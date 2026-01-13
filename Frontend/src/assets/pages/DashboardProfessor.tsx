@@ -18,6 +18,7 @@ import { CardDesempenhoHabilidade } from "../components/CardDesempenhoHabilidade
 import CardMinhasTurmas from "../components/CardMinhasTurmas";
 import CardEvolucaoTurma from "../components/CardEvolucaoTurma";
 import { useEffect, useState } from "react";
+import Configuracao from "./Configuracao";
 
 interface TurmaProfessor {
   id: string;
@@ -131,6 +132,8 @@ function DashboardProfessor() {
         ) : null;
       case "registro":
         return <Registro />;
+      case "configuracoes":
+        return <Configuracao />;
       default:
         return null;
     }
