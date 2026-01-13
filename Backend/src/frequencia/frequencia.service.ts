@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+
 import { Frequencia, StatusFrequencia } from './entities/frequencia.entity';
 import { CreateFrequenciaDto } from './dto/create-frequencia.dto';
 import { UpdateFrequenciaDto } from './dto/update-frequencia.dto';
@@ -716,71 +717,75 @@ export class FrequenciaService {
     await this.frequenciaRepository.remove(frequencia);
   }
 
+
 async anexarJustificativa(
-    frequenciaId: string,
-    arquivo: Express.Multer.File,
-    user: any,
-  ): Promise<{ message: string }> {
-    if (!arquivo) {
-      throw new BadRequestException('Arquivo é obrigatório');
-    }
-
-    const frequencia = await this.frequenciaRepository.findOne({
-      where: { id: frequenciaId },
-      relations: ['aluno', 'disciplina', 'turma'],
-    });
-
-    if (!frequencia) {
-      throw new NotFoundException('Frequência não encontrada');
-    }
-
-    if (frequencia.status !== StatusFrequencia.FALTA) {
-      throw new BadRequestException('Apenas faltas podem ser justificadas');
-    }
-
-    await this.assertCanModifyFrequencia(frequencia, user);
-
-    let documentacao = await this.documentacaoRepository.findOne({
-      where: { aluno: { id: frequencia.aluno.id } as any },
-    });
-
-    if (!documentacao) {
-      documentacao = this.documentacaoRepository.create({
-        aluno: frequencia.aluno,
-      });
-      await this.documentacaoRepository.save(documentacao);
-    }
-
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const documento = this.documentoRepository.create({
-        tipo: TipoDocumento.JUSTIFICATIVA_FALTA,
-        nomeOriginal: arquivo.originalname,
-        nomeArquivo: arquivo.filename || `${Date.now()}-${arquivo.originalname}`,
-        caminho: arquivo.path || `uploads/justificativas/${arquivo.originalname}`,
-        mimeType: arquivo.mimetype,
-        tamanho: arquivo.size,
-        documentacao,
-        frequencia,
-      });
-
-      await queryRunner.manager.save(documento);
-
-      frequencia.status = StatusFrequencia.FALTA_JUSTIFICADA;
-      await queryRunner.manager.save(frequencia);
-
-      await queryRunner.commitTransaction();
-      
-      return { message: 'Justificativa anexada com sucesso' };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+  frequenciaId: string,
+  arquivo: Express.Multer.File,
+  user: any,
+): Promise<{ message: string }> {
+  if (!arquivo) {
+    throw new BadRequestException('Arquivo é obrigatório');
   }
 
+  // Busca a frequência com aluno, disciplina e turma
+  const frequencia = await this.frequenciaRepository.findOne({
+    where: { id: frequenciaId },
+    relations: ['aluno', 'disciplina', 'turma'],
+  });
+
+  if (!frequencia) {
+    throw new NotFoundException('Frequência não encontrada');
+  }
+
+  if (frequencia.status !== StatusFrequencia.FALTA) {
+    throw new BadRequestException('Apenas faltas podem ser justificadas');
+  }
+
+  await this.assertCanModifyFrequencia(frequencia, user);
+
+  // Cria ou busca a documentação do aluno
+  let documentacao = await this.documentacaoRepository.findOne({
+    where: { aluno: { id: frequencia.aluno.id } as any },
+  });
+
+  if (!documentacao) {
+    documentacao = this.documentacaoRepository.create({
+      aluno: frequencia.aluno,
+    });
+    await this.documentacaoRepository.save(documentacao);
+  }
+
+  const queryRunner = this.dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    // Cria o documento vinculado à frequência específica
+    const documento = this.documentoRepository.create({
+      tipo: TipoDocumento.JUSTIFICATIVA_FALTA,
+      nomeOriginal: arquivo.originalname,
+      nomeArquivo: arquivo.filename || `${Date.now()}-${arquivo.originalname}`,
+      caminho: arquivo.path || `uploads/justificativas/${arquivo.originalname}`,
+      mimeType: arquivo.mimetype,
+      tamanho: arquivo.size,
+      documentacao,
+      frequencia, // importante: cada frequência terá seu próprio documento
+    });
+
+    await queryRunner.manager.save(documento);
+
+    // Atualiza o status da frequência
+    frequencia.status = StatusFrequencia.FALTA_JUSTIFICADA;
+    await queryRunner.manager.save(frequencia);
+
+    await queryRunner.commitTransaction();
+
+    return { message: 'Justificativa anexada com sucesso' };
+  } catch (err) {
+    await queryRunner.rollbackTransaction();
+    throw err;
+  } finally {
+    await queryRunner.release();
+  }
+}
 }
