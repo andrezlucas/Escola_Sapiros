@@ -140,7 +140,7 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
           options={chartOptions}
           series={series}
           type="line"
-          height={200}
+          height={300}
         />
       </div>
 

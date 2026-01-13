@@ -1,6 +1,8 @@
 import { useState } from "react";
 import FormEditarPerfil from "../components/FormEditarPerfil";
 import FormTermoUso from "../components/FormTermoUso";
+import FormPrivacidadeSeguranca from "../components/FormPrivacidadeSeguranca";
+import FormGerenciamentoUsuarios from "../components/FormGerenciamentoUsuarios";
 
 type OpcaoMenu =
   | "Editar Perfil"
@@ -29,7 +31,8 @@ function Configuracao() {
     "Privacidade e Segurança",
   ];
 
-  const opcoes = role === "coordenacao" ? opcoesCoordenacao : opcoesAlunoProfessor;
+  const opcoes =
+    role === "coordenacao" ? opcoesCoordenacao : opcoesAlunoProfessor;
 
   return (
     <div className="flex gap-6">
@@ -60,16 +63,11 @@ function Configuracao() {
 
       {active === "Editar Perfil" && <FormEditarPerfil />}
       {active === "Gerenciamento de Usuários" && role === "coordenacao" && (
-        <h1>teste</h1>
+        <FormGerenciamentoUsuarios />
       )}
       {active === "Termo de uso" && <FormTermoUso />}
 
-      {active === "Privacidade e Segurança" && (
-        <div className="flex-1 bg-white rounded-xl p-8 shadow-md">
-          <h3 className="text-xl font-bold mb-4">Privacidade e Segurança</h3>
-          <p>Conteúdo em desenvolvimento...</p>
-        </div>
-      )}
+      {active === "Privacidade e Segurança" && <FormPrivacidadeSeguranca />}
     </div>
   );
 }

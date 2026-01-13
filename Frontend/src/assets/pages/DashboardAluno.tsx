@@ -18,6 +18,7 @@ import CardPreparacaoVestibular from "../components/CardPreparacaoVestibular";
 import { CardDesempenhoAcademico } from "../components/CardDesempenhoAcademico";
 import Configuracao from "./Configuracao";
 import DocumentosAluno from "./DocumentosAluno";
+import { authFetch } from "../utils/authFetch";
 
 export type Habilidade = {
   habilidade: string;
@@ -82,7 +83,7 @@ function DashboardAluno() {
   useEffect(() => {
     const carregarHabilidades = async () => {
       try {
-        const res = await fetch(
+        const res = await authFetch(
           "http://localhost:3000/alunos/dashboard/habilidades",
           {
             headers: {
@@ -106,7 +107,7 @@ function DashboardAluno() {
   useEffect(() => {
     const carregarResumoSimulados = async () => {
       try {
-        const res = await fetch(
+        const res = await authFetch(
           "http://localhost:3000/alunos/dashboard/simulados/resumo",
           {
             headers: {
@@ -130,7 +131,7 @@ function DashboardAluno() {
   useEffect(() => {
     const carregarNotas = async () => {
       try {
-        const res = await fetch(
+        const res = await authFetch(
           "http://localhost:3000/alunos/dashboard/notas",
           {
             headers: {

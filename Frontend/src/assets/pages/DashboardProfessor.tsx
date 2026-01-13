@@ -19,6 +19,7 @@ import CardMinhasTurmas from "../components/CardMinhasTurmas";
 import CardEvolucaoTurma from "../components/CardEvolucaoTurma";
 import { useEffect, useState } from "react";
 import Configuracao from "./Configuracao";
+import { authFetch } from "../utils/authFetch";
 
 interface TurmaProfessor {
   id: string;
@@ -61,7 +62,7 @@ function DashboardProfessor() {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const response = await fetch(
+        const response = await authFetch(
           "http://localhost:3000/professores/turmas",
           {
             headers: {

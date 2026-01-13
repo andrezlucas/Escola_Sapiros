@@ -2,6 +2,7 @@ import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
+  variant?: "primary" | "secondary" | "danger" | "outline"
 }
 
 export function Button({ children, disabled, ...props }: ButtonProps) {
