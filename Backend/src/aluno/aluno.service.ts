@@ -1013,25 +1013,23 @@ async buscarAlunoPorUsuario(usuarioId: string): Promise<Aluno> {
         .slice(-3) 
         .map(c => `Dificuldade em ${c.nome}`);
     if (pontosFortes.length === 0 && sortedCompetencias.length > 0) pontosFortes.push(sortedCompetencias[0].nome); 
-    return {
-      header: {
-        nome: aluno.usuario.nome,
-        matricula: aluno.matriculaAluno,
-        status: statusAluno, 
-        foto: 'url_da_foto_se_tiver', 
-      },
-      kpis: {
-        mediaGeral: Number(mediaGeral.toFixed(1)),
-        frequencia: percentualFrequencia,
-        tarefasEntregues: entregues,
-        tarefasTotal: totalAtividades
-      },
-      competencias: listaCompetencias, 
-      insights: {
-        fortes: pontosFortes.length ? pontosFortes : ['Nenhum dado suficiente registrado'],
-        atencao: pontosAtencao.length ? pontosAtencao : ['Nenhum ponto crítico identificado']
-      }
-    };
+return {
+  header: {
+    nome: aluno.usuario.nome,
+    matricula: aluno.matriculaAluno,
+    status: statusAluno, 
+    foto: aluno.usuario.fotoPerfil || null, // aqui pegamos a foto do usuário
+  },
+  kpis: {
+    mediaGeral: Number(mediaGeral.toFixed(1)),
+    frequencia: percentualFrequencia,
+    tarefasEntregues: entregues,
+    tarefasTotal: totalAtividades
+  },
+  competencias: listaCompetencias, 
+  insights: {
+    fortes: pontosFortes.length ? pontosFortes : ['Nenhum dado suficiente registrado'],
+    atencao: pontosAtencao.length ? pontosAtencao : ['Nenhum ponto crítico identificado']
   }
-
-}
+};
+  }}
