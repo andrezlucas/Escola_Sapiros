@@ -19,6 +19,8 @@ import { RelatoriosHabilidadesModule } from './relatorio/relatorios-habilidades.
 import { MaterialModule } from './material/material.module';
 import { SimuladoModule } from './simulado/simulado.module';
 import { ConfiguracoesModule } from './configurações/configuracoes.module';
+import { IaModule } from './ia/ia.module';
+import { EmissaoDocumentosModule } from './emissao-documentos/emissao-documentos.module';
 
 
 @Module({
@@ -61,7 +63,9 @@ import { ConfiguracoesModule } from './configurações/configuracoes.module';
     RelatoriosHabilidadesModule,
     MaterialModule,
     SimuladoModule,
-    ConfiguracoesModule,    
+    ConfiguracoesModule,
+    EmissaoDocumentosModule,
+    IaModule
   ],
   controllers: [AppController],
   providers: [AppService],
