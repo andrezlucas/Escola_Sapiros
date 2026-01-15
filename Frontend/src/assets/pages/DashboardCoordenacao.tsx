@@ -43,8 +43,6 @@ interface DashboardEstatisticasResponse {
   indicadores: IndicadoresDashboard;
 }
 
-
-
 function DashboardCoordenacao() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentView = searchParams.get("view") || "home";
@@ -158,7 +156,7 @@ function DashboardCoordenacao() {
   );
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       <SideBarMenu
         navigateTo={navigateTo}
         menuItems={options.main}
@@ -166,15 +164,24 @@ function DashboardCoordenacao() {
         activeView={currentView}
       />
 
-      <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
+      <div className="flex-1 flex flex-col md:ml-52 bg-[#1D5D7F] overflow-hidden">
         <div className="h-16">
           <HeaderBar />
         </div>
 
-        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
+        <div
+          className="flex-1
+    bg-[#E8E4DC]
+    relative
+    overflow-y-auto
+    px-4 py-4
+    md:p-8
+    p-15
+    rounded-tl-[30px]"
+        >
           {currentView === "home" ? (
-            <div className="grid grid-cols-5 gap-8 h-full">
-              <div className="col-span-3 flex flex-col">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+              <div className="col-span-1 md:col-span-3 flex flex-col">
                 <CardMenuBackground>
                   <CardMenu
                     title="Mural"
@@ -208,7 +215,7 @@ function DashboardCoordenacao() {
                   Gráfico de Turma
                 </h2>
 
-                <div className="flex-1 w-full rounded-xl bg-white shadow-md">
+                <div className="flex-1 w-full rounded-xl bg-white">
                   {loadingGrafico && (
                     <p className="text-center text-gray-400 p-6">
                       Carregando gráfico...
@@ -216,7 +223,7 @@ function DashboardCoordenacao() {
                   )}
 
                   {!loadingGrafico && estatisticas && (
-                    <div className="bg-white rounded-xl p-6 shadow-md h-[380px] flex gap-6">
+                    <div className="p-4 md:p-6 flex flex-col md:flex-row gap-6">
                       <div className="flex-1">
                         <GraficoDesempenho
                           data={estatisticas.graficoAlunosPorTurma}
@@ -244,7 +251,7 @@ function DashboardCoordenacao() {
                 </div>
               </div>
 
-              <div className="col-span-2 flex flex-col space-y-14 h-full">
+              <div className="col-span-1 md:col-span-2 flex flex-col space-y-6 md:space-y-14">
                 <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
                 <div className="-mt-2.5">
                   <CardCalendario />

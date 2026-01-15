@@ -5,8 +5,9 @@
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
-
-
+.p-15 {
+  padding: 3.75rem;
+}

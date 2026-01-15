@@ -2,7 +2,7 @@ import ReactApexChart from "react-apexcharts";
 
 interface IndicadorCircularProps {
   value: number;
-  max?: number; 
+  max?: number;
   label: string;
 }
 
@@ -37,21 +37,21 @@ export default function IndicadorCircular({
   };
 
   return (
-    <div className="flex items-center space-x-4 p-2 ">
+    <div className="flex items-center space-x-3 sm:space-x-4 p-2">
       <ReactApexChart
         options={options}
         series={series}
         type="donut"
-        height={80}
-        width={80}
+        height={70}
+        width={70}
       />
 
       <div>
-        <p className="text-xl font-semibold text-[#1D5D7F]">
+        <p className="text-lg sm:text-xl font-semibold text-[#1D5D7F]">
           {value}
           {max === 100 ? "%" : ""}
         </p>
-        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-xs sm:text-sm text-gray-500">{label}</p>
       </div>
     </div>
   );

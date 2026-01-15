@@ -23,13 +23,16 @@ export default function GraficoDesempenho({ data }: Props) {
     },
   ];
 
-  const options: ApexCharts.ApexOptions = {
+  const options: ApexOptions = {
     chart: {
       type: "bar",
       toolbar: { show: false },
     },
     xaxis: {
       categories: data.map((t) => t.nomeTurma),
+      labels: {
+        rotate: -45,
+      },
     },
     tooltip: {
       custom: ({ dataPointIndex }) => {
@@ -39,12 +42,12 @@ export default function GraficoDesempenho({ data }: Props) {
         );
 
         return `
-        <div style="padding:8px">
-          <strong>${turma.nomeTurma}</strong><br/>
-           Alunos: ${turma.totalAlunos} / ${turma.capacidadeMaxima}<br/>
-           Ocupação: ${ocupacao}%
-        </div>
-      `;
+          <div style="padding:8px">
+            <strong>${turma.nomeTurma}</strong><br/>
+            Alunos: ${turma.totalAlunos} / ${turma.capacidadeMaxima}<br/>
+            Ocupação: ${ocupacao}%
+          </div>
+        `;
       },
     },
     plotOptions: {
@@ -56,5 +59,9 @@ export default function GraficoDesempenho({ data }: Props) {
     colors: ["#3D7E8F", "#1D5D7F"],
   };
 
-  return <Chart options={options} series={series} type="bar" height="100%" />;
+  return (
+    <div className="w-full h-[260px] sm:h-full">
+      <Chart options={options} series={series} type="bar" height="100%" />
+    </div>
+  );
 }

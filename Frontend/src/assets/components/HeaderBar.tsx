@@ -60,28 +60,45 @@ function HeaderBar() {
     role === "aluno" ? perfilAluno?.turma : LetraMaiuscula(role);
 
   return (
-    <header className="flex items-center justify-end gap-2 p-4 bg-[#1D5D7F]">
-      <button
-        className="p-2 rounded-full hover:bg-[#ffffff33] transition-colors"
-        aria-label="Notificações"
-      >
-        <LuBellRing className="w-6 h-6 text-[#e6eef8]" />
+    <header className="flex items-center justify-between md:justify-end gap-2 px-4 py-3 bg-[#1D5D7F]">
+      <button className="md:hidden p-2 rounded-full hover:bg-[#ffffff33]">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-6 h-6 text-[#e6eef8]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
       </button>
 
-      <button
-        className="p-2 rounded-full hover:bg-[#ffffff33] transition-colors"
-        aria-label="Usuário"
-      >
-        <FaRegUserCircle className="w-7 h-7 text-[#e6eef8]" />
-      </button>
+      <span className="md:hidden flex-1 text-center text-sm font-semibold text-[#E8E4DC]">
+        Dashboard {role}
+      </span>
 
-      <div className="flex flex-col leading-tight">
-        <span className="text-sm text-[#E8E4DC] font-bold">
-          {nomeExibido || "Usuário"}
-        </span>
-        <span className="text-xs text-[#E8E4DC] font-semibold">
-          {subtitulo || ""}
-        </span>
+      <div className="flex items-center gap-2">
+        <button className="p-2 rounded-full hover:bg-[#ffffff33] transition-colors">
+          <LuBellRing className="w-5 h-5 md:w-6 md:h-6 text-[#e6eef8]" />
+        </button>
+
+        <button className="p-2 rounded-full hover:bg-[#ffffff33] transition-colors">
+          <FaRegUserCircle className="w-6 h-6 md:w-7 md:h-7 text-[#e6eef8]" />
+        </button>
+
+        <div className="hidden md:flex flex-col leading-tight">
+          <span className="text-sm text-[#E8E4DC] font-bold truncate max-w-[140px]">
+            {nomeExibido || "Usuário"}
+          </span>
+          <span className="text-xs text-[#E8E4DC] font-semibold truncate">
+            {subtitulo || ""}
+          </span>
+        </div>
       </div>
     </header>
   );

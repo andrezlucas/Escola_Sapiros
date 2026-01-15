@@ -60,11 +60,12 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
       curve: "smooth",
       width: 3,
     },
-    colors: ["#1D5D7F", "#1D5D7F"],
+    colors: ["#1D5D7F"],
     xaxis: {
       categories: dados.map((item) => item.semana),
       labels: {
-        style: { fontSize: "13px", colors: "#1D5D7F" },
+        rotate: -45,
+        style: { fontSize: "12px", colors: "#1D5D7F" },
       },
     },
     yaxis: {
@@ -73,17 +74,17 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
       tickAmount: 5,
       labels: {
         formatter: (val: number) => `${val}%`,
-        style: { fontSize: "13px", colors: "#1D5D7F" },
+        style: { fontSize: "12px", colors: "#1D5D7F" },
       },
     },
     dataLabels: {
       enabled: true,
       formatter: (val: number) => `${val}%`,
-      style: { fontSize: "13px", colors: ["#fff"] },
+      style: { fontSize: "11px", colors: ["#fff"] },
       background: {
         enabled: true,
         foreColor: "#1D5D7F",
-        padding: 5,
+        padding: 4,
         borderRadius: 4,
         borderWidth: 0,
         opacity: 0.9,
@@ -97,8 +98,8 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
       strokeDashArray: 4,
     },
     markers: {
-      size: 5,
-      hover: { size: 7 },
+      size: 4,
+      hover: { size: 6 },
     },
   };
 
@@ -111,44 +112,54 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
 
   if (loading)
     return (
-  
-      <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-6 flex flex-col gap-5 h-[360px]">
-        <h3 className="text-xl font-bold text-[#1D5D7F]">
-        Evolução do Semanal da Turma
-      </h3>
-        <div className="h-full flex items-center justify-center text-gray-500">
+      <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-4 sm:p-6 flex flex-col gap-4 h-auto sm:h-[360px]">
+        <h3 className="text-lg sm:text-xl font-bold text-[#1D5D7F]">
+          Evolução Semanal da Turma
+        </h3>
+        <div className="flex-1 flex items-center justify-center text-gray-500 text-sm sm:text-base">
           Carregando evolução...
         </div>
       </div>
     );
-  if (error) return <div className="card p-6 text-red-600">Erro: {error}</div>;
+
+  if (error)
+    return (
+      <div className="bg-white rounded-xl shadow-md border border-red-300 p-4 sm:p-6 text-red-600">
+        Erro: {error}
+      </div>
+    );
+
   if (dados.length === 0)
-    return <div className="card p-6">Sem dados para mostrar</div>;
+    return (
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sm:p-6">
+        Sem dados para mostrar
+      </div>
+    );
 
   return (
-    <div
-      className="bg-white card rounded-xl shadow-md border border-[#1D5D7F]/20 p-6 flex flex-col gap-5
-    h-[360px]"
-    >
-      <h3 className="text-xl font-bold text-[#1D5D7F]">
-        Evolução do Semanal da Turma
+    <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-4 sm:p-6 flex flex-col gap-4 h-auto sm:h-[360px]">
+      <h3 className="text-lg sm:text-xl font-bold text-[#1D5D7F]">
+        Evolução Semanal da Turma
       </h3>
-      
 
-      <div className="apex-chart-container">
-        <ApexCharts
-          options={chartOptions}
-          series={series}
-          type="line"
-          height={300}
-        />
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[320px]">
+          <ApexCharts
+            options={chartOptions}
+            series={series}
+            type="line"
+            height={260}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200 -700">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
         {dados.map((item, index) => (
           <div key={index} className="text-center">
-            <div className="text-sm text-[#1D5D7F] ">{item.semana}</div>
-            <div className="text-2xl font-bold text-[#1D5D7F]">
+            <div className="text-xs sm:text-sm text-[#1D5D7F]">
+              {item.semana}
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-[#1D5D7F]">
               {item.media}%
             </div>
           </div>

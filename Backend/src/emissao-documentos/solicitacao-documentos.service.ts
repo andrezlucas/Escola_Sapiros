@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
 import {
@@ -131,16 +135,24 @@ export class SolicitacaoDocumentoService {
 
     switch (solicitacao.tipoDocumento) {
       case TipoDocumentoEnum.DECLARACAO_MATRICULA:
-        pdf = await this.emissaoService.gerarDeclaracaoMatricula(solicitacao.aluno.id);
+        pdf = await this.emissaoService.gerarDeclaracaoMatricula(
+          solicitacao.aluno.id,
+        );
         break;
       case TipoDocumentoEnum.DECLARACAO_FREQUENCIA:
-        pdf = await this.emissaoService.gerarDeclaracaoFrequencia(solicitacao.aluno.id);
+        pdf = await this.emissaoService.gerarDeclaracaoFrequencia(
+          solicitacao.aluno.id,
+        );
         break;
       case TipoDocumentoEnum.DECLARACAO_CONCLUSAO:
-        pdf = await this.emissaoService.gerarDeclaracaoConclusao(solicitacao.aluno.id);
+        pdf = await this.emissaoService.gerarDeclaracaoConclusao(
+          solicitacao.aluno.id,
+        );
         break;
       case TipoDocumentoEnum.HISTORICO_ESCOLAR:
-        pdf = await this.emissaoService.gerarHistoricoEscolar(solicitacao.aluno.id);
+        pdf = await this.emissaoService.gerarHistoricoEscolar(
+          solicitacao.aluno.id,
+        );
         break;
       case TipoDocumentoEnum.BOLETIM:
         pdf = await this.emissaoService.gerarBoletimPDF(
@@ -178,6 +190,33 @@ export class SolicitacaoDocumentoService {
     if (solicitacao.status !== StatusSolicitacaoEnum.CONCLUIDO)
       throw new ForbiddenException('Documento ainda não concluído');
 
-    return this.emitirDocumento(id, usuario);
+    switch (solicitacao.tipoDocumento) {
+      case TipoDocumentoEnum.DECLARACAO_MATRICULA:
+        return this.emissaoService.gerarDeclaracaoMatricula(
+          solicitacao.aluno.id,
+        );
+
+      case TipoDocumentoEnum.DECLARACAO_FREQUENCIA:
+        return this.emissaoService.gerarDeclaracaoFrequencia(
+          solicitacao.aluno.id,
+        );
+
+      case TipoDocumentoEnum.DECLARACAO_CONCLUSAO:
+        return this.emissaoService.gerarDeclaracaoConclusao(
+          solicitacao.aluno.id,
+        );
+
+      case TipoDocumentoEnum.HISTORICO_ESCOLAR:
+        return this.emissaoService.gerarHistoricoEscolar(solicitacao.aluno.id);
+
+      case TipoDocumentoEnum.BOLETIM:
+        return this.emissaoService.gerarBoletimPDF(
+          solicitacao.aluno.id,
+          new Date().getFullYear(),
+        );
+
+      default:
+        throw new NotFoundException('Tipo de documento inválido');
+    }
   }
 }

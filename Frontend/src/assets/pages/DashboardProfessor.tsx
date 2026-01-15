@@ -141,7 +141,7 @@ function DashboardProfessor() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       <SideBarMenu
         navigateTo={navigateTo}
         menuItems={options.main}
