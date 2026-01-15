@@ -11,6 +11,7 @@ import { SolicitacaoDocumento } from './entities/emissao-documentos.entity';
 import { SolicitacaoDocumentoService } from './solicitacao-documentos.service';
 import { Usuario } from 'src/usuario/entities/usuario.entity';
 
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([

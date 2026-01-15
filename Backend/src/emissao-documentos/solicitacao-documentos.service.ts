@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  forwardRef, Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
@@ -22,6 +23,7 @@ export class SolicitacaoDocumentoService {
     private readonly solicitacaoRepository: Repository<SolicitacaoDocumento>,
     @InjectRepository(Aluno)
     private readonly alunoRepository: Repository<Aluno>,
+    @Inject(forwardRef(() => EmissaoDocumentosService))
     private readonly emissaoService: EmissaoDocumentosService,
   ) {}
 
@@ -219,4 +221,17 @@ export class SolicitacaoDocumentoService {
         throw new NotFoundException('Tipo de documento inválido');
     }
   }
+
+    async buscarPorId(id: string): Promise<SolicitacaoDocumento> {
+    const solicitacao = await this.solicitacaoRepository.findOne({
+      where: { id },
+      relations: ['aluno', 'aluno.usuario', 'aluno.turma'],
+    });
+
+    if (!solicitacao) {
+      throw new NotFoundException('Solicitação de documento não encontrada');
+    }
+
+    return solicitacao;
+}
 }

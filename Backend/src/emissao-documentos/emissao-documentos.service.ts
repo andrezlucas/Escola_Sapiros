@@ -1,18 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import PDFDocument from 'pdfkit';
 import * as QRCode from 'qrcode';
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Nota } from '../nota/entities/nota.entity';
-import { Turma } from '../turma/entities/turma.entity';
-import { Disciplina } from '../disciplina/entities/disciplina.entity';
 import { Bimestre } from '../shared/enums/bimestre.enum';
 import {
   Frequencia,
   StatusFrequencia,
 } from '../frequencia/entities/frequencia.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
+import { SolicitacaoDocumentoService } from './solicitacao-documentos.service';
+import { TipoDocumentoEnum } from './entities/emissao-documentos.entity';
 
 @Injectable()
 export class EmissaoDocumentosService {
@@ -21,14 +21,12 @@ export class EmissaoDocumentosService {
     private readonly alunoRepository: Repository<Aluno>,
     @InjectRepository(Nota)
     private readonly notaRepository: Repository<Nota>,
-    @InjectRepository(Turma)
-    private readonly turmaRepository: Repository<Turma>,
-    @InjectRepository(Disciplina)
-    private readonly disciplinaRepository: Repository<Disciplina>,
     @InjectRepository(Frequencia)
     private readonly frequenciaRepository: Repository<Frequencia>,
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @Inject(forwardRef(() => SolicitacaoDocumentoService))
+    private readonly solicitacaoService: SolicitacaoDocumentoService,
   ) {}
 
   private adicionarCabecalho(doc: PDFKit.PDFDocument): void {
@@ -448,5 +446,41 @@ async gerarBoletimPDF(alunoId: string, ano: number): Promise<Buffer> {
         reject(e);
       }
     });
+  }
+
+ async verificarAutenticidadeUniversal(id: string) {
+    const solicitacao = await this.solicitacaoService.buscarPorId(id);
+
+    const dadosVerificacao: any = {
+      status: "DOCUMENTO AUTÊNTICO",
+      codigo_autenticidade: id,
+      data_emissao: solicitacao.criadoEm,
+      titular: {
+        nome: solicitacao.aluno.usuario.nome,
+        matricula: solicitacao.aluno.matriculaAluno,
+        turma: solicitacao.aluno.turma?.nome_turma
+      },
+      info: {
+        tipo: solicitacao.tipoDocumento,
+        protocolo: solicitacao.protocolo
+      }
+    };
+
+    if (solicitacao.tipoDocumento === TipoDocumentoEnum.BOLETIM) {
+      const notas = await this.notaRepository.find({
+        where: { aluno: { id: solicitacao.aluno.id } },
+        relations: ['disciplina'],
+      });
+
+      dadosVerificacao.notas = notas.map(n => ({
+        disciplina: n.disciplina.nome_disciplina,
+        bimestre: n.bimestre,
+        nota1: parseFloat(n.nota1.toString()),
+        nota2: parseFloat(n.nota2.toString()),
+        media: (parseFloat(n.nota1.toString()) + parseFloat(n.nota2.toString())) / 2
+      }));
+    }
+
+    return dadosVerificacao;
   }
 }

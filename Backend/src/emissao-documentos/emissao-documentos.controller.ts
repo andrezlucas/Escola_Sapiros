@@ -175,4 +175,10 @@ export class DocumentosController {
       await this.emissaoService.gerarDeclaracaoVinculoServidor(id);
     this.enviarPdf(res, buffer, `declaracao-servidor-${id}`);
   }
+  
+  @Get('verificar/:id')
+  @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
+  async verificarDocumento(@Param('id') id: string) {
+    return this.emissaoService.verificarAutenticidadeUniversal(id);
+}
 }
