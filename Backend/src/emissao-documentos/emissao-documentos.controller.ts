@@ -102,7 +102,7 @@ export class DocumentosController {
     this.enviarPdf(res, buffer, `documento-${id}`);
   }
 
-  @Get('emissao/boletim/:alunoId')
+ @Get('emissao/boletim/:alunoId')
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   async boletim(
     @Param('alunoId') alunoId: string,
