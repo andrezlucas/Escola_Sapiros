@@ -24,7 +24,6 @@ export enum StatusSolicitacaoEnum {
 export enum FormaEntregaEnum {
   PRESENCIAL = 'presencial',
   EMAIL = 'email',
-  CORREIOS = 'correios',
 }
 
 @Entity('solicitacoes_documentos')

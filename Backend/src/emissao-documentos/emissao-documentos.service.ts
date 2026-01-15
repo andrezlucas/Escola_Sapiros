@@ -36,7 +36,7 @@ export class EmissaoDocumentosService {
     doc.moveDown(7);
   }
 
-async gerarBoletimPDF(alunoId: string, ano: number): Promise<Buffer> {
+async gerarBoletimPDF(alunoId: string, ano: number, solicitacaoId?: string): Promise<Buffer> {
   const aluno = await this.alunoRepository.findOne({
     where: { id: alunoId },
     relations: ['turma', 'usuario'],
@@ -55,7 +55,7 @@ async gerarBoletimPDF(alunoId: string, ano: number): Promise<Buffer> {
   });
 
   const qrCode = await QRCode.toDataURL(
-    `https://escola-sapiros.com.br/verificar-boletim/${alunoId}/${ano}`,
+    `http://localhost:3000/documentos/verificar/${solicitacaoId}`,
   );
 
   return new Promise((resolve, reject) => {
@@ -173,7 +173,7 @@ async gerarBoletimPDF(alunoId: string, ano: number): Promise<Buffer> {
   });
 }
 
-  async gerarHistoricoEscolar(alunoId: string): Promise<Buffer> {
+  async gerarHistoricoEscolar(alunoId: string, solicitacaoId?: string): Promise<Buffer> {
     const aluno = await this.alunoRepository.findOne({
       where: { id: alunoId },
       relations: ['usuario', 'turma'],
@@ -188,7 +188,7 @@ async gerarBoletimPDF(alunoId: string, ano: number): Promise<Buffer> {
     });
 
     const qrCode = await QRCode.toDataURL(
-      `https://escola-sapiros.com.br/verificar-historico/${alunoId}`,
+      `http://localhost:3000/documentos/verificar/${solicitacaoId}`,
     );
 
     return new Promise((resolve, reject) => {
