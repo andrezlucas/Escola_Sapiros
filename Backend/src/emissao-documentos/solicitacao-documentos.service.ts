@@ -2,10 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-  forwardRef, Inject,
+  forwardRef, Inject
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, } from 'typeorm';
 import {
   SolicitacaoDocumento,
   TipoDocumentoEnum,
@@ -15,6 +15,7 @@ import {
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Usuario, Role } from '../usuario/entities/usuario.entity';
 import { EmissaoDocumentosService } from '../emissao-documentos/emissao-documentos.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class SolicitacaoDocumentoService {
@@ -25,6 +26,10 @@ export class SolicitacaoDocumentoService {
     private readonly alunoRepository: Repository<Aluno>,
     @Inject(forwardRef(() => EmissaoDocumentosService))
     private readonly emissaoService: EmissaoDocumentosService,
+    private readonly mailService: MailService,
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
+  
   ) {}
 
   async criarSolicitacao(
@@ -234,4 +239,70 @@ export class SolicitacaoDocumentoService {
 
     return solicitacao;
 }
-}
+
+async processarEnvioDocumento(solicitacaoId: string): Promise<void> {
+    const solicitacao = await this.buscarPorId(solicitacaoId);
+    
+    let pdfBuffer: Buffer;
+    const alunoId = solicitacao.aluno.id;
+    const anoAtual = new Date().getFullYear();
+
+    switch (solicitacao.tipoDocumento) {
+        case TipoDocumentoEnum.BOLETIM:
+            pdfBuffer = await this.emissaoService.gerarBoletimPDF(alunoId, anoAtual, solicitacao.id);
+            break;
+        case TipoDocumentoEnum.HISTORICO_ESCOLAR:
+            pdfBuffer = await this.emissaoService.gerarHistoricoEscolar(alunoId, solicitacao.id);
+            break;
+        case TipoDocumentoEnum.DECLARACAO_MATRICULA:
+            pdfBuffer = await this.emissaoService.gerarDeclaracaoMatricula(alunoId);
+            break;
+        case TipoDocumentoEnum.DECLARACAO_FREQUENCIA:
+            pdfBuffer = await this.emissaoService.gerarDeclaracaoFrequencia(alunoId);
+            break;
+        case TipoDocumentoEnum.DECLARACAO_CONCLUSAO:
+            pdfBuffer = await this.emissaoService.gerarDeclaracaoConclusao(alunoId);
+            break;
+        case TipoDocumentoEnum.ATESTADO_VAGA:
+            pdfBuffer = await this.emissaoService.gerarAtestadoVaga(
+                solicitacao.aluno.usuario.nome || 'Aluno',
+                solicitacao.aluno.turma?.nome_turma || ''
+            );
+            break;
+        case TipoDocumentoEnum.DECLARACAO_VINCULO_SERVIDOR:
+            pdfBuffer = await this.emissaoService.gerarDeclaracaoVinculoServidor(solicitacao.aluno.usuario.id);
+            break;
+        default:
+            throw new Error('Tipo de documento não suportado');
+    }
+
+    if (solicitacao.formaEntrega === FormaEntregaEnum.EMAIL) {
+        const usuarioParaEnvio = await this.usuarioRepository.findOne({
+            where: { id: solicitacao.aluno.usuario.id }
+        });
+
+        const emailDestino = usuarioParaEnvio?.email;
+
+        if (!emailDestino) {
+            throw new Error('E-mail do destinatário não encontrado');
+        }
+
+        await this.mailService.sendMail(
+            emailDestino,
+            `Documento Disponível - Protocolo ${solicitacao.protocolo}`,
+            `<p>Olá ${solicitacao.aluno.usuario.nome}, seu documento está em anexo.</p>`,
+            [{
+                filename: `${solicitacao.tipoDocumento}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf',
+            }]
+        );
+    }
+
+    solicitacao.status = StatusSolicitacaoEnum.CONCLUIDO;
+    await this.solicitacaoRepository.save(solicitacao);
+}}
+  
+
+
+

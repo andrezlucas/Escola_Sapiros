@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
   Req,
+  HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/strategy/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
@@ -175,10 +176,21 @@ export class DocumentosController {
       await this.emissaoService.gerarDeclaracaoVinculoServidor(id);
     this.enviarPdf(res, buffer, `declaracao-servidor-${id}`);
   }
-  
+
   @Get('verificar/:id')
   @Roles(Role.COORDENACAO, Role.PROFESSOR, Role.ALUNO)
   async verificarDocumento(@Param('id') id: string) {
     return this.emissaoService.verificarAutenticidadeUniversal(id);
 }
+
+  @Post(':id/enviar')
+  @Roles(Role.COORDENACAO)
+  @HttpCode(HttpStatus.OK)
+  async enviarDocumento(@Param('id') id: string) {
+    await this.solicitacaoService.processarEnvioDocumento(id);
+    return {
+      success: true,
+      message: 'Documento gerado e enviado com sucesso.',
+    };
+  }
 }

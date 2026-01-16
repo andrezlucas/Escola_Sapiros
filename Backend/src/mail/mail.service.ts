@@ -18,12 +18,13 @@ export class MailService {
     });
   }
 
-  async sendMail(to: string, subject: string, html: string) {
+  async sendMail(to: string, subject: string, html: string, attachments?: any[]) {
     await this.transporter.sendMail({
       from: `"Escola Sapiros" <${this.configService.get<string>('SMTP_USER')}>`,
       to,
       subject,
       html,
+      attachments,
     });
   }
 }
