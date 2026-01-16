@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
-import { FaFilePdf, FaPlay, FaCheck } from "react-icons/fa";
+import { FaFilePdf, FaPaperPlane } from "react-icons/fa";
 import { toast } from "react-toastify";
-import Tabela, { type Coluna } from "../components/Tabela";
+import Tabela, { type Coluna } from "../components/Tabela"; 
 
-type Status = "pendente" | "em_andamento" | "concluido";
+type Status =
+  | "pendente"
+  | "em_andamento"
+  | "aprovado"
+  | "rejeitado"
+  | "concluido";
 
 type Documento = {
   id: string;
   protocolo: string;
-  aluno: { nome: string };
+  aluno: { usuario: { nome: string } };
   tipoDocumento: string;
-  createdAt: string;
+  criadoEm: string;
   status: Status;
+  formaEntrega?: string;
+  atendidoPor?: { nome: string };
 };
 
 type ResumoDashboard = {
@@ -21,6 +28,17 @@ type ResumoDashboard = {
 };
 
 const API_URL = "http://localhost:3000";
+
+const TIPOS_DOCUMENTO_LABEL: Record<string, string> = {
+  atestado_matricula: "Atestado de Matrícula",
+  historico_escolar: "Histórico Escolar",
+  declaracao_vinculo_servidor: "Declaração de Vínculo de Servidor",
+  atestado_vaga: "Atestado de Vaga",
+  declaracao_matricula: "Declaração de Matrícula",
+  declaracao_frequencia: "Declaração de Frequência",
+  declaracao_conclusao: "Declaração de Conclusão",
+  boletim: "Boletim Escolar",
+};
 
 function authFetch(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("token");
@@ -35,14 +53,18 @@ function authFetch(url: string, options: RequestInit = {}) {
 
 function StatusBadge({ status }: { status: Status }) {
   const estilos = {
-    pendente: "bg-orange-100 text-orange-600",
-    em_andamento: "bg-blue-100 text-blue-600",
-    concluido: "bg-green-100 text-green-600",
+    pendente: "bg-orange-100 text-orange-800",
+    em_andamento: "bg-blue-100 text-blue-800",
+    aprovado: "bg-purple-100 text-purple-800",
+    rejeitado: "bg-red-100 text-red-800",
+    concluido: "bg-green-100 text-green-800",
   };
 
   const label = {
     pendente: "Pendente",
     em_andamento: "Em andamento",
+    aprovado: "Aprovado",
+    rejeitado: "Rejeitado",
     concluido: "Concluído",
   };
 
@@ -57,9 +79,9 @@ function StatusBadge({ status }: { status: Status }) {
 
 function Resumo({ titulo, valor }: { titulo: string; valor: number }) {
   return (
-    <div className="border border-[#1D5D7F] rounded-xl p-5">
+    <div className="border border-[#1D5D7F] rounded-xl p-5 text-center">
       <span className="text-3xl font-bold text-[#1D5D7F]">{valor}</span>
-      <p className="text-sm text-gray-600">{titulo}</p>
+      <p className="text-sm text-gray-600 mt-1">{titulo}</p>
     </div>
   );
 }
@@ -78,21 +100,19 @@ export default function DocumentoCoordenacao() {
   }, []);
 
   async function carregarTudo() {
+    setLoading(true);
     await Promise.all([fetchSolicitacoes(), fetchResumo()]);
+    setLoading(false);
   }
 
   async function fetchSolicitacoes() {
-    setLoading(true);
     try {
       const res = await authFetch(`${API_URL}/documentos/solicitacoes`);
       if (!res.ok) throw new Error();
-
-      const data: Documento[] = await res.json();
+      const data = await res.json();
       setDocumentos(data);
     } catch {
       toast.error("Erro ao carregar solicitações");
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -102,34 +122,29 @@ export default function DocumentoCoordenacao() {
         `${API_URL}/documentos/solicitacoes/dashboard`
       );
       if (!res.ok) throw new Error();
-
-      const data = await res.json();
-      setResumo(data);
+      setResumo(await res.json());
     } catch {
-      toast.error("Erro ao carregar resumo");
+      toast.error("Erro ao carregar dashboard");
     }
   }
 
-  async function atualizarStatus(
-    id: string,
-    status: "em_andamento" | "concluido"
-  ) {
+  async function gerarEEnviar(id: string) {
     try {
-      const res = await authFetch(
-        `${API_URL}/documentos/solicitacoes/${id}/status`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        }
-      );
+      const res = await authFetch(`${API_URL}/documentos/${id}/enviar`, {
+        method: "POST",
+      });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Falha ao processar");
+      }
 
-      toast.success("Status atualizado");
+      toast.success("Documento gerado e enviado com sucesso!");
       carregarTudo();
-    } catch {
-      toast.error("Erro ao atualizar status");
+    } catch (err: any) {
+      toast.error(
+        "Erro: " + (err.message || "Não foi possível enviar o documento")
+      );
     }
   }
 
@@ -139,35 +154,39 @@ export default function DocumentoCoordenacao() {
 
   const colunas: Coluna<Documento>[] = [
     { titulo: "Protocolo", render: (item) => item.protocolo },
-    { titulo: "Aluno", render: (item) => item.aluno.nome },
+    { titulo: "Aluno", render: (item) => item.aluno?.usuario?.nome || "—" },
     {
       titulo: "Documento",
-      render: (item) => item.tipoDocumento.replaceAll("_", " "),
+      render: (item) =>
+        TIPOS_DOCUMENTO_LABEL[item.tipoDocumento] ||
+        item.tipoDocumento.replace(/_/g, " "),
     },
     {
       titulo: "Data",
-      render: (item) => new Date(item.createdAt).toLocaleDateString("pt-BR"),
+      render: (item) => new Date(item.criadoEm).toLocaleDateString("pt-BR"),
     },
     {
       titulo: "Status",
-      render: (item) => <StatusBadge status={item.status} />,
+      render: (item) => <StatusBadge status={item.status as Status} />,
     },
   ];
 
   return (
     <div className="w-full bg-white rounded-xl p-6 shadow-md flex flex-col gap-6">
-      <h1 className="text-4xl text-[#1D5D7F]">Documentos</h1>
+      <h1 className="text-4xl text-[#1D5D7F] mb-4">
+        Gerenciamento de Documentos
+      </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Resumo titulo="Solicitações Pendentes" valor={resumo.pendentes} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Resumo titulo="Pendentes" valor={resumo.pendentes} />
         <Resumo titulo="Em Andamento" valor={resumo.emAndamento} />
-        <Resumo titulo="Solicitações Concluídas" valor={resumo.concluidos} />
+        <Resumo titulo="Concluídos" valor={resumo.concluidos} />
       </div>
 
       {loading ? (
         <div className="flex justify-center py-20">
           <span className="text-[#1D5D7F] text-lg font-semibold">
-            Carregando solicitações...
+            Carregando...
           </span>
         </div>
       ) : (
@@ -175,22 +194,14 @@ export default function DocumentoCoordenacao() {
           dados={documentos}
           colunas={colunas}
           renderExtra={(item) => (
-            <div className="flex gap-3 text-[#1D5D7F]">
-              {item.status === "pendente" && (
+            <div className="flex gap-4 text-[#1D5D7F] text-xl">
+              {item.status !== "concluido" && (
                 <button
-                  title="Iniciar"
-                  onClick={() => atualizarStatus(item.id, "em_andamento")}
+                  title="Gerar e Enviar Documento"
+                  onClick={() => gerarEEnviar(item.id)}
+                  className="hover:text-green-600 transition"
                 >
-                  <FaPlay />
-                </button>
-              )}
-
-              {item.status === "em_andamento" && (
-                <button
-                  title="Concluir"
-                  onClick={() => atualizarStatus(item.id, "concluido")}
-                >
-                  <FaCheck />
+                  <FaPaperPlane />
                 </button>
               )}
 
@@ -198,6 +209,7 @@ export default function DocumentoCoordenacao() {
                 <button
                   title="Visualizar PDF"
                   onClick={() => abrirPdf(item.id)}
+                  className="hover:text-blue-600 transition"
                 >
                   <FaFilePdf />
                 </button>

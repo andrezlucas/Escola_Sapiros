@@ -120,7 +120,7 @@ export default function ListSimulado() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold mb-4">Simulados Criados</h1>
+      <h1 className="text-xl font-bold mb-4 text-[#1D5D7F]">Simulados Criados</h1>
 
       <Tabela
         dados={simulados}

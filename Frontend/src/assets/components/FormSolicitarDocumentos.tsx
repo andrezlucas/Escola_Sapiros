@@ -7,18 +7,23 @@ type FormData = {
   motivo: string;
 };
 
-const TIPOS_DOCUMENTO = [
-  { value: "DECLARACAO_MATRICULA", label: "Declaração de Matrícula" },
-  { value: "DECLARACAO_FREQUENCIA", label: "Declaração de Frequência" },
-  { value: "DECLARACAO_CONCLUSAO", label: "Declaração de Conclusão" },
-  { value: "HISTORICO_ESCOLAR", label: "Histórico Escolar" },
-  { value: "BOLETIM", label: "Boletim" },
+export const TIPOS_DOCUMENTO = [
+  { value: "atestado_matricula", label: "Atestado de Matrícula" },
+  { value: "historico_escolar", label: "Histórico Escolar" },
+  {
+    value: "declaracao_vinculo_servidor",
+    label: "Declaração de Vínculo de Servidor",
+  },
+  { value: "atestado_vaga", label: "Atestado de Vaga" },
+  { value: "declaracao_matricula", label: "Declaração de Matrícula" },
+  { value: "declaracao_frequencia", label: "Declaração de Frequência" },
+  { value: "declaracao_conclusao", label: "Declaração de Conclusão" },
+  { value: "boletim", label: "Boletim Escolar" },
 ];
 
 const FORMAS_ENTREGA = [
-  { value: "EMAIL", label: "E-mail" },
-  { value: "PRESENCIAL", label: "Presencial" },
-  { value: "CORREIOS", label: "Correios" },
+  { value: "presencial", label: "Presencial" },
+  { value: "email", label: "Por E-mail" },
 ];
 
 function FormSolicitarDocumentos() {
@@ -32,7 +37,7 @@ function FormSolicitarDocumentos() {
   const onSubmit = async (data: FormData) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/documentos/solicitacoes`,
+        "http://localhost:3000/documentos/solicitacoes",
         {
           method: "POST",
           headers: {
@@ -42,20 +47,23 @@ function FormSolicitarDocumentos() {
           body: JSON.stringify({
             tipoDocumento: data.tipoDocumento,
             formaEntrega: data.formaEntrega,
-            motivo: data.motivo,
+            motivo: data.motivo || undefined,
           }),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Erro ao enviar solicitação");
+        const err = await response.json();
+        throw new Error(err.message || "Erro ao enviar solicitação");
       }
 
       reset();
-      toast.success("Solicitação enviada com sucesso!");
-    } catch (error) {
+      toast.success("Solicitação enviada com sucesso! Protocolo gerado.");
+    } catch (error: any) {
       console.error(error);
-      toast.error("Erro ao enviar solicitação. Tente novamente.");
+      toast.error(
+        error.message || "Erro ao enviar solicitação. Tente novamente."
+      );
     }
   };
 
@@ -96,12 +104,12 @@ function FormSolicitarDocumentos() {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          Formato de Entrega
+          Forma de Entrega
         </label>
         <Controller
           name="formaEntrega"
           control={control}
-          rules={{ required: "Selecione o formato de entrega" }}
+          rules={{ required: "Selecione a forma de entrega" }}
           render={({ field }) => (
             <select
               {...field}
@@ -111,7 +119,7 @@ function FormSolicitarDocumentos() {
                 ${errors.formaEntrega ? "border-red-500" : ""}
               `}
             >
-              <option value="">Selecione o Formato de Entrega</option>
+              <option value="">Selecione a Forma</option>
               {FORMAS_ENTREGA.map((forma) => (
                 <option key={forma.value} value={forma.value}>
                   {forma.label}
@@ -129,40 +137,34 @@ function FormSolicitarDocumentos() {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          Motivo da Solicitação
+          Motivo da Solicitação (opcional)
         </label>
         <Controller
           name="motivo"
           control={control}
-          rules={{
-            required: "Informe o motivo da solicitação",
-            minLength: { value: 5, message: "Mínimo de 5 caracteres" },
-          }}
           render={({ field }) => (
             <textarea
               {...field}
-              placeholder="Descreva brevemente para que você precisa deste documento (ex: transferência, estágio, etc...)"
+              placeholder="Ex: transferência escolar, solicitação de bolsa, estágio, etc..."
               className={`
                 w-full px-4 py-3 border border-gray-300 rounded-lg 
                 focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] focus:border-[#1D5D7F]
                 resize-none h-32
-                ${errors.motivo ? "border-red-500" : ""}
               `}
             />
           )}
         />
-        {errors.motivo && (
-          <p className="text-red-500 text-sm mt-1">{errors.motivo.message}</p>
-        )}
       </div>
 
       <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg border border-blue-100">
         <span className="text-[#1D5D7F] text-xl font-bold mt-0.5">•</span>
         <p className="text-sm text-gray-700">
-          <span className="font-medium">Informação importante:</span>
-          <br />O prazo de processamento para documentos digitais é de até 2
-          dias úteis. Para retirada presencial, aguarde o e-mail de confirmação
-          antes de se dirigir à secretaria.
+          <span className="font-medium">Atenção:</span>
+          <br />
+          Documentos enviados por e-mail são processados em até 2 dias úteis.
+          <br />
+          Para retirada presencial, aguarde confirmação por e-mail ou no
+          sistema.
         </p>
       </div>
 
@@ -175,7 +177,7 @@ function FormSolicitarDocumentos() {
             rounded-lg hover:bg-gray-200 transition
           "
         >
-          Cancelar
+          Limpar
         </button>
         <button
           type="submit"
@@ -184,7 +186,7 @@ function FormSolicitarDocumentos() {
             rounded-lg hover:bg-[#15475a] transition
           "
         >
-          Enviar
+          Solicitar Documento
         </button>
       </div>
     </form>

@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Equal } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
+
 import { Nota } from '../nota/entities/nota.entity';
 import { Atividade } from '../atividade/entities/atividade.entity';
 import { Entrega } from '../atividade/entities/entrega.entity';
@@ -8,7 +9,7 @@ import { Frequencia } from '../frequencia/entities/frequencia.entity';
 import { Simulado } from '../simulado/entities/simulado.entity';
 import { Aluno } from '../aluno/entities/aluno.entity';
 import { Habilidade } from '../disciplina/entities/habilidade.entity';
-import { NotFoundException } from '@nestjs/common';
+import { TentativaSimulado } from 'src/simulado/entities/tentativa-simulado.entity';
 
 @Injectable()
 export class IaQueryDbService {
@@ -33,28 +34,20 @@ export class IaQueryDbService {
 
     @InjectRepository(Habilidade)
     private readonly habilidadeRepository: Repository<Habilidade>,
-
   ) {}
 
   /* =====================
      MÉDIA GERAL DO ALUNO
   ====================== */
   async mediaGeral(alunoId: string) {
-    const notas = await this.notaRepository.find({
-      where: { aluno: { id: alunoId } },
-    });
-
-    if (notas.length === 0) {
-      return { media: 0 };
-    }
-
-    const soma = notas.reduce(
-      (total, n) => total + (Number(n.nota1) + Number(n.nota2)) / 2,
-      0,
-    );
+    const resultado = await this.notaRepository
+      .createQueryBuilder('n')
+      .select('AVG((n.nota1 + n.nota2) / 2)', 'media')
+      .where('n.aluno = :alunoId', { alunoId })
+      .getRawOne();
 
     return {
-      media: Number((soma / notas.length).toFixed(2)),
+      media: Number(Number(resultado?.media || 0).toFixed(2)),
     };
   }
 
@@ -64,11 +57,12 @@ export class IaQueryDbService {
   async disciplinaPiorDesempenho(alunoId: string) {
     return this.notaRepository
       .createQueryBuilder('n')
-      .select('d.nome', 'disciplina')
-      .addSelect('AVG((n.nota1 + n.nota2) / 2)', 'media')
       .innerJoin('n.disciplina', 'd')
+      .select('d.id_disciplina', 'disciplinaId')
+      .addSelect('d.nome_disciplina', 'disciplina')
+      .addSelect('AVG((n.nota_1 + n.nota_2) / 2)', 'media')
       .where('n.aluno_id = :alunoId', { alunoId })
-      .groupBy('d.nome')
+      .groupBy('d.id_disciplina')
       .orderBy('media', 'ASC')
       .getRawOne();
   }
@@ -79,12 +73,18 @@ export class IaQueryDbService {
   async frequenciaPorData(alunoId: string, data: string) {
     const dataConvertida = new Date(data);
 
-    return this.frequenciaRepository.findOne({
+    const frequencia = await this.frequenciaRepository.findOne({
       where: {
         aluno: { id: alunoId },
         data: dataConvertida,
       },
     });
+
+    if (!frequencia) {
+      throw new NotFoundException('Frequência não encontrada para esta data');
+    }
+
+    return frequencia;
   }
 
   /* =====================
@@ -93,13 +93,18 @@ export class IaQueryDbService {
   async atividadesPendentes(alunoId: string) {
     return this.atividadeRepository
       .createQueryBuilder('a')
-      .leftJoin(
-        'a.entregas',
-        'e',
-        'e.aluno_id = :alunoId',
-        { alunoId },
-      )
-      .where('e.id IS NULL')
+      .where((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('1')
+          .from(Entrega, 'e')
+          .where('e.atividade_id = a.id')
+          .andWhere('e.aluno_id = :alunoId')
+          .getQuery();
+
+        return `NOT EXISTS ${subQuery}`;
+      })
+      .setParameter('alunoId', alunoId)
       .getMany();
   }
 
@@ -107,59 +112,56 @@ export class IaQueryDbService {
      QUANTIDADE DE SIMULADOS
   ====================== */
   async quantidadeSimulados(alunoId: string) {
-    return this.simuladoRepository
+    const resultado = await this.simuladoRepository
       .createQueryBuilder('s')
-      .innerJoin('s.tentativas', 't')
-      .where('t.aluno_id = :alunoId', { alunoId })
+      .where((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('COUNT(1)')
+          .from(TentativaSimulado, 't')
+          .where('t.simulado_id = s.id')
+          .andWhere('t.aluno_id = :alunoId')
+          .getQuery();
+
+        return `${subQuery} > 0`;
+      })
+      .setParameter('alunoId', alunoId)
       .getCount();
+
+    return {
+      quantidade: resultado,
+    };
   }
 
   /* =====================
-     HABILIDADE MAIS FORTE
-     (nota + atividades)
+     HABILIDADE / DISCIPLINA MAIS FORTE
   ====================== */
-async habilidadeMaisForte(alunoId: string) {
-  return this.notaRepository
-    .createQueryBuilder('n')
-    .innerJoin('n.disciplina', 'd')
-    .select('d.id_disciplina', 'disciplinaId')
-    .addSelect('d.nome_disciplina', 'disciplina')
-    .addSelect('AVG((n.nota1 + n.nota2) / 2)', 'media')
-    .where('n.aluno_id = :alunoId', { alunoId })
-    .groupBy('d.id_disciplina')
-    .orderBy('media', 'DESC')
-    .limit(1)
-    .getRawOne();
-}
+  async habilidadeMaisForte(alunoId: string) {
+    return this.notaRepository
+      .createQueryBuilder('n')
+      .innerJoin('n.disciplina', 'd')
+      .select('d.id_disciplina', 'disciplinaId')
+      .addSelect('d.nome_disciplina', 'disciplina')
+      .addSelect('AVG((n.nota_1 + n.nota_2) / 2)', 'media')
+      .where('n.aluno_id = :alunoId', { alunoId })
+      .groupBy('d.id_disciplina')
+      .orderBy('media', 'DESC')
+      .limit(1)
+      .getRawOne();
+  }
 
-async disciplinaMaisForte(alunoId: string) {
-  return this.notaRepository
-    .createQueryBuilder('n')
-    .innerJoin('n.disciplina', 'd')
-    .select('d.id', 'disciplinaId')
-    .addSelect('d.nome', 'disciplina')
-    .addSelect('AVG((n.nota1 + n.nota2) / 2)', 'media')
-    .where('n.aluno_id = :alunoId', { alunoId })
-    .groupBy('d.id')
-    .orderBy('media', 'DESC')
-    .limit(1)
-    .getRawOne();
-}
-
-
-async buscarAlunoPorNome(nome: string) {
-  return this.alunoRepository
-    .createQueryBuilder('aluno')
-    .innerJoin('aluno.usuario', 'usuario')
-    .where('LOWER(usuario.nome) LIKE :nome', {
-      nome: `%${nome.toLowerCase()}%`,
-    })
-    .select([
-      'aluno.id',
-      'usuario.nome',
-    ])
-    .getOne();
+  /* =====================
+     BUSCAR ALUNO POR NOME
+  ====================== */
+  async buscarAlunoPorNome(nome: string) {
+    return this.alunoRepository
+      .createQueryBuilder('aluno')
+      .innerJoinAndSelect('aluno.usuario', 'usuario')
+      .where('LOWER(usuario.nome) LIKE LOWER(:nome)', {
+        nome: `%${nome.split(' ')[0]}%`,
+      })
+      .getOne();
+  }
 }
 
 
-}

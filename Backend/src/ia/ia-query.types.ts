@@ -8,21 +8,20 @@ export type EntidadeIA =
   | 'disciplina';
 
 export type AcaoIA =
-  | 'media'
-  | 'maior_facilidade'
-  | 'menor_desempenho'
+  | 'media_geral'
+  | 'melhor_disciplina'
+  | 'pior_disciplina'
   | 'buscar_por_data'
-  | 'buscar_por_periodo'
   | 'pendencias'
   | 'quantidade'
-  | 'consultar'; // 🔥 ação genérica padrão
+  | 'consultar';
 
 export interface IntentIA {
   entidade: EntidadeIA;
   acao: AcaoIA;
   filtros: {
     alunoId?: string;
-    nomeAluno?: string;  
+    nomeAluno?: string;
     data?: string;
     inicio?: string;
     fim?: string;

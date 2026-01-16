@@ -14,7 +14,7 @@ import SenhaBloqueada from "./assets/pages/SenhaBloqueada";
 import DashboardCoordenacao from "./assets/pages/DashboardCoordenacao";
 import NaoAutorizado from "./assets/pages/NaoAutorizado";
 import Configuracao from "./assets/pages/Configuracao";
-
+import VerificarDocumento from "./assets/pages/VerificarDocumento";
 
 function App() {
   return (
@@ -27,6 +27,7 @@ function App() {
         <Route path="/nova-senha" element={<NovaSenha />} />
         <Route path="/senha-bloqueada" element={<SenhaBloqueada />} />
         <Route path="/nao-autorizado" element={<NaoAutorizado />} />
+        <Route path="/verificar/:id" element={<VerificarDocumento />} />
 
         <Route
           path="/dashboard/coordenacao"
@@ -99,8 +100,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
-        
       </Routes>
     </>
   );

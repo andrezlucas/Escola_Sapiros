@@ -430,7 +430,7 @@ function FormAtividade({
   return (
     <div className=" w-full h-full  mx-auto">
       <div className="border rounded-xl p-6 flex flex-col gap-6 mb-12">
-        <h1 className="text-2xl font-bold mb-2">
+        <h1 className="text-xl font-bold mb-4 text-[#1D5D7F]">
           {atividadeId ? "Editar Atividade" : "Criar Nova Atividade"}
         </h1>
 
@@ -477,7 +477,7 @@ function FormAtividade({
 
               <div>
                 <Input
-                  label={""}
+                  label={"Data de entrega:"}
                   type="date"
                   {...register("dataEntrega", {
                     required: "A Data de entrega é obrigatória",

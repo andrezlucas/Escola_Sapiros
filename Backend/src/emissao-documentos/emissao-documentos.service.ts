@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import PDFDocument from 'pdfkit';
@@ -36,144 +41,286 @@ export class EmissaoDocumentosService {
     doc.moveDown(7);
   }
 
-async gerarBoletimPDF(alunoId: string, ano: number, solicitacaoId?: string): Promise<Buffer> {
-  const aluno = await this.alunoRepository.findOne({
-    where: { id: alunoId },
-    relations: ['turma', 'usuario'],
-  });
+  async gerarBoletimPDF(
+    alunoId: string,
+    ano: number,
+    solicitacaoId?: string,
+  ): Promise<Buffer> {
+    const aluno = await this.alunoRepository.findOne({
+      where: { id: alunoId },
+      relations: ['turma', 'usuario'],
+    });
 
-  if (!aluno) throw new NotFoundException('Aluno não encontrado');
+    if (!aluno) throw new NotFoundException('Aluno não encontrado');
 
-  const notas = await this.notaRepository.find({
-    where: { aluno: { id: alunoId } },
-    relations: ['disciplina'],
-  });
+    const notas = await this.notaRepository.find({
+      where: { aluno: { id: alunoId } },
+      relations: ['disciplina'],
+    });
 
-  const frequencias = await this.frequenciaRepository.find({
-    where: { aluno: { id: alunoId } },
-    relations: ['disciplina'],
-  });
+    const frequencias = await this.frequenciaRepository.find({
+      where: { aluno: { id: alunoId } },
+      relations: ['disciplina'],
+    });
 
-  const qrCode = await QRCode.toDataURL(
-    `http://localhost:3000/documentos/verificar/${solicitacaoId}`,
-  );
+    const qrCodeDataUrl = await QRCode.toDataURL(
+      `http://192.168.1.64:3000/documentos/verificar/${solicitacaoId || 'sem-solicitacao'}`,
+    );
 
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({ size: 'A4', margin: 60 });
-      const chunks: Buffer[] = [];
-      doc.on('data', (c) => chunks.push(c));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ size: 'A4', margin: 35 });
+        const chunks: Buffer[] = [];
+        doc.on('data', (c) => chunks.push(c));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
 
-      doc.image('assets/logo.sapiros.png', 237, 30, { width: 100 });
-      doc.moveDown(5);
+        doc.image('assets/logo.sapiros.png', 220, 20, { width: 120 });
+        doc.moveDown(6);
 
-      doc.fontSize(18).font('Helvetica-Bold').text('Boletim Escolar', { align: 'center' });
-      doc.moveDown(1.5);
+        doc
+          .fontSize(20)
+          .font('Helvetica-Bold')
+          .text('BOLETIM ESCOLAR', { align: 'center' });
+        doc.moveDown(1);
 
-      doc.fontSize(12).font('Helvetica');
-      doc.text(`Aluna(o): ${aluno.usuario.nome || '[Nome do Aluno]'}`);
-      doc.text(`Matrícula: ${aluno.matriculaAluno || '[Número da Matrícula]'}`);
-      doc.text(`Turma/Série: ${aluno.turma?.nome_turma || '[Ex: 1º Ano A]'}`);
-      doc.text(`Curso: Ensino Médio`);
-      doc.moveDown(1);
+        doc.fontSize(12).font('Helvetica');
+        doc.text(`Nome: ${aluno.usuario.nome || '—'}`, 45);
+        doc.text(`Matrícula: ${aluno.matriculaAluno || '—'}`, 45);
+        doc.text(`Turma: ${aluno.turma?.nome_turma || '—'}`, 45);
+        doc.text(`Ano letivo: ${ano}`, 45);
+        doc.moveDown(1.5);
 
-      const notasAgrupadas = notas.reduce((acc: any, n) => {
-        const id = n.disciplina.id_disciplina;
-        if (!acc[id]) {
-          acc[id] = {
-            nome: n.disciplina.nome_disciplina,
-            bimestres: {},
-            freq: 0,
-            totalAulas: 0,
-          };
-        }
-        acc[id].bimestres[n.bimestre] = {
-          nota1: n.nota1 ? parseFloat(n.nota1.toString()) : 0,
-          nota2: n.nota2 ? parseFloat(n.nota2.toString()) : 0,
-        };
-        return acc;
-      }, {});
+        const notasAgrupadas: Record<
+          string,
+          {
+            nome: string;
+            bimestres: Partial<
+              Record<Bimestre, { n1: number; n2: number; media?: number }>
+            >;
+          }
+        > = {};
 
-      frequencias.forEach((f) => {
-        const id = f.disciplina.id_disciplina;
-        if (notasAgrupadas[id]) {
-          notasAgrupadas[id].totalAulas++;
-          if (f.status === StatusFrequencia.PRESENTE) notasAgrupadas[id].freq++;
-        }
-      });
+        notas.forEach((n) => {
+          const discId = n.disciplina.id_disciplina;
+          if (!notasAgrupadas[discId]) {
+            notasAgrupadas[discId] = {
+              nome: n.disciplina.nome_disciplina,
+              bimestres: {},
+            };
+          }
 
-      doc.font('Helvetica-Bold').fontSize(11);
-      doc.text('Disciplina', 60, doc.y);
-      doc.text('B1', 202, doc.y);
-      doc.text('B2', 242, doc.y);
-      doc.text('Média Final', 335, doc.y);
-      doc.text('Freq.', 425, doc.y);
-      doc.text('Situação', 500, doc.y);
-      doc.moveDown(0.5);
+          const bim = n.bimestre;
+          if (!notasAgrupadas[discId].bimestres[bim]) {
+            notasAgrupadas[discId].bimestres[bim] = { n1: 0, n2: 0 };
+          }
 
-      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.moveDown(0.5);
+          if (n.nota1 != null)
+            notasAgrupadas[discId].bimestres[bim]!.n1 = parseFloat(
+              n.nota1.toString(),
+            );
+          if (n.nota2 != null)
+            notasAgrupadas[discId].bimestres[bim]!.n2 = parseFloat(
+              n.nota2.toString(),
+            );
 
-      let yPos = doc.y;
-      let somaMedias = 0;
-      let totalDisciplinas = 0;
+          if (
+            notasAgrupadas[discId].bimestres[bim]!.n1 &&
+            notasAgrupadas[discId].bimestres[bim]!.n2
+          ) {
+            notasAgrupadas[discId].bimestres[bim]!.media =
+              (notasAgrupadas[discId].bimestres[bim]!.n1 +
+                notasAgrupadas[discId].bimestres[bim]!.n2) /
+              2;
+          }
+        });
 
-      Object.values(notasAgrupadas).forEach((d: any) => {
-        const b1Data = d.bimestres[Bimestre.PRIMEIRO];
-        const b2Data = d.bimestres[Bimestre.SEGUNDO];
+        const freqPorDisc: Record<string, { freq: number; total: number }> = {};
+        frequencias.forEach((f) => {
+          const discId = f.disciplina?.id_disciplina;
+          if (discId) {
+            if (!freqPorDisc[discId])
+              freqPorDisc[discId] = { freq: 0, total: 0 };
+            freqPorDisc[discId].total++;
+            if (f.status === StatusFrequencia.PRESENTE)
+              freqPorDisc[discId].freq++;
+          }
+        });
 
-        let pi = b1Data ? b1Data.nota1.toFixed(1) : '—';
-        let p2 = b2Data ? b2Data.nota1.toFixed(1) : '—';
-        let mediaFinal = '—';
-        let situacao = 'Cursando';
+        const tableTop = doc.y;
+        const leftMargin = 35;
+        const rightMargin = 580;
+        const colWidths = [145, 65, 65, 65, 65, 70, 60, 70];
+        const colX: number[] = [leftMargin];
+        colWidths.reduce((acc, w) => {
+          const next = acc + w;
+          colX.push(next);
+          return next;
+        }, leftMargin);
 
-        if (b1Data && b2Data) {
-          const media = (b1Data.nota1 + b2Data.nota1) / 2;
-          mediaFinal = media.toFixed(1);
-          somaMedias += media;
-          totalDisciplinas++;
-          situacao = media >= 6 ? 'Aprovado' : 'Recuperação';
-        }
+        const headers = [
+          'Disciplina',
+          'B1',
+          'B2',
+          'B3',
+          'B4',
+          'Média Final',
+          'Freq.',
+        ];
 
-        let freqPercent = d.totalAulas > 0 
-          ? `${((d.freq / d.totalAulas) * 100).toFixed(0)}%` 
-          : '—';
+        doc.font('Helvetica-Bold').fontSize(9.8);
+        headers.forEach((h, i) => {
+          doc.text(h, colX[i], tableTop, {
+            width: colWidths[i],
+            align: i === 0 ? 'left' : 'center',
+          });
+        });
 
-        doc.font('Helvetica').fontSize(11);
-        doc.text(d.nome, 60, yPos, { width: 130 });
-        doc.text(pi, 202, yPos);
-        doc.text(p2, 242, yPos);
-        doc.text(mediaFinal, 335, yPos);
-        doc.text(freqPercent, 425, yPos);
-        doc.text(situacao, 500, yPos);
+        doc
+          .moveTo(leftMargin, tableTop + 14)
+          .lineTo(rightMargin, tableTop + 14)
+          .lineWidth(1)
+          .stroke();
+        colX.forEach((x) =>
+          doc
+            .moveTo(x, tableTop)
+            .lineTo(x, tableTop + 14)
+            .lineWidth(0.8)
+            .stroke(),
+        );
 
-        doc.moveTo(50, yPos + 15).lineTo(550, yPos + 15).stroke();
-        yPos += 20;
-      });
+        let rowY = tableTop + 17;
+        let somaMedias = 0;
+        let countMedias = 0;
 
-      const mediaGeral = totalDisciplinas > 0 ? (somaMedias / totalDisciplinas).toFixed(1) : '—';
-      const situacaoGeral = mediaGeral !== '—' && parseFloat(mediaGeral) >= 6 ? 'APROVADO' : 'RECUPERAÇÃO';
+        Object.entries(notasAgrupadas).forEach(([discId, d]) => {
+          const nomeDisc =
+            d.nome.length > 22 ? d.nome.substring(0, 19) + '...' : d.nome;
 
-      doc.font('Helvetica-Bold').fontSize(12).text(`Média Geral: ${mediaGeral}   Situação: ${situacaoGeral}`, 60, yPos + 10);
-      doc.moveDown(2);
-      doc.font('Helvetica').fontSize(11).text('Observações: O(a) aluno(a) cumpriu satisfatoriamente os critérios de avaliação e frequência exigidos pelo regimento escolar vigente.', 60, doc.y, { align: 'left', width: 480 });
-      doc.moveDown(3);
-      doc.fontSize(12).text(`Recife, ${new Date().toLocaleDateString('pt-BR')}`, 60, doc.y);
-      doc.moveDown(4);
-      doc.moveTo(150, doc.y).lineTo(450, doc.y).stroke();
-      doc.moveDown(0.5);
-      doc.text('Secretário(a) Escolar', { align: 'center' });
-      doc.moveDown(4);
-      doc.image(qrCode, { fit: [100, 100], align: 'center' });
-      doc.end();
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
+          const bimValues = [
+            d.bimestres[Bimestre.PRIMEIRO],
+            d.bimestres[Bimestre.SEGUNDO],
+            d.bimestres[Bimestre.TERCEIRO],
+            d.bimestres[Bimestre.QUARTO],
+          ];
 
-  async gerarHistoricoEscolar(alunoId: string, solicitacaoId?: string): Promise<Buffer> {
+          const bimStrs = bimValues.map((b) =>
+            b ? `${b.n1.toFixed(1)}${b.n2 ? `|${b.n2.toFixed(1)}` : ''}` : '—',
+          );
+
+          const mediasBim = bimValues
+            .filter((b) => b?.media !== undefined)
+            .map((b) => b!.media!);
+          let mediaFinal = '—';
+          let situacao = 'Cursando';
+
+          if (mediasBim.length > 0) {
+            const mf = mediasBim.reduce((a, b) => a + b, 0) / mediasBim.length;
+            mediaFinal = mf.toFixed(1);
+            somaMedias += mf;
+            countMedias++;
+            situacao =
+              mf >= 6 ? 'Aprovado' : mf >= 3 ? 'Recuperação' : 'Reprovado';
+          }
+
+          const freqData = freqPorDisc[discId];
+          const freq =
+            freqData && freqData.total > 0
+              ? ((freqData.freq / freqData.total) * 100).toFixed(0) + '%'
+              : '—';
+
+          doc.font('Helvetica').fontSize(9.2);
+          doc.text(nomeDisc, colX[0], rowY, {
+            width: colWidths[0],
+            align: 'left',
+          });
+
+          bimStrs.forEach((str, i) => {
+            doc.text(str, colX[i + 1], rowY, {
+              width: colWidths[i + 1],
+              align: 'center',
+            });
+          });
+
+          doc.text(mediaFinal, colX[5], rowY, {
+            width: colWidths[5],
+            align: 'center',
+          });
+          doc.text(freq, colX[6], rowY, {
+            width: colWidths[6],
+            align: 'center',
+          });
+
+          doc
+            .moveTo(leftMargin, rowY + 14)
+            .lineTo(rightMargin, rowY + 14)
+            .lineWidth(0.5)
+            .stroke();
+          colX.forEach((x) => {
+            doc
+              .moveTo(x, rowY - 4)
+              .lineTo(x, rowY + 14)
+              .lineWidth(0.5)
+              .stroke();
+          });
+
+          rowY += 18;
+
+          if (rowY > 680) {
+            doc.addPage({ margin: 35 });
+            rowY = 60;
+          }
+        });
+
+        const mediaGeral =
+          countMedias > 0 ? (somaMedias / countMedias).toFixed(1) : '—';
+        const situacaoGeral =
+          mediaGeral !== '—' && parseFloat(mediaGeral) >= 6
+            ? 'APROVADO'
+            : 'RECUPERAÇÃO';
+
+        doc.moveDown(2);
+        doc.font('Helvetica-Bold').fontSize(11);
+        doc.text(
+          `Média Geral: ${mediaGeral}   |   Situação: ${situacaoGeral}`,
+          45,
+          rowY,
+        );
+
+        doc.moveDown(2);
+        doc
+          .font('Helvetica')
+          .fontSize(9.5)
+          .text(
+            'Observação: Este documento é emitido com base nos registros oficiais da instituição até a data de emissão. ' +
+              'A frequência é calculada considerando todas as aulas registradas.',
+            45,
+            doc.y,
+            { width: 500, align: 'justify', lineGap: 3 },
+          );
+
+        doc.moveDown(3);
+        doc
+          .fontSize(10)
+          .text(`Recife, ${new Date().toLocaleDateString('pt-BR')}`, 45);
+
+        doc.moveDown(3);
+        doc.moveTo(160, doc.y).lineTo(440, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).text('Secretaria Escolar', { align: 'center' });
+
+        doc.moveDown(4);
+        doc.image(qrCodeDataUrl, { fit: [80, 80], align: 'center' });
+
+        doc.end();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+  async gerarHistoricoEscolar(
+    alunoId: string,
+    solicitacaoId?: string,
+  ): Promise<Buffer> {
     const aluno = await this.alunoRepository.findOne({
       where: { id: alunoId },
       relations: ['usuario', 'turma'],
@@ -188,18 +335,18 @@ async gerarBoletimPDF(alunoId: string, ano: number, solicitacaoId?: string): Pro
     });
 
     const qrCode = await QRCode.toDataURL(
-      `http://localhost:3000/documentos/verificar/${solicitacaoId}`,
+      `http://localhost:3000/documentos/verificar/${solicitacaoId || 'sem-solicitacao'}`,
     );
 
     return new Promise((resolve, reject) => {
       try {
-        const doc = new PDFDocument({ size: 'A4', margin: 60 });
+        const doc = new PDFDocument({ size: 'A4', margin: 40 }); // margem menor para ganhar espaço
         const chunks: Buffer[] = [];
         doc.on('data', (c) => chunks.push(c));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
 
-        doc.image('assets/logo.sapiros.png', 237, 30, { width: 100 });
-        doc.moveDown(5);
+        doc.image('assets/logo.sapiros.png', 230, 25, { width: 110 });
+        doc.moveDown(6);
 
         doc
           .fontSize(16)
@@ -211,7 +358,7 @@ async gerarBoletimPDF(alunoId: string, ano: number, solicitacaoId?: string): Pro
         doc
           .fontSize(18)
           .font('Helvetica-Bold')
-          .text('Histórico Escolar', { align: 'center' });
+          .text('HISTÓRICO ESCOLAR', { align: 'center' });
         doc.moveDown(2);
 
         doc.fontSize(12).font('Helvetica');
@@ -226,86 +373,179 @@ async gerarBoletimPDF(alunoId: string, ano: number, solicitacaoId?: string): Pro
         doc.text('Curso: Ensino Médio');
         doc.moveDown(2);
 
-        doc.font('Helvetica-Bold').fontSize(11);
-        doc.text('Série/Ano', 60, doc.y);
-        doc.text('Disciplinas', 130, doc.y);
-        doc.text('Carga Horária', 280, doc.y);
-        doc.text('Média Final', 360, doc.y);
-        doc.text('Situação', 420, doc.y);
-        doc.moveDown(0.5);
-
-        doc.moveTo(50, doc.y).lineTo(550, doc.y).lineWidth(1).stroke();
-        doc.moveDown(0.5);
-
-        doc.font('Helvetica').fontSize(11);
-        let yPos = doc.y;
-
-        const historico = notas.reduce((acc: any, n) => {
-          const ano = new Date(n.criadoEm).getFullYear();
-          if (!acc[ano]) acc[ano] = {};
-          const id = n.disciplina.id_disciplina;
-          if (!acc[ano][id])
-            acc[ano][id] = { nome: n.disciplina.nome_disciplina, medias: [] };
-
-          if (n.nota1 != null && n.nota2 != null) {
-            acc[ano][id].medias.push((n.nota1 + n.nota2) / 2);
-          }
-
-          return acc;
-        }, {});
-
-        Object.entries(historico).forEach(
-          ([ano, disciplinas]: [string, any]) => {
-            Object.values(disciplinas).forEach((d: any) => {
-              let mediaStr = '—';
-              let situacao = 'Pendente';
-
-              if (d.medias.length > 0) {
-                const soma = d.medias.reduce(
-                  (a: number, b: number) => a + b,
-                  0,
-                );
-                const media = soma / d.medias.length;
-                mediaStr = media.toFixed(1);
-                situacao = media >= 5 ? 'Aprovado' : 'Reprovado';
-              }
-
-              doc.text(`${ano}º Ano`, 60, yPos);
-              doc.text(d.nome, 130, yPos);
-              doc.text('200h', 280, yPos);
-              doc.text(mediaStr, 360, yPos);
-              doc.text(situacao, 420, yPos);
-
-              yPos += 20;
-            });
+        const historico = notas.reduce(
+          (
+            acc: Record<
+              string,
+              Record<string, { nome: string; medias: number[] }>
+            >,
+            n,
+          ) => {
+            const ano = new Date(n.criadoEm).getFullYear().toString();
+            if (!acc[ano]) acc[ano] = {};
+            const id = n.disciplina.id_disciplina;
+            if (!acc[ano][id]) {
+              acc[ano][id] = { nome: n.disciplina.nome_disciplina, medias: [] };
+            }
+            if (n.nota1 != null && n.nota2 != null) {
+              acc[ano][id].medias.push(
+                (parseFloat(n.nota1.toString()) +
+                  parseFloat(n.nota2.toString())) /
+                  2,
+              );
+            }
+            return acc;
           },
+          {},
         );
 
-        doc.moveTo(50, yPos).lineTo(550, yPos).stroke();
+        let tableY = doc.y;
+        const leftMargin = 40;
+        const rightMargin = 570;
+        const colWidths = [100, 220, 80, 80, 80];
+        const colX: number[] = [leftMargin];
+        colWidths.reduce((acc, w) => {
+          const next = acc + w;
+          colX.push(next);
+          return next;
+        }, leftMargin);
 
-        doc.moveDown(2);
+        const headers = [
+          'Série/Ano',
+          'Disciplinas',
+          'Carga Horária',
+          'Média Final',
+          'Situação',
+        ];
+
+        doc.font('Helvetica-Bold').fontSize(10.5);
+        headers.forEach((header, i) => {
+          doc.text(header, colX[i], tableY, {
+            width: colWidths[i],
+            align: i === 0 || i === 1 ? 'left' : 'center',
+          });
+        });
+
         doc
-          .fontSize(11)
+          .moveTo(leftMargin, tableY + 14)
+          .lineTo(rightMargin, tableY + 14)
+          .lineWidth(1.1)
+          .stroke();
+
+        colX.forEach((x) => {
+          doc
+            .moveTo(x, tableY)
+            .lineTo(x, tableY + 14)
+            .lineWidth(0.8)
+            .stroke();
+        });
+
+        let yPos = tableY + 18;
+
+        Object.entries(historico).forEach(([ano, disciplinas]) => {
+          doc.font('Helvetica-Bold').fontSize(11);
+          doc.text(`${ano}º Ano`, leftMargin, yPos, {
+            width: colWidths[0],
+            align: 'left',
+          });
+          yPos += 18;
+
+          Object.values(disciplinas).forEach((d: any) => {
+            let mediaStr = '—';
+            let situacao = 'Pendente';
+
+            if (d.medias.length > 0) {
+              const soma = d.medias.reduce((a: number, b: number) => a + b, 0);
+              const media = soma / d.medias.length;
+              mediaStr = media.toFixed(1);
+              situacao = media >= 5 ? 'Aprovado' : 'Reprovado';
+            }
+
+            const nomeDisc =
+              d.nome.length > 35 ? d.nome.substring(0, 32) + '...' : d.nome;
+
+            doc.font('Helvetica').fontSize(9.8);
+            doc.text(`${ano}º Ano`, colX[0], yPos, {
+              width: colWidths[0],
+              align: 'left',
+            });
+            doc.text(nomeDisc, colX[1], yPos, {
+              width: colWidths[1],
+              align: 'left',
+            });
+            doc.text('200h', colX[2], yPos, {
+              width: colWidths[2],
+              align: 'center',
+            });
+            doc.text(mediaStr, colX[3], yPos, {
+              width: colWidths[3],
+              align: 'center',
+            });
+            doc.text(situacao, colX[4], yPos, {
+              width: colWidths[4],
+              align: 'center',
+            });
+
+            doc
+              .moveTo(leftMargin, yPos + 14)
+              .lineTo(rightMargin, yPos + 14)
+              .lineWidth(0.6)
+              .stroke();
+
+            colX.forEach((x) => {
+              doc
+                .moveTo(x, yPos - 4)
+                .lineTo(x, yPos + 14)
+                .lineWidth(0.6)
+                .stroke();
+            });
+
+            yPos += 18;
+
+            if (yPos > 680) {
+              doc.addPage({ margin: 40 });
+              yPos = 80;
+              tableY = 80;
+            }
+          });
+
+          doc
+            .moveTo(leftMargin, yPos)
+            .lineTo(rightMargin, yPos)
+            .lineWidth(1)
+            .dash(3, { space: 2 })
+            .stroke();
+          yPos += 10;
+        });
+
+        doc.undash();
+
+        doc.moveTo(40, yPos).lineTo(570, yPos).stroke();
+        yPos += 20;
+
+        doc
+          .font('Helvetica')
+          .fontSize(10)
           .text(
             'Observações: Cumpriu integralmente a carga horária mínima exigida por lei.',
-            60,
-            doc.y,
-            { align: 'left', width: 480 },
+            40,
+            yPos,
+            { width: 490, align: 'justify', lineGap: 4 },
           );
 
-        doc.moveDown(3);
+        yPos += 40;
 
         doc
-          .fontSize(12)
-          .text(`Recife, ${new Date().toLocaleDateString('pt-BR')}`, 60, doc.y);
+          .fontSize(11)
+          .text(`Recife, ${new Date().toLocaleDateString('pt-BR')}`, 40, yPos);
 
-        doc.moveDown(4);
+        yPos += 30;
 
-        doc.moveTo(150, doc.y).lineTo(450, doc.y).stroke();
-        doc.moveDown(0.5);
-        doc.fontSize(12).text('Secretário(a) Escolar', { align: 'center' });
+        doc.moveTo(160, yPos).lineTo(440, yPos).stroke();
+        yPos += 10;
+        doc.fontSize(11).text('Secretário(a) Escolar', { align: 'center' });
 
-        doc.moveDown(4);
+        yPos += 40;
 
         doc.image(qrCode, {
           fit: [100, 100],
@@ -448,22 +688,22 @@ async gerarBoletimPDF(alunoId: string, ano: number, solicitacaoId?: string): Pro
     });
   }
 
- async verificarAutenticidadeUniversal(id: string) {
+  async verificarAutenticidadeUniversal(id: string) {
     const solicitacao = await this.solicitacaoService.buscarPorId(id);
 
     const dadosVerificacao: any = {
-      status: "DOCUMENTO AUTÊNTICO",
+      status: 'DOCUMENTO AUTÊNTICO',
       codigo_autenticidade: id,
       data_emissao: solicitacao.criadoEm,
       titular: {
         nome: solicitacao.aluno.usuario.nome,
         matricula: solicitacao.aluno.matriculaAluno,
-        turma: solicitacao.aluno.turma?.nome_turma
+        turma: solicitacao.aluno.turma?.nome_turma,
       },
       info: {
         tipo: solicitacao.tipoDocumento,
-        protocolo: solicitacao.protocolo
-      }
+        protocolo: solicitacao.protocolo,
+      },
     };
 
     if (solicitacao.tipoDocumento === TipoDocumentoEnum.BOLETIM) {
@@ -472,12 +712,13 @@ async gerarBoletimPDF(alunoId: string, ano: number, solicitacaoId?: string): Pro
         relations: ['disciplina'],
       });
 
-      dadosVerificacao.notas = notas.map(n => ({
+      dadosVerificacao.notas = notas.map((n) => ({
         disciplina: n.disciplina.nome_disciplina,
         bimestre: n.bimestre,
         nota1: parseFloat(n.nota1.toString()),
         nota2: parseFloat(n.nota2.toString()),
-        media: (parseFloat(n.nota1.toString()) + parseFloat(n.nota2.toString())) / 2
+        media:
+          (parseFloat(n.nota1.toString()) + parseFloat(n.nota2.toString())) / 2,
       }));
     }
 

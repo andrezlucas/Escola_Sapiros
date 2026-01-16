@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { IaSimpleService } from '../ia/ia-simple.service';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { IaSimpleService } from './ia-simple.service';
 import { IntentIA } from './ia-query.types';
 
 @Injectable()
@@ -12,25 +12,82 @@ export class IaQueryIntentService {
       this.systemPrompt(),
     );
 
-    return JSON.parse(resposta);
+    try {
+      const intent = JSON.parse(resposta);
+
+      if (!intent.entidade || !intent.acao) {
+        throw new Error('JSON incompleto');
+      }
+
+      return intent;
+    } catch (error) {
+      throw new BadRequestException('Não foi possível interpretar a pergunta');
+    }
   }
 
   private systemPrompt(): string {
     return `
-Você interpreta perguntas educacionais e retorna JSON estruturado + explicação breve.
+Você converte perguntas educacionais em JSON para consultas em banco de dados.
 
-Entidades:
-aluno, nota, frequencia, habilidade, atividade, simulado, disciplina
+RETORNE APENAS JSON VÁLIDO. NÃO explique nada.
 
-Ações:
-media, maior_facilidade, menor_desempenho,
-buscar_por_data, buscar_por_periodo,
-pendencias, quantidade
+Entidades possíveis:
+- nota
+- frequencia
+- atividade
+- simulado
+- habilidade
 
-Regras:
-- Retorne JSON válido
--  explique minimamente
-- Não invente campos
-`;
+Ações possíveis:
+- media_geral
+- pior_disciplina
+- melhor_disciplina
+- buscar_por_data
+- pendencias
+- quantidade
+- consultar
+
+Formato obrigatório:
+{
+  "entidade": "nota | frequencia | atividade | simulado | habilidade",
+  "acao": "media_geral | pior_disciplina | melhor_disciplina | buscar_por_data | pendencias | quantidade | consultar",
+  "filtros": {
+    "nomeAluno"?: string,
+    "data"?: string
+  }
+}
+
+Regras de interpretação:
+
+- "média", "média geral", "nota geral" → entidade: nota, ação: media_geral
+- "pior", "abaixo", "precisa melhorar", "menor nota" → pior_disciplina
+- "melhor", "mais forte", "se destaca", "maior nota" → melhor_disciplina
+
+- Perguntas sobre presença ou falta em uma data:
+  → entidade: frequencia
+  → ação: buscar_por_data
+  → extraia a data no formato YYYY-MM-DD
+
+- Perguntas sobre atividades não entregues:
+  → entidade: atividade
+  → ação: pendencias
+
+- Perguntas sobre quantidade de simulados:
+  → entidade: simulado
+  → ação: quantidade
+
+- Perguntas sobre habilidade principal, ponto forte ou destaque:
+  → entidade: habilidade
+  → ação: consultar
+
+- Sempre que um aluno for citado, extraia o nome completo em "nomeAluno".
+
+Se não entender a pergunta, retorne exatamente:
+{
+  "entidade": null,
+  "acao": null,
+  "filtros": {}
+}
+`.trim();
   }
 }

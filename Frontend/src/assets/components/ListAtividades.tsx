@@ -140,7 +140,7 @@ export default function ListAtividades() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold mb-4">Atividades Criadas</h1>
+      <h1 className="text-xl font-bold mb-4 text-[#1D5D7F]">Atividades Criadas</h1>
 
       <Tabela
         dados={atividades}

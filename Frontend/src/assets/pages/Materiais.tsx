@@ -19,7 +19,7 @@ function Materiais() {
           }`}
           onClick={() => setEtapa("minhasatividades")}
         >
-          <span className="text-sm font-bold">Minhas Atividades</span>
+          <span className="text-sm font-bold ">Minhas Atividades</span>
         </button>
         <button
           className={`w-42 h-9 px-5 py-3 rounded-lg shadow flex justify-center items-center ${

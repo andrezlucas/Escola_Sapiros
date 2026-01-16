@@ -75,9 +75,6 @@ function FormSimulado({
     });
   }
 
-  /* ============================
-     🔒 CARGA SEGURA DOS DADOS
-     ============================ */
   useEffect(() => {
     let ativo = true;
 
@@ -96,7 +93,6 @@ function FormSimulado({
         setDisciplinas(Array.isArray(discs) ? discs : []);
         setTurmas(Array.isArray(turms) ? turms : []);
 
-        // 🔒 Sempre limpa antes
         setQuestoes([]);
         setDisciplinaSelecionada("");
         setTurmasSelecionadas([]);
@@ -106,7 +102,6 @@ function FormSimulado({
           setValue("tempoDuracao", simuladoInicial.tempoDuracao ?? 60);
           setValue("bimestre", simuladoInicial.bimestre ?? "");
 
-          // Datas (NÃO USAR toISOString → causa troca de hora)
           if (simuladoInicial.dataInicio) {
             const d = new Date(simuladoInicial.dataInicio);
             if (!isNaN(d.getTime())) {
@@ -180,9 +175,6 @@ function FormSimulado({
     0
   );
 
-  /* ============================
-     ➕ CRIAR QUESTÃO
-     ============================ */
   const handleCriarQuestao = async (novaQuestao: any) => {
     const questaoLocal: QuestaoLocal = {
       id: crypto.randomUUID(),
@@ -286,7 +278,7 @@ function FormSimulado({
   return (
     <div className="w-full mx-auto">
       <div className="border rounded-xl p-6 flex flex-col gap-6">
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-xl font-bold mb-4 text-[#1D5D7F]">
           {isEdicao ? "Editar Simulado" : "Criar Simulado"}
         </h1>
 

@@ -30,12 +30,14 @@ import { Habilidade } from '../disciplina/entities/habilidade.entity';
     ]),
   ],
   controllers: [IaController],
-  providers: [IaQuestoesService,
+  providers: [
+    IaQuestoesService,
     IaSimpleService,
     IaQueryService,
     IaQueryIntentService,
     IaQueryMapperService,
-    IaQueryDbService,],
+    IaQueryDbService,
+  ],
   exports: [IaQuestoesService, IaSimpleService],
 })
 export class IaModule {}

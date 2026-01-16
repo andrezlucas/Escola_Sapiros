@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { IaQueryIntentService } from './ia-query-intent.service';
 import { IaQueryMapperService } from './ia-query-mapper.service';
 import { IaSimpleService } from '../ia/ia-simple.service';
@@ -11,37 +11,22 @@ export class IaQueryService {
     private readonly ia: IaSimpleService,
   ) {}
 
-  async perguntar(pergunta: string, alunoId: string) {
-    // 1️⃣ Interpreta a intenção
+  async perguntar(pergunta: string) {
     const intent = await this.intentService.interpretar(pergunta);
 
-    // 2️⃣ Garante estrutura de filtros
     intent.filtros ??= {};
 
-    // 3️⃣ Extrai nome do aluno da pergunta (se houver)
     const nomeAluno = this.extrairNomeAluno(pergunta);
 
-    if (nomeAluno) {
-      // Busca por nome explícito
-      intent.filtros.nomeAluno = nomeAluno;
-    } else {
-      // Fallback: aluno logado
-      intent.filtros.alunoId = alunoId;
+    if (!nomeAluno) {
+      throw new BadRequestException(
+        'Nome do aluno não identificado na pergunta',
+      );
     }
 
-    // 4️⃣ Executa consulta mapeada
-    const dados = await this.mapperService.executar(intent);
+    intent.filtros.nomeAluno = nomeAluno;
 
-    // 5️⃣ IA explica o resultado
-    return this.ia.processarComando(
-      `
-Explique os dados abaixo para um aluno.
-Use linguagem simples.
-Não utilize termos técnicos.
-Seja claro, direto e educativo.
-      `.trim(),
-      JSON.stringify(dados),
-    );
+    return this.mapperService.executar(intent);
   }
 
   /**
@@ -52,10 +37,9 @@ Seja claro, direto e educativo.
    */
   private extrairNomeAluno(texto: string): string | null {
     const regex =
-      /(aluno|aluna)\s+([a-zà-ú]+(\s+[a-zà-ú]+)*)/i;
+      /(aluno|aluna)\s+([a-zà-ú]+(?:\s+[a-zà-ú]+)*)(?=\s+(tem|está|vai|precisa|com|em|no|na|de)|\?|$)/i;
 
     const match = texto.match(regex);
-
     return match ? match[2].trim() : null;
   }
 }

@@ -207,7 +207,7 @@ function FormAnexar({
   return (
     <div className="w-full">
       <div className="border rounded-xl p-6 flex flex-col gap-6">
-        <h1 className="text-2xl font-bold text-center">
+        <h1 className="text-xl font-bold mb-4 text-[#1D5D7F] text-center">
           {modo === "editar" ? "Editar Material" : "Fazer upload de material"}
         </h1>
 
