@@ -21,6 +21,9 @@ import { SimuladoModule } from './simulado/simulado.module';
 import { ConfiguracoesModule } from './configurações/configuracoes.module';
 import { IaModule } from './ia/ia.module';
 import { EmissaoDocumentosModule } from './emissao-documentos/emissao-documentos.module';
+import { AuditModule } from './audit/audit.module';
+import { MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { AccessAuditMiddleware } from './audit/access-audit.middleware';
 
 
 @Module({
@@ -65,9 +68,17 @@ import { EmissaoDocumentosModule } from './emissao-documentos/emissao-documentos
     SimuladoModule,
     ConfiguracoesModule,
     EmissaoDocumentosModule,
-    IaModule
+    IaModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AccessAuditMiddleware)
+      .forRoutes('*');
+  }
+}
