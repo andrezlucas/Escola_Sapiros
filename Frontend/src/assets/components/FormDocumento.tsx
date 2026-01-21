@@ -53,11 +53,17 @@ function FormDocumento({ onNext, onBack }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="flex flex-col gap-4 md:gap-6"
+    >
       <CardTituloMatricula>Documentos do(a) aluno(a)</CardTituloMatricula>
 
       <FormRowMatricula>
-        <FormTextoMatricula title="Registro Geral (RG)">
+        <FormTextoMatricula
+          title="Registro Geral (RG)"
+          className="w-full md:w-1/3"
+        >
           <Input
             label={""}
             type="file"
@@ -65,13 +71,13 @@ function FormDocumento({ onNext, onBack }: Props) {
             {...register("RG_ALUNO", { validate: validarArquivo })}
           />
           {errors.RG_ALUNO && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.RG_ALUNO.message}
             </span>
           )}
         </FormTextoMatricula>
 
-        <FormTextoMatricula title="CPF">
+        <FormTextoMatricula title="CPF" className="w-full md:w-1/3">
           <Input
             label={""}
             type="file"
@@ -79,13 +85,16 @@ function FormDocumento({ onNext, onBack }: Props) {
             {...register("CPF_ALUNO", { validate: validarArquivo })}
           />
           {errors.CPF_ALUNO && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.CPF_ALUNO.message}
             </span>
           )}
         </FormTextoMatricula>
 
-        <FormTextoMatricula title="Certidão de Nascimento">
+        <FormTextoMatricula
+          title="Certidão de Nascimento"
+          className="w-full md:w-1/3"
+        >
           <Input
             label={""}
             type="file"
@@ -93,7 +102,7 @@ function FormDocumento({ onNext, onBack }: Props) {
             {...register("CERTIDAO_NASCIMENTO", { validate: validarArquivo })}
           />
           {errors.CERTIDAO_NASCIMENTO && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.CERTIDAO_NASCIMENTO?.message}
             </span>
           )}
@@ -101,7 +110,10 @@ function FormDocumento({ onNext, onBack }: Props) {
       </FormRowMatricula>
 
       <FormRowMatricula>
-        <FormTextoMatricula title="Comprovante de Residência">
+        <FormTextoMatricula
+          title="Comprovante de Residência"
+          className="w-full md:w-1/3"
+        >
           <Input
             label={""}
             type="file"
@@ -111,13 +123,13 @@ function FormDocumento({ onNext, onBack }: Props) {
             })}
           />
           {errors.COMPROVANTE_RESIDENCIA_ALUNO && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.COMPROVANTE_RESIDENCIA_ALUNO.message}
             </span>
           )}
         </FormTextoMatricula>
 
-        <FormTextoMatricula title="Foto 3x4">
+        <FormTextoMatricula title="Foto 3x4" className="w-full md:w-1/3">
           <Input
             label={""}
             type="file"
@@ -125,13 +137,16 @@ function FormDocumento({ onNext, onBack }: Props) {
             {...register("FOTO_3X4", { validate: validarArquivo })}
           />
           {errors.FOTO_3X4 && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.FOTO_3X4.message}
             </span>
           )}
         </FormTextoMatricula>
 
-        <FormTextoMatricula title="Histórico Escolar">
+        <FormTextoMatricula
+          title="Histórico Escolar"
+          className="w-full md:w-1/3"
+        >
           <Input
             label={""}
             type="file"
@@ -141,7 +156,7 @@ function FormDocumento({ onNext, onBack }: Props) {
             })}
           />
           {errors.HISTORICO_ESCOLAR && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.HISTORICO_ESCOLAR.message}
             </span>
           )}
@@ -149,9 +164,12 @@ function FormDocumento({ onNext, onBack }: Props) {
       </FormRowMatricula>
 
       <CardTituloMatricula>Documentos do Responsável</CardTituloMatricula>
-    
+
       <FormRowMatricula>
-        <FormTextoMatricula title="RG do Responsável">
+        <FormTextoMatricula
+          title="RG do Responsável"
+          className="w-full md:w-1/3"
+        >
           <Input
             label={""}
             type="file"
@@ -159,13 +177,16 @@ function FormDocumento({ onNext, onBack }: Props) {
             {...register("RG_RESPONSAVEL", { validate: validarArquivo })}
           />
           {errors.RG_RESPONSAVEL && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.RG_RESPONSAVEL.message}
             </span>
           )}
         </FormTextoMatricula>
 
-        <FormTextoMatricula title="CPF do Responsável">
+        <FormTextoMatricula
+          title="CPF do Responsável"
+          className="w-full md:w-1/3"
+        >
           <Input
             label={""}
             type="file"
@@ -173,13 +194,16 @@ function FormDocumento({ onNext, onBack }: Props) {
             {...register("CPF_RESPONSAVEL", { validate: validarArquivo })}
           />
           {errors.CPF_RESPONSAVEL && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.CPF_RESPONSAVEL.message}
             </span>
           )}
         </FormTextoMatricula>
 
-        <FormTextoMatricula title="Comprovante de Residência">
+        <FormTextoMatricula
+          title="Comprovante de Residência"
+          className="w-full md:w-1/3"
+        >
           <Input
             label={""}
             type="file"
@@ -189,28 +213,27 @@ function FormDocumento({ onNext, onBack }: Props) {
             })}
           />
           {errors.COMPROVANTE_RESIDENCIA_RESP && (
-            <span className="text-sm text-red-500">
+            <span className="text-xs md:text-sm text-red-500">
               {errors.COMPROVANTE_RESIDENCIA_RESP.message}
             </span>
           )}
         </FormTextoMatricula>
       </FormRowMatricula>
-      <div className="w-full flex justify-center gap-6 mt-10">
-        <div className="w-full flex justify-center gap-6 mt-10">
-          <button
-            type="button"
-            onClick={() => onBack(getValues())}
-            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg"
-          >
-            Voltar
-          </button>
-          <button
-            type="submit"
-            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg"
-          >
-            Avançar
-          </button>
-        </div>
+
+      <div className="w-full flex flex-col sm:flex-row justify-center gap-4 md:gap-6 mt-6 md:mt-10">
+        <button
+          type="button"
+          onClick={() => onBack(getValues())}
+          className="w-full sm:w-40 h-12 md:h-14 bg-gray-400 md:bg-[#1D5D7F] text-white text-lg md:text-xl font-semibold rounded-lg transition duration-200 hover:opacity-90"
+        >
+          Voltar
+        </button>
+        <button
+          type="submit"
+          className="w-full sm:w-40 h-12 md:h-14 bg-[#1D5D7F] text-white text-lg md:text-xl font-semibold rounded-lg transition duration-200 hover:bg-[#2a7aa3] focus:outline-none focus:ring-4 focus:ring-[#1D5D7F]/30"
+        >
+          Avançar
+        </button>
       </div>
     </form>
   );

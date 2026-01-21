@@ -84,7 +84,10 @@ export default function FormResponsavel({
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-4 md:gap-6"
+      >
         <CardTituloMatricula>Dados pessoais do responsável</CardTituloMatricula>
 
         <FormRowMatricula>
@@ -107,7 +110,10 @@ export default function FormResponsavel({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Data de nascimento:" className="w-1/2">
+          <FormTextoMatricula
+            title="Data de nascimento:"
+            className="w-full md:w-1/2"
+          >
             <Input
               label=""
               type="date"
@@ -129,7 +135,7 @@ export default function FormResponsavel({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Sexo:" className="w-1/2">
+          <FormTextoMatricula title="Sexo:" className="w-full md:w-1/2">
             <FormSelect
               name="sexo"
               options={[
@@ -139,7 +145,7 @@ export default function FormResponsavel({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="RG:" className="w-1/2">
+          <FormTextoMatricula title="RG:" className="w-full md:w-1/2">
             <Input
               label=""
               type="text"
@@ -153,7 +159,10 @@ export default function FormResponsavel({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Data de emissão:" className="w-1/3">
+          <FormTextoMatricula
+            title="Data de emissão:"
+            className="w-full md:w-1/3"
+          >
             <Input
               label=""
               type="date"
@@ -168,7 +177,10 @@ export default function FormResponsavel({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Órgão emissor:" className="w-1/3">
+          <FormTextoMatricula
+            title="Órgão emissor:"
+            className="w-full md:w-1/3"
+          >
             <Input
               label=""
               {...register("orgao_emissor", {
@@ -178,7 +190,7 @@ export default function FormResponsavel({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="CPF:" className="w-1/3">
+          <FormTextoMatricula title="CPF:" className="w-full md:w-1/3">
             <Input
               label=""
               {...register("cpf", {
@@ -192,7 +204,7 @@ export default function FormResponsavel({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Celular:" className="w-1/2">
+          <FormTextoMatricula title="Celular:" className="w-full md:w-1/2">
             <Input
               label=""
               {...register("celular", {
@@ -215,21 +227,22 @@ export default function FormResponsavel({
               error={errors?.email?.message}
             />
           </FormTextoMatricula>
-          <FormRowMatricula>
-            <FormTextoMatricula title="Nacionalidade" className="w-1/2">
-              <NacionalidadeSelect />
-            </FormTextoMatricula>
+        </FormRowMatricula>
 
-            <FormTextoMatricula title="Naturalidade" className="w-1/2">
-              <NaturalidadeSelect />
-            </FormTextoMatricula>
-          </FormRowMatricula>
+        <FormRowMatricula>
+          <FormTextoMatricula title="Nacionalidade" className="w-full md:w-1/2">
+            <NacionalidadeSelect />
+          </FormTextoMatricula>
+
+          <FormTextoMatricula title="Naturalidade" className="w-full md:w-1/2">
+            <NaturalidadeSelect />
+          </FormTextoMatricula>
         </FormRowMatricula>
 
         <CardTituloMatricula>Endereço do responsável</CardTituloMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Logradouro:" className="w-1/2">
+          <FormTextoMatricula title="Logradouro:" className="w-full md:w-1/2">
             <Input
               label=""
               {...register("logradouro", {
@@ -239,7 +252,7 @@ export default function FormResponsavel({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Número:" className="w-1/2">
+          <FormTextoMatricula title="Número:" className="w-full md:w-1/2">
             <Input
               label=""
               {...register("numero", {
@@ -249,7 +262,7 @@ export default function FormResponsavel({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="CEP:" className="w-1/2">
+          <FormTextoMatricula title="CEP:" className="w-full md:w-1/2">
             <Input
               label=""
               type="text"
@@ -276,11 +289,11 @@ export default function FormResponsavel({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Complemento:" className="w-1/2">
+          <FormTextoMatricula title="Complemento:" className="w-full md:w-1/2">
             <Input label="" {...register("complemento")} />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Bairro:" className="w-1/2">
+          <FormTextoMatricula title="Bairro:" className="w-full md:w-1/2">
             <Input
               label=""
               {...register("bairro", {
@@ -290,27 +303,29 @@ export default function FormResponsavel({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Estado:" className="w-1/2">
+          <FormTextoMatricula title="Estado:" className="w-full md:w-1/2">
             <EstadoSelect control={control} />
           </FormTextoMatricula>
+        </FormRowMatricula>
 
-          <FormTextoMatricula title="Cidade:" className="w-1/2">
+        <FormRowMatricula>
+          <FormTextoMatricula title="Cidade:" className="w-full">
             <CidadeSelect />
           </FormTextoMatricula>
         </FormRowMatricula>
 
-        <div className="w-full flex justify-center gap-6 mt-10">
+        <div className="w-full flex flex-col sm:flex-row justify-center gap-4 md:gap-6 mt-6 md:mt-10">
           <button
             type="button"
             onClick={() => onBack(methods.getValues())}
-            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg"
+            className="w-full sm:w-40 h-12 md:h-14 bg-gray-400 md:bg-[#1D5D7F] text-white text-lg md:text-xl font-semibold rounded-lg transition duration-200 hover:opacity-90"
           >
             Voltar
           </button>
 
           <button
             type="submit"
-            className="w-40 h-12 sm:h-14 bg-[#1D5D7F] text-white text-lg sm:text-xl rounded-lg"
+            className="w-full sm:w-40 h-12 md:h-14 bg-[#1D5D7F] text-white text-lg md:text-xl font-semibold rounded-lg transition duration-200 hover:bg-[#2a7aa3] focus:outline-none focus:ring-4 focus:ring-[#1D5D7F]/30"
           >
             Avançar
           </button>

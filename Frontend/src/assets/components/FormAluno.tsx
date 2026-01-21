@@ -100,7 +100,10 @@ export default function FormAluno({
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex flex-col gap-4 md:gap-6"
+      >
         <CardTituloMatricula>Dados pessoais do(a) aluno(a)</CardTituloMatricula>
 
         <FormRowMatricula>
@@ -124,7 +127,10 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Data de nascimento:" className="w-1/2">
+          <FormTextoMatricula
+            title="Data de nascimento:"
+            className="w-full md:w-1/2"
+          >
             <Input
               label=""
               type="date"
@@ -143,7 +149,7 @@ export default function FormAluno({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Sexo:" className="w-1/2">
+          <FormTextoMatricula title="Sexo:" className="w-full md:w-1/2">
             <FormSelect
               name="sexo"
               options={[
@@ -153,7 +159,7 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="RG:" className="w-1/2">
+          <FormTextoMatricula title="RG:" className="w-full md:w-1/2">
             <Input
               label=""
               type="text"
@@ -167,7 +173,10 @@ export default function FormAluno({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Data de emissão:" className="w-1/3">
+          <FormTextoMatricula
+            title="Data de emissão:"
+            className="w-full md:w-1/3"
+          >
             <Input
               label=""
               type="date"
@@ -182,7 +191,10 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Órgão emissor:" className="w-1/3">
+          <FormTextoMatricula
+            title="Órgão emissor:"
+            className="w-full md:w-1/3"
+          >
             <Input
               label=""
               {...register("orgao_emissor", {
@@ -192,7 +204,7 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="CPF:" className="w-1/3">
+          <FormTextoMatricula title="CPF:" className="w-full md:w-1/3">
             <Input
               label=""
               {...register("cpf", {
@@ -206,7 +218,7 @@ export default function FormAluno({
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Celular:" className="w-1/2">
+          <FormTextoMatricula title="Celular:" className="w-full md:w-1/2">
             <Input
               label=""
               {...register("celular", {
@@ -229,11 +241,14 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Nacionalidade:" className="w-1/2">
+          <FormTextoMatricula
+            title="Nacionalidade:"
+            className="w-full md:w-1/2"
+          >
             <NacionalidadeSelect />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Naturalidade:" className="w-1/2">
+          <FormTextoMatricula title="Naturalidade:" className="w-full md:w-1/2">
             <NaturalidadeSelect />
           </FormTextoMatricula>
         </FormRowMatricula>
@@ -241,58 +256,60 @@ export default function FormAluno({
         <CardTituloMatricula>Endereço do(a) aluno(a)</CardTituloMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Logradouro:" className="w-1/2">
+          <FormTextoMatricula title="Logradouro:" className="w-full md:w-1/2">
             <Input label="" {...register("logradouro")} />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Número:" className="w-1/2">
+          <FormTextoMatricula title="Número:" className="w-full md:w-1/2">
             <Input label="" {...register("numero")} />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="CEP:" className="w-1/2">
+          <FormTextoMatricula title="CEP:" className="w-full md:w-1/2">
             <Controller
               name="cep"
               control={control}
               rules={{ required: "CEP obrigatório" }}
               render={({ field }) => (
                 <Input
-                label={""} {...field}
-                onChange={async (e) => {
-                  const value = maskCep(e.target.value);
-                  field.onChange(value);
+                  label={""}
+                  {...field}
+                  onChange={async (e) => {
+                    const value = maskCep(e.target.value);
+                    field.onChange(value);
 
-                  if (value.replace(/\D/g, "").length === 8) {
-                    const d = await BuscarCep(value);
-                    if (d) {
-                      setValue("logradouro", d.logradouro ?? "");
-                      setValue("bairro", d.bairro ?? "");
-                      setValue("cidade", d.cidade ?? "");
-                      setValue("estado", d.estado ?? "");
+                    if (value.replace(/\D/g, "").length === 8) {
+                      const d = await BuscarCep(value);
+                      if (d) {
+                        setValue("logradouro", d.logradouro ?? "");
+                        setValue("bairro", d.bairro ?? "");
+                        setValue("cidade", d.cidade ?? "");
+                        setValue("estado", d.estado ?? "");
+                      }
                     }
-                  }
-                } }
-                error={errors?.cep?.message}                />
+                  }}
+                  error={errors?.cep?.message}
+                />
               )}
             />
           </FormTextoMatricula>
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Complemento:" className="w-1/2">
+          <FormTextoMatricula title="Complemento:" className="w-full md:w-1/2">
             <Input label="" {...register("complemento")} />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Bairro:" className="w-1/2">
+          <FormTextoMatricula title="Bairro:" className="w-full md:w-1/2">
             <Input label="" {...register("bairro")} />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Estado:" className="w-1/2">
+          <FormTextoMatricula title="Estado:" className="w-full md:w-1/2">
             <EstadoSelect control={control} />
           </FormTextoMatricula>
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Cidade:" className="w-1/1">
+          <FormTextoMatricula title="Cidade:" className="w-full">
             <CidadeSelect />
           </FormTextoMatricula>
         </FormRowMatricula>
@@ -300,7 +317,7 @@ export default function FormAluno({
         <CardTituloMatricula>Informações acadêmicas</CardTituloMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Série/Ano:" className="w-1/2">
+          <FormTextoMatricula title="Série/Ano:" className="w-full md:w-1/2">
             <FormSelect
               name="serie"
               options={[
@@ -311,7 +328,7 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Turno:" className="w-1/2">
+          <FormTextoMatricula title="Turno:" className="w-full md:w-1/2">
             <FormSelect
               name="turno"
               options={[
@@ -321,7 +338,10 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Escola de Origem:" className="w-1/2">
+          <FormTextoMatricula
+            title="Escola de Origem:"
+            className="w-full md:w-1/2"
+          >
             <Input label="" {...register("escola_origem")} />
           </FormTextoMatricula>
         </FormRowMatricula>
@@ -329,11 +349,17 @@ export default function FormAluno({
         <CardTituloMatricula>Informações complementares</CardTituloMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Necessidades especiais:" className="w-1/2">
+          <FormTextoMatricula
+            title="Necessidades especiais:"
+            className="w-full md:w-1/2"
+          >
             <Input label="" {...register("necessidades_especiais")} />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Possui alergias?" className="w-1/2">
+          <FormTextoMatricula
+            title="Possui alergias?"
+            className="w-full md:w-1/2"
+          >
             <FormSelect
               name="tem_alergia"
               options={[
@@ -343,13 +369,19 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Quais alergias?" className="w-1/2">
+          <FormTextoMatricula
+            title="Quais alergias?"
+            className="w-full md:w-1/2"
+          >
             <Input label="" {...register("quais_alergias")} />
           </FormTextoMatricula>
         </FormRowMatricula>
 
         <FormRowMatricula>
-          <FormTextoMatricula title="Saída sozinho:" className="w-1/2">
+          <FormTextoMatricula
+            title="Saída sozinho:"
+            className="w-full md:w-1/2"
+          >
             <FormSelect
               name="saida_sozinho"
               options={[
@@ -359,7 +391,10 @@ export default function FormAluno({
             />
           </FormTextoMatricula>
 
-          <FormTextoMatricula title="Uso de imagem:" className="w-1/2">
+          <FormTextoMatricula
+            title="Uso de imagem:"
+            className="w-full md:w-1/2"
+          >
             <FormSelect
               name="uso_imagem"
               options={[
@@ -370,11 +405,11 @@ export default function FormAluno({
           </FormTextoMatricula>
         </FormRowMatricula>
 
-        <div className="w-full flex justify-center mt-10">
-          <div className="w-40">
+        <div className="w-full flex justify-center mt-6 md:mt-10">
+          <div className="w-full max-w-[160px]">
             <button
               type="submit"
-              className="w-full bg-[#1D5D7F] h-12 sm:h-14 text-white text-lg sm:text-xl font-normal rounded-lg transition duration-200 focus:outline-none focus:ring-4"
+              className="w-full bg-[#1D5D7F] h-12 md:h-14 text-white text-lg md:text-xl font-semibold rounded-lg transition duration-200 hover:bg-[#2a7aa3] focus:outline-none focus:ring-4 focus:ring-[#1D5D7F]/30"
             >
               Avançar
             </button>

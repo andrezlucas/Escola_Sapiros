@@ -82,7 +82,7 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
       })
         .then((res) => res.json())
         .then((res) => {
-          setAlunos(Array.isArray(res) ? res : res.data ?? []);
+          setAlunos(Array.isArray(res) ? res : (res.data ?? []));
         });
     }
     if (tipo === "INDIVIDUAL") {
@@ -91,7 +91,7 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
       })
         .then((res) => res.json())
         .then((res) => {
-          setProfessor(Array.isArray(res) ? res : res.data ?? []);
+          setProfessor(Array.isArray(res) ? res : (res.data ?? []));
         });
     }
   }, [tipo, token]);
@@ -166,8 +166,8 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-2xl rounded-xl p-6">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white w-full max-w-2xl rounded-xl p-4 sm:p-6 max-h-[95vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-[#1D5D7F] mb-4">Criar Aviso</h2>
 
         <FormProvider {...methods}>
@@ -177,7 +177,7 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
             {tipo === "TURMA" && (
               <select
                 {...register("turmaId")}
-                className="w-full border rounded-lg px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#1D5D7F]"
               >
                 <option value="">Selecione a turma</option>
                 {turmas.map((t) => (
@@ -189,10 +189,10 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
             )}
 
             {tipo === "INDIVIDUAL" && (
-              <>
+              <div className="space-y-4">
                 <select
                   {...register("destinatarioAlunoId")}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#1D5D7F]"
                 >
                   <option value="">Selecione o aluno (opcional)</option>
                   {alunos.map((a) => (
@@ -204,7 +204,7 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
 
                 <select
                   {...register("destinatarioProfessorId")}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#1D5D7F]"
                 >
                   <option value="">Selecione o professor (opcional)</option>
                   {professor.map((p) => (
@@ -213,20 +213,20 @@ export default function ModalCriarAviso({ onClose, onSalvar }: Props) {
                     </option>
                   ))}
                 </select>
-              </>
+              </div>
             )}
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border rounded-lg"
+                className="w-full sm:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#1D5D7F] text-white rounded-lg"
+                className="w-full sm:w-auto px-4 py-2 bg-[#1D5D7F] text-white rounded-lg font-medium hover:bg-[#164863] transition-colors"
               >
                 Salvar
               </button>

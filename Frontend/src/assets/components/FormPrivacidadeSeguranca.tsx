@@ -57,7 +57,7 @@ function FormPrivacidadeSeguranca() {
           "http://localhost:3000/configuracoes/codigos-acesso",
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         if (resCodigos.ok) {
@@ -167,7 +167,7 @@ function FormPrivacidadeSeguranca() {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
 
           if (!res.ok) {
@@ -183,7 +183,7 @@ function FormPrivacidadeSeguranca() {
             "http://localhost:3000/configuracoes/codigos-acesso",
             {
               headers: { Authorization: `Bearer ${token}` },
-            }
+            },
           );
           if (resStatus.ok) {
             setCodigosStatus(await resStatus.json());
@@ -194,38 +194,48 @@ function FormPrivacidadeSeguranca() {
           setLoadingGerar(false);
         }
       },
-      () => {}
+      () => {},
     );
   }
 
   return (
-    <div className="flex-1 bg-white rounded-xl p-8 shadow-md space-y-6">
+    <div className="flex-1 bg-white rounded-xl p-4 sm:p-8 shadow-md space-y-6">
       <div>
-        <p className="font-bold text-2xl text-[#1D5D7F]">E-mail</p>
-        <p className="text-lg font-medium">{email || "Carregando..."}:</p>
+        <p className="font-bold text-xl sm:text-2xl text-[#1D5D7F]">E-mail</p>
+        <p className="text-base sm:text-lg font-medium break-all">
+          {email || "Carregando..."}:
+        </p>
       </div>
 
       <hr />
 
       <div className="space-y-4">
-        <h4 className="font-bold text-2xl text-[#1D5D7F]">
+        <h4 className="font-bold text-xl sm:text-2xl text-[#1D5D7F]">
           Verificação em duas etapas (2FA)
         </h4>
 
         {!twoFAEnabled && !qrCode && (
-          <Button onClick={gerarQrCode} disabled={loading}>
-            Ativar verificação em duas etapas
-          </Button>
+          <div className="flex">
+            <Button
+              onClick={gerarQrCode}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              Ativar verificação em duas etapas
+            </Button>
+          </div>
         )}
 
         {qrCode && (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+          <div className="flex flex-col items-center sm:items-start space-y-4">
+            <p className="text-sm text-gray-600 text-center sm:text-left">
               Escaneie o QR Code com o Google Authenticator ou Authy e digite o
               código abaixo.
             </p>
 
-            <img src={qrCode} alt="QR Code 2FA" className="w-48" />
+            <div className="bg-white p-2 border rounded-lg">
+              <img src={qrCode} alt="QR Code 2FA" className="w-40 sm:w-48" />
+            </div>
 
             <input
               type="text"
@@ -234,13 +244,17 @@ function FormPrivacidadeSeguranca() {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               placeholder="000000"
               className="
-                w-40 h-12 text-center text-xl tracking-widest
+                w-full sm:w-40 h-12 text-center text-xl tracking-widest
                 border rounded-lg focus:outline-none focus:ring-2
                 focus:ring-[#1D5D7F]
               "
             />
 
-            <Button onClick={ativar2FA} disabled={code.length !== 6}>
+            <Button
+              onClick={ativar2FA}
+              disabled={code.length !== 6}
+              className="w-full sm:w-auto"
+            >
               Confirmar ativação
             </Button>
           </div>
@@ -249,12 +263,14 @@ function FormPrivacidadeSeguranca() {
         {twoFAEnabled && (
           <div className="space-y-3">
             <p className="text-green-600 font-medium flex items-center gap-2">
-              <MdVerifiedUser className="text-lg" />
-              Verificação em duas etapas ativada
+              <MdVerifiedUser className="text-lg shrink-0" />
+              <span className="text-sm sm:text-base">
+                Verificação em duas etapas ativada
+              </span>
             </p>
 
             {ultimoLogin && (
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Último login em {new Date(ultimoLogin).toLocaleString("pt-BR")}
               </p>
             )}
@@ -263,13 +279,14 @@ function FormPrivacidadeSeguranca() {
               <Button
                 variant="danger"
                 onClick={() => setMostrarDesativar(true)}
+                className="w-full sm:w-auto"
               >
                 Desativar verificação em duas etapas
               </Button>
             )}
 
             {mostrarDesativar && (
-              <div className="space-y-3 max-w-sm">
+              <div className="space-y-3 w-full max-w-sm">
                 <input
                   type="password"
                   placeholder="Digite sua senha"
@@ -283,8 +300,10 @@ function FormPrivacidadeSeguranca() {
                   "
                 />
 
-                <div className="flex gap-2">
-                  <Button onClick={desativar2FA}>Confirmar desativação</Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={desativar2FA} className="w-full sm:w-auto">
+                    Confirmar desativação
+                  </Button>
 
                   <Button
                     variant="secondary"
@@ -292,6 +311,7 @@ function FormPrivacidadeSeguranca() {
                       setMostrarDesativar(false);
                       setSenha2FA("");
                     }}
+                    className="w-full sm:w-auto"
                   >
                     Cancelar
                   </Button>
@@ -306,21 +326,24 @@ function FormPrivacidadeSeguranca() {
 
       {twoFAEnabled && (
         <div className="space-y-4">
-          <h4 className="text-lg font-semibold flex items-center gap-2">
+          <h4 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <MdSecurity className="text-[#1D5D7F]" />
             Códigos de Recuperação
           </h4>
 
-          <p className="text-sm text-gray-600">
+          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
             Esses códigos permitem acessar sua conta se perder acesso ao 2FA ou
             ao celular autenticador. Cada código é de uso único. Guarde-os em
             local seguro.
           </p>
 
           {codigosStatus && (
-            <div className="bg-gray-50 p-4 rounded-lg text-sm">
-              <p>
-                <strong>Total:</strong> {codigosStatus.total} •
-                <strong> Usados:</strong> {codigosStatus.usados} •
+            <div className="bg-gray-50 p-4 rounded-lg text-xs sm:text-sm">
+              <p className="flex flex-wrap gap-1">
+                <strong>Total:</strong> {codigosStatus.total}{" "}
+                <span className="hidden sm:inline">•</span>
+                <strong> Usados:</strong> {codigosStatus.usados}{" "}
+                <span className="hidden sm:inline">•</span>
                 <strong> Restantes:</strong>{" "}
                 <span
                   className={
@@ -336,12 +359,20 @@ function FormPrivacidadeSeguranca() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={gerarCodigosAcesso} disabled={loadingGerar}>
+            <Button
+              onClick={gerarCodigosAcesso}
+              disabled={loadingGerar}
+              className="w-full sm:w-auto"
+            >
               {loadingGerar ? "Gerando..." : "Gerar 10 novos códigos"}
             </Button>
 
             {codigosGerados.length > 0 && (
-              <Button variant="outline" onClick={() => setCodigosGerados([])}>
+              <Button
+                variant="outline"
+                onClick={() => setCodigosGerados([])}
+                className="w-full sm:w-auto"
+              >
                 Ocultar códigos
               </Button>
             )}
@@ -349,14 +380,14 @@ function FormPrivacidadeSeguranca() {
 
           {codigosGerados.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm text-amber-800 font-medium mb-2">
+              <p className="text-xs sm:text-sm text-amber-800 font-medium mb-2">
                 **Copie esses códigos agora! Eles não aparecem novamente.**
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {codigosGerados.map((cod, i) => (
                   <div
                     key={i}
-                    className="font-mono bg-gray-100 p-3 text-center rounded border border-gray-300"
+                    className="font-mono bg-gray-100 p-3 text-sm sm:text-base text-center rounded border border-gray-300"
                   >
                     {cod}
                   </div>

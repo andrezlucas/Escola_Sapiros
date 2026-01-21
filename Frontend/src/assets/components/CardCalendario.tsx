@@ -15,13 +15,15 @@ const CardCalendario: React.FC<CardCalendarioProps> = ({ type = "full" }) => {
     <div
       className={
         type === "mini"
-          ? "border-gray-200 rounded-xl p-3 flex justify-center"
-          : "w-full border-gray-200 rounded-xl p-9 mt-4 flex justify-center"
+          ? "border-gray-200 rounded-xl p-2 md:p-3 flex justify-center overflow-hidden"
+          : "w-full border-gray-200 rounded-xl p-4 md:p-9 mt-2 md:mt-4 flex justify-center overflow-hidden"
       }
     >
       <div
         className={
-          type === "mini" ? "scale-75 origin-top" : "scale-110 origin-top"
+          type === "mini"
+            ? "scale-90 sm:scale-100 md:scale-75 origin-top"
+            : "scale-100 md:scale-110 origin-top"
         }
       >
         <Calendar

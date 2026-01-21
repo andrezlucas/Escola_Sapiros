@@ -42,7 +42,6 @@ export default function ResponderSimulado({
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Função para iniciar tentativa (chamada uma vez só)
   const iniciarTentativa = async () => {
     try {
       const res = await fetch(
@@ -52,7 +51,7 @@ export default function ResponderSimulado({
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!res.ok) {
@@ -90,7 +89,7 @@ export default function ResponderSimulado({
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-          }
+          },
         );
 
         if (!resSimulado.ok) throw new Error("Erro ao carregar simulado");
@@ -109,7 +108,6 @@ export default function ResponderSimulado({
     if (simuladoId) carregarDados();
   }, [simuladoId]);
 
-  // Timer regressivo
   useEffect(() => {
     if (
       tempoRestante === null ||
@@ -142,7 +140,7 @@ export default function ResponderSimulado({
     if (horas > 0) {
       return `${horas}h ${minutos.toString().padStart(2, "0")}min`;
     }
-    return `${minutos.toString().padStart(2, "0")}min`;
+    return `${minutos.toString().padStart(2, "0")}:${segundos.toString().padStart(2, "0")}min`;
   };
 
   const selecionarAlternativa = (questaoId: string, alternativaId: string) => {
@@ -171,7 +169,7 @@ export default function ResponderSimulado({
           ([questaoId, alternativaId]) => ({
             questaoId,
             alternativaId,
-          })
+          }),
         ),
       };
 
@@ -184,7 +182,7 @@ export default function ResponderSimulado({
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (!res.ok) {
@@ -194,7 +192,7 @@ export default function ResponderSimulado({
 
       const resultado = await res.json();
       toast.success(
-        `Simulado finalizado! Sua nota: ${resultado.notaFinal || "—"}`
+        `Simulado finalizado! Sua nota: ${resultado.notaFinal || "—"}`,
       );
 
       if (onSimuladoFinalizado) onSimuladoFinalizado();
@@ -208,37 +206,23 @@ export default function ResponderSimulado({
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <p className="text-xl text-white">Carregando simulado...</p>
+        <p className="text-xl text-white animate-pulse">
+          Carregando simulado...
+        </p>
       </div>
     );
   }
 
-  if (erro) {
+  if (erro || !simulado || !tentativaIniciada) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl p-10 text-center">
-          <p className="text-xl text-red-600 mb-4">{erro}</p>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!simulado || !tentativaIniciada) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl p-10 text-center">
-          <p className="text-xl text-red-600 mb-4">
-            Não foi possível iniciar o simulado.
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl p-6 sm:p-10 text-center max-w-sm w-full">
+          <p className="text-lg sm:text-xl text-red-600 mb-6">
+            {erro || "Não foi possível iniciar o simulado."}
           </p>
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+            className="w-full px-6 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 font-bold transition-colors"
           >
             Fechar
           </button>
@@ -249,68 +233,93 @@ export default function ResponderSimulado({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white w-full max-w-2xl rounded-xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-white w-full max-w-3xl rounded-t-2xl sm:rounded-xl h-[95vh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b pb-4 mb-6 sticky top-0 bg-white z-10">
-          <h1 className="text-2xl font-bold text-gray-800">
-            {simulado.titulo}
-          </h1>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 gap-4">
-            <div className="text-xl font-bold text-[#1D5D7F]">
-              Tempo restante: {formatarTempo()}
+        <div className="border-b p-4 sm:p-6 bg-white z-20">
+          <div className="flex justify-between items-start mb-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-800 line-clamp-1">
+              {simulado.titulo}
+            </h1>
+            <button onClick={onClose} className="sm:hidden text-gray-400 p-1">
+              ✕
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div
+              className={`text-lg sm:text-xl font-bold transition-colors ${tempoRestante && tempoRestante < 300 ? "text-red-600 animate-pulse" : "text-[#1D5D7F]"}`}
+            >
+              Tempo: {formatarTempo()}
             </div>
-            <div className="text-lg text-gray-700">
-              Questões respondidas: {questoesRespondidas} / {totalQuestoes}
+            <div className="text-sm sm:text-lg text-gray-600 font-medium">
+              Progresso:{" "}
+              <span className="text-[#1D5D7F]">{questoesRespondidas}</span> /{" "}
+              {totalQuestoes}
             </div>
+          </div>
+
+          <div className="w-full bg-gray-100 h-1.5 rounded-full mt-3 overflow-hidden">
+            <div
+              className="bg-[#1D5D7F] h-full transition-all duration-300"
+              style={{
+                width: `${(questoesRespondidas / totalQuestoes) * 100}%`,
+              }}
+            />
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-10">
           {simulado.questoes.map((q, index) => (
             <div key={q.id} className="space-y-4">
-              <h3 className="font-bold text-gray-800 leading-tight">
+              <h3 className="font-bold text-gray-800 leading-tight text-base sm:text-lg">
                 {index + 1}. {q.enunciado}
               </h3>
 
-              <div className="grid gap-2">
-                {q.alternativas.map((alt) => (
-                  <label
-                    key={alt.id}
-                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-blue-50 ${
-                      respostas[q.id] === alt.id
-                        ? "bg-blue-100 border-[#1D5D7F]"
-                        : ""
-                    } ${
-                      finalizado || tempoRestante === 0
-                        ? "opacity-60 cursor-not-allowed"
-                        : ""
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={q.id}
-                      className="w-4 h-4 text-[#1D5D7F]"
-                      checked={respostas[q.id] === alt.id}
-                      onChange={() => selecionarAlternativa(q.id, alt.id)}
-                      disabled={finalizado || tempoRestante === 0}
-                    />
-                    <span className="text-gray-700">{alt.texto}</span>
-                  </label>
-                ))}
+              <div className="grid gap-3">
+                {q.alternativas.map((alt) => {
+                  const isSelected = respostas[q.id] === alt.id;
+                  const isDisabled = finalizado || tempoRestante === 0;
+
+                  return (
+                    <label
+                      key={alt.id}
+                      className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all active:scale-[0.98] ${
+                        isSelected
+                          ? "bg-blue-50 border-[#1D5D7F] shadow-sm"
+                          : "border-gray-100 hover:border-gray-200"
+                      } ${isDisabled ? "opacity-60 cursor-not-allowed active:scale-100" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name={q.id}
+                        className="w-5 h-5 text-[#1D5D7F] focus:ring-[#1D5D7F]"
+                        checked={isSelected}
+                        onChange={() => selecionarAlternativa(q.id, alt.id)}
+                        disabled={isDisabled}
+                      />
+                      <div className="flex gap-2 text-sm sm:text-base">
+                        <span className="font-bold text-[#1D5D7F]">
+                          {alt.letra})
+                        </span>
+                        <span className="text-gray-700">{alt.texto}</span>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex justify-end gap-3 pt-8 mt-8 border-t sticky bottom-0 bg-white z-10">
+        <div className="p-4 sm:p-6 border-t bg-gray-50 flex flex-col sm:flex-row justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg transition-colors"
+            className="order-2 sm:order-1 px-6 py-3 text-gray-600 font-semibold hover:bg-gray-200 rounded-xl transition-colors text-sm sm:text-base"
             disabled={finalizado}
           >
             Cancelar
@@ -318,13 +327,13 @@ export default function ResponderSimulado({
           <button
             onClick={finalizarSimulado}
             disabled={finalizado || tempoRestante === 0}
-            className="px-8 py-2.5 bg-[#1D5D7F] text-white rounded-lg font-bold hover:bg-[#164a66] shadow-md transition-all active:scale-95 disabled:opacity-50"
+            className="order-1 sm:order-2 px-8 py-3.5 bg-[#1D5D7F] text-white rounded-xl font-bold hover:bg-[#164a66] shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 text-sm sm:text-base"
           >
             {finalizado
-              ? "Finalizado!"
+              ? "Enviando..."
               : tempoRestante === 0
-              ? "Tempo esgotado"
-              : "Finalizar e Enviar"}
+                ? "Tempo esgotado"
+                : "Finalizar Simulado"}
           </button>
         </div>
       </div>

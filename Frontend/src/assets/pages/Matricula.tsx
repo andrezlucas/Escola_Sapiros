@@ -67,7 +67,7 @@ function onlyDigits(value?: string) {
 }
 
 function mapSexoFrontToDto(
-  value?: string
+  value?: string,
 ): "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO" {
   if (!value) return "NAO_INFORMADO";
   const v = value.toLowerCase();
@@ -167,7 +167,7 @@ function Matricula(): JSX.Element {
 
     Object.keys(payload).forEach(
       (k) =>
-        (payload[k] === undefined || payload[k] === "") && delete payload[k]
+        (payload[k] === undefined || payload[k] === "") && delete payload[k],
     );
 
     return payload;
@@ -232,7 +232,7 @@ function Matricula(): JSX.Element {
                   Authorization: `Bearer ${token}`,
                 },
                 body: formData,
-              }
+              },
             );
           }
         }
@@ -250,50 +250,75 @@ function Matricula(): JSX.Element {
 
   return (
     <FormProvider {...methods}>
-      <div className="w-full h-auto p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
-        <h1 className="text-4xl text-[#1D5D7F]">Matrícula online</h1>
+      <div className="w-full h-auto p-4 md:p-8 bg-white rounded-xl shadow-md flex flex-col gap-4 md:gap-6">
+        <h1 className="text-2xl md:text-4xl text-[#1D5D7F]  md:font-normal">
+          Matrícula online
+        </h1>
 
-        {etapa === 1 && (
-          <FormAluno
-            defaultValues={dadosCompleto.aluno}
-            onNext={(data) => handleNext(1, data)}
-          />
-        )}
-
-        {etapa === 2 && (
-          <FormResponsavel
-            defaultValues={dadosCompleto.responsavel}
-            onNext={(data) => handleNext(2, data)}
-            onBack={(data) => handleBack(2, data)}
-          />
-        )}
-
-        {etapa === 3 && (
-          <FormDocumento
-            onNext={(data) => {
-              setDadosCompleto((prev) => ({ ...prev, documentos: data }));
-              setEtapa(4);
-            }}
-            onBack={(data) => {
-              setDadosCompleto((prev) => ({ ...prev, documentos: data }));
-              setEtapa(2);
-            }}
-          />
-        )}
-
-        {etapa === 4 && (
-          <div className="w-full flex justify-center mt-10">
-            <div className="w-48">
-              <button
-                onClick={handleFinalSubmit}
-                disabled={enviando}
-                className="w-full bg-[#1D5D7F] h-12 sm:h-14 text-white text-lg sm:text-xl font-normal rounded-lg transition duration-200 focus:outline-none focus:ring-4"
-              >
-                {enviando ? "Enviando..." : "Finalizar matrícula"}
-              </button>
-            </div>
+        <div className="flex items-center gap-2 mb-2 md:hidden">
+          <span className="text-xs font-bold text-[#1D5D7F]">
+            Etapa {etapa} de 4
+          </span>
+          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#1D5D7F] transition-all duration-300"
+              style={{ width: `${(etapa / 4) * 100}%` }}
+            />
           </div>
-        )}
+        </div>
+
+        <div className="w-full">
+          {etapa === 1 && (
+            <FormAluno
+              defaultValues={dadosCompleto.aluno}
+              onNext={(data) => handleNext(1, data)}
+            />
+          )}
+
+          {etapa === 2 && (
+            <FormResponsavel
+              defaultValues={dadosCompleto.responsavel}
+              onNext={(data) => handleNext(2, data)}
+              onBack={(data) => handleBack(2, data)}
+            />
+          )}
+
+          {etapa === 3 && (
+            <FormDocumento
+              onNext={(data) => {
+                setDadosCompleto((prev) => ({ ...prev, documentos: data }));
+                setEtapa(4);
+              }}
+              onBack={(data) => {
+                setDadosCompleto((prev) => ({ ...prev, documentos: data }));
+                setEtapa(2);
+              }}
+            />
+          )}
+
+          {etapa === 4 && (
+            <div className="w-full flex flex-col items-center justify-center py-10 md:py-20 gap-6">
+              <div className="text-center space-y-2">
+                <h2 className="text-xl md:text-2xl font-bold text-[#1D5D7F]">
+                  Quase lá!
+                </h2>
+                <p className="text-sm md:text-base text-gray-600">
+                  Confira seus dados e finalize a matrícula.
+                </p>
+              </div>
+
+              <div className="w-full max-w-xs">
+                <button
+                  onClick={handleFinalSubmit}
+                  disabled={enviando}
+                  className="w-full bg-[#1D5D7F] h-12 md:h-14 text-white text-lg md:text-xl font-semibold rounded-lg transition duration-200 hover:bg-[#2a7aa3] disabled:opacity-50 focus:outline-none focus:ring-4 focus:ring-[#1D5D7F]/30"
+                >
+                  {enviando ? "Enviando..." : "Finalizar matrícula"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <ToastContainer
           position="bottom-center"

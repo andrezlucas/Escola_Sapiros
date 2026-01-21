@@ -17,7 +17,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 type Habilidade = {
@@ -118,7 +118,7 @@ function DesempenhoAluno() {
       const habilidadesData: Habilidade[] = await resHabilidades.json();
       const desenvolverData: HabilidadeDesenvolver[] =
         await resDesenvolver.json();
-      const notasData: NotaDisciplina[] = (await resNotas.json()) ?? []; // ← se null/undefined vira []
+      const notasData: NotaDisciplina[] = (await resNotas.json()) ?? [];
       setNotasDetalhadas(notasData);
       const disciplinasData: DesempenhoDisciplina[] =
         await resDisciplinas.json();
@@ -132,7 +132,7 @@ function DesempenhoAluno() {
     } catch (err: any) {
       console.error("Erro ao carregar desempenho:", err);
       setError(
-        err.message || "Erro ao carregar os dados. Verifique sua conexão."
+        err.message || "Erro ao carregar os dados. Verifique sua conexão.",
       );
     } finally {
       setLoading(false);
@@ -189,8 +189,8 @@ function DesempenhoAluno() {
           {i?.mediaFinal != null
             ? i.mediaFinal.toFixed(2)
             : i?.media != null
-            ? i.media.toFixed(2)
-            : "-"}
+              ? i.media.toFixed(2)
+              : "-"}
         </span>
       ),
     },
@@ -221,145 +221,147 @@ function DesempenhoAluno() {
 
   return (
     <div className="w-full h-auto p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
-      <div className="">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">Desempenho</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl text-[#1D5D7F]">
+          Desempenho
+        </h1>
 
-          <div className="flex items-center gap-3">
-            <label className="text-[#1D5D7F] font-medium">
-              Filtrar por bimestre:
-            </label>
-            <select
-              value={bimestreSelecionado ?? "todos"}
-              onChange={handleBimestreChange}
-              className="px-4 py-2 border border-gray-300 rounded-md bg-white text-[#1D5D7F] focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
-              <option value="todos">Todos os bimestres</option>
-              <option value="1">1º Bimestre</option>
-              <option value="2">2º Bimestre</option>
-              <option value="3">3º Bimestre</option>
-              <option value="4">4º Bimestre</option>
-            </select>
-          </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
+          <label className="text-[#1D5D7F] font-medium whitespace-nowrap">
+            Filtrar por bimestre:
+          </label>
+          <select
+            value={bimestreSelecionado ?? "todos"}
+            onChange={handleBimestreChange}
+            className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md bg-white text-[#1D5D7F] focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          >
+            <option value="todos">Todos os bimestres</option>
+            <option value="1">1º Bimestre</option>
+            <option value="2">2º Bimestre</option>
+            <option value="3">3º Bimestre</option>
+            <option value="4">4º Bimestre</option>
+          </select>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div className="xl:col-span-2 space-y-5">
-            <div
-              className="bg-white rounded-xl border p-5"
-              style={{ borderColor: "rgba(51,51,51,0.5)" }}
-            >
-              <h2 className="font-poppins font-bold text-lg text-[#1D5D7F]  mb-4">
-                Desempenho por Habilidade
-              </h2>
-              <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
-                {habilidades.map((h) => (
-                  <div key={h.habilidade}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-poppins font-medium">
-                        {h.habilidade}
-                      </span>
-                      <span
-                        className={`font-poppins font-semibold ${
-                          h.percentual < 70 ? "text-red-500" : ""
-                        }`}
-                      >
-                        {h.percentual}%
-                      </span>
-                    </div>
-                    <div className="h-6 bg-gray-200 rounded-full">
-                      <div
-                        className={`h-full ${getBarColorClass(
-                          h.percentual
-                        )} transition-all duration-500`}
-                        style={{ width: `${h.percentual}%` }}
-                      />
-                    </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <div className="xl:col-span-2 space-y-5">
+          <div
+            className="bg-white rounded-xl border p-4 sm:p-5"
+            style={{ borderColor: "rgba(51,51,51,0.5)" }}
+          >
+            <h2 className="font-poppins font-bold text-lg text-[#1D5D7F] mb-4">
+              Desempenho por Habilidade
+            </h2>
+            <div className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
+              {habilidades.map((h) => (
+                <div key={h.habilidade}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-poppins font-medium pr-2">
+                      {h.habilidade}
+                    </span>
+                    <span
+                      className={`font-poppins font-semibold ${
+                        h.percentual < 70 ? "text-red-500" : ""
+                      }`}
+                    >
+                      {h.percentual}%
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <div className="h-6 bg-gray-200 rounded-full">
+                    <div
+                      className={`h-full ${getBarColorClass(
+                        h.percentual,
+                      )} transition-all duration-500 rounded-full`}
+                      style={{ width: `${h.percentual}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div
-              className="bg-white rounded-xl border p-5"
-              style={{ borderColor: "rgba(51,51,51,0.5)" }}
-            >
-              <h2 className="text-lg font-bold font-poppins text-[#1D5D7F] mb-3">
-                Notas detalhadas
-              </h2>
-              <p className="font-poppins font-normal text-[#1D5D7F]">
-                Visualize suas notas por avaliação em cada disciplina
-              </p>
-              <div className="max-h-[350px] overflow-y-auto">
+          <div
+            className="bg-white rounded-xl border p-4 sm:p-5"
+            style={{ borderColor: "rgba(51,51,51,0.5)" }}
+          >
+            <h2 className="text-lg font-bold font-poppins text-[#1D5D7F] mb-3">
+              Notas detalhadas
+            </h2>
+            <p className="font-poppins font-normal text-[#1D5D7F] mb-4 text-sm sm:text-base">
+              Visualize suas notas por avaliação em cada disciplina
+            </p>
+            <div className="overflow-x-auto">
+              <div className="min-w-[600px] xl:min-w-full">
                 <Tabela dados={notasDetalhadas} colunas={colunasNotas} />
               </div>
             </div>
+          </div>
 
-            <div
-              className="bg-white rounded-xl border p-5"
-              style={{ borderColor: "rgba(51,51,51,0.5)" }}
-            >
-              <h2 className="text-lg font-bold mb-4 font-poppins  text-[#1D5D7F]">
-                Desempenho por Disciplina
-              </h2>
-              <div className="h-64">
-                <Bar data={chartData} options={chartOptions} />
-              </div>
+          <div
+            className="bg-white rounded-xl border p-4 sm:p-5"
+            style={{ borderColor: "rgba(51,51,51,0.5)" }}
+          >
+            <h2 className="text-lg font-bold mb-4 font-poppins text-[#1D5D7F]">
+              Desempenho por Disciplina
+            </h2>
+            <div className="h-64">
+              <Bar data={chartData} options={chartOptions} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          <div
+            className="bg-white rounded-xl border p-5"
+            style={{ borderColor: "rgba(51,51,51,0.5)" }}
+          >
+            <h3 className="text-lg font-bold mb-4 font-poppins text-[#1D5D7F]">
+              Resumo Geral
+            </h3>
+            <div className="flex justify-between mb-4">
+              <span className="font-poppins font-medium text-[#1D5D7F]">
+                Média Geral
+              </span>
+              <span className="text-cyan-600 font-poppins font-medium">
+                {mediaGeral}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-poppins font-medium text-[#1D5D7F]">
+                Frequência
+              </span>
+              <span
+                className={`font-poppins font-medium ${
+                  frequencia < 75 ? "text-red-500" : "text-green-600"
+                }`}
+              >
+                {frequencia}%
+              </span>
             </div>
           </div>
 
-          <div className="space-y-5">
-            <div
-              className="bg-white rounded-xl border p-5"
-              style={{ borderColor: "rgba(51,51,51,0.5)" }}
-            >
-              <h3 className="text-lg font-bold mb-4 font-poppins text-[#1D5D7F]">
-                Resumo Geral
-              </h3>
-              <div className="flex justify-between mb-4">
-                <span className="font-poppins font-medium text-[#1D5D7F]">
-                  Média Geral
-                </span>
-                <span className="text-cyan-600  font-poppins font-medium">
-                  {mediaGeral}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-poppins font-medium text-[#1D5D7F]">
-                  Frequência
-                </span>
-                <span
-                  className={`font-poppins font-medium ${
-                    frequencia < 75 ? "text-red-500" : "text-green-600"
-                  }`}
+          <div
+            className="bg-white rounded-xl border p-5"
+            style={{ borderColor: "rgba(51,51,51,0.5)" }}
+          >
+            <h3 className="text-lg font-semibold mb-3">
+              Habilidades a desenvolver
+            </h3>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+              {habilidadesADesenvolver.map((h) => (
+                <div
+                  key={h.habilidade}
+                  className="bg-orange-50 border border-orange-100 rounded-lg p-3"
                 >
-                  {frequencia}%
-                </span>
-              </div>
-            </div>
-
-            <div
-              className="bg-white rounded-xl border p-5"
-              style={{ borderColor: "rgba(51,51,51,0.5)" }}
-            >
-              <h3 className="text-lg font-semibold mb-3">
-                Habilidades a desenvolver
-              </h3>
-              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2">
-                {habilidadesADesenvolver.map((h) => (
-                  <div
-                    key={h.habilidade}
-                    className="bg-orange-50 border border-orange-100 rounded-lg p-3"
-                  >
-                    <p className="font-semibold text-orange-700">
-                      {h.habilidade}
-                    </p>
-                    <p className="text-sm text-orange-600">
-                      Disciplina: {h.disciplina}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  <p className="font-semibold text-orange-700">
+                    {h.habilidade}
+                  </p>
+                  <p className="text-sm text-orange-600">
+                    Disciplina: {h.disciplina}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

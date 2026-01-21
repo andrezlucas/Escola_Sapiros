@@ -15,11 +15,18 @@ import DashboardCoordenacao from "./assets/pages/DashboardCoordenacao";
 import NaoAutorizado from "./assets/pages/NaoAutorizado";
 import Configuracao from "./assets/pages/Configuracao";
 import VerificarDocumento from "./assets/pages/VerificarDocumento";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   return (
     <>
-      <ToastContainer position="bottom-center" autoClose={3000} theme="dark" />
+      <ToastContainer
+        position="bottom-center"
+        autoClose={3000}
+        theme="dark"
+        toastClassName="w-[90vw] mx-auto sm:w-[320px] mb-4 rounded-lg shadow-lg"
+        className="text-sm sm:text-base font-medium"
+      />
 
       <Routes>
         <Route path="/" element={<Login />} />
@@ -104,4 +111,5 @@ function App() {
     </>
   );
 }
+
 export default App;

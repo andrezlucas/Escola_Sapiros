@@ -141,7 +141,7 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
   async function ExcluirAviso() {
     if (
       !window.confirm(
-        "Tem certeza que deseja excluir este aviso?\nEsta ação não pode ser desfeita."
+        "Tem certeza que deseja excluir este aviso?\nEsta ação não pode ser desfeita.",
       )
     ) {
       return;
@@ -170,8 +170,8 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-2xl rounded-xl p-6">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white w-full max-w-2xl rounded-xl p-4 sm:p-6 max-h-[95vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-[#1D5D7F] mb-4">Editar Aviso</h2>
 
         <FormProvider {...methods}>
@@ -181,7 +181,7 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
             {tipo === "TURMA" && (
               <select
                 {...register("turmaId")}
-                className="w-full border rounded-lg px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#1D5D7F]"
               >
                 <option value="">Selecione a turma</option>
                 {turmas.map((t) => (
@@ -195,7 +195,7 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
             {tipo === "INDIVIDUAL" && (
               <select
                 {...register("destinatarioAlunoId")}
-                className="w-full border rounded-lg px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#1D5D7F]"
               >
                 <option value="">Selecione o aluno</option>
                 {alunos.map((a) => (
@@ -206,18 +206,18 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
               </select>
             )}
 
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border rounded-lg"
+                className="w-full sm:order-1 sm:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancelar
               </button>
 
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#1D5D7F] text-white rounded-lg"
+                className="w-full sm:order-2 sm:w-auto px-4 py-2 bg-[#1D5D7F] text-white rounded-lg font-medium hover:bg-[#164863] transition-colors"
               >
                 Salvar
               </button>
@@ -225,7 +225,7 @@ export default function ModalEditarAviso({ aviso, onClose, onSalvar }: Props) {
               <button
                 type="button"
                 onClick={ExcluirAviso}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                className="w-full sm:order-3 sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 transition-colors"
               >
                 <FaTrash className="w-3 h-3" />
                 Excluir

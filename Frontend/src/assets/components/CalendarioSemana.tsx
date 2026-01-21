@@ -75,10 +75,10 @@ export function CalendarioSemana({
 
   const formatDayHeader = (date: Date) => {
     const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-    return `${dayNames[date.getDay()]}.${String(date.getDate()).padStart(
-      2,
-      "0"
-    )}`;
+    return {
+      name: dayNames[date.getDay()],
+      day: String(date.getDate()).padStart(2, "0"),
+    };
   };
 
   const isToday = (d: Date) => {
@@ -177,35 +177,41 @@ export function CalendarioSemana({
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="grid grid-cols-8 border-b border-gray-200">
-        <div className="p-4 text-center font-medium text-gray-500 border-r border-gray-200">
+        <div className="p-1 md:p-4 flex items-center justify-center text-center font-medium text-gray-500 border-r border-gray-200 text-[10px] md:text-sm">
           Hora
         </div>
 
         {weekDays.map((day, i) => {
           const fullDayEvents = getFullDayEvents(day);
           const dayEvents = getDayEvents(day);
+          const header = formatDayHeader(day);
 
           return (
             <div
               key={i}
-              className={`p-4 text-center border-r border-gray-200 ${
+              className={`p-1 md:p-4 text-center border-r border-gray-200 ${
                 isToday(day) ? "bg-blue-50" : ""
               } ${i === 6 ? "border-r-0" : ""}`}
             >
               <div
-                className={`font-medium ${
+                className={`flex flex-col items-center justify-center font-medium leading-tight ${
                   isToday(day) ? "text-blue-600" : "text-gray-700"
                 }`}
               >
-                {formatDayHeader(day)}
+                <span className="text-[9px] md:text-xs uppercase opacity-70">
+                  {header.name}
+                </span>
+                <span className="text-[11px] md:text-sm font-bold">
+                  {header.day}
+                </span>
               </div>
 
               {fullDayEvents.length > 0 && (
-                <div className="mt-2 space-y-1">
+                <div className="mt-1 md:mt-2 space-y-1">
                   {fullDayEvents.map((event, idx) => (
                     <div
                       key={idx}
-                      className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-90"
+                      className="text-[8px] md:text-xs px-0.5 md:px-2 py-0.5 md:py-1 rounded cursor-pointer hover:opacity-90"
                       style={{
                         backgroundColor:
                           (event.backgroundColor as string) ?? "#E6F2F8",
@@ -219,24 +225,18 @@ export function CalendarioSemana({
                       <div className="font-semibold truncate">
                         {event.title}
                       </div>
-                      {event.extendedProps?.categoria && (
-                        <div className="text-[10px] opacity-75 mt-0.5">
-                          {event.extendedProps.categoria}
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
               )}
 
               {dayEvents.length > 0 && fullDayEvents.length === 0 && (
-                <div className="mt-2 space-y-1">
-                  {dayEvents.slice(0, 2).map((event, idx) => {
-                    const start = parseDateInput(event.start);
+                <div className="mt-1 md:mt-2 space-y-1">
+                  {dayEvents.slice(0, 1).map((event, idx) => {
                     return (
                       <div
                         key={idx}
-                        className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-90"
+                        className="text-[8px] md:text-xs px-0.5 md:px-2 py-0.5 md:py-1 rounded cursor-pointer hover:opacity-90"
                         style={{
                           backgroundColor:
                             (event.backgroundColor as string) ?? "#E6F2F8",
@@ -250,17 +250,12 @@ export function CalendarioSemana({
                         <div className="font-semibold truncate">
                           {event.title}
                         </div>
-                        {start && (
-                          <div className="text-[10px] opacity-75 mt-0.5">
-                            {formatTime(event.start)}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
-                  {dayEvents.length > 2 && (
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      +{dayEvents.length - 2} mais
+                  {dayEvents.length > 1 && (
+                    <div className="text-[7px] md:text-[10px] text-gray-500 mt-0.5">
+                      +{dayEvents.length - 1}
                     </div>
                   )}
                 </div>
@@ -273,19 +268,19 @@ export function CalendarioSemana({
       <div className="divide-y divide-gray-200">
         {timeSlots.map((slot, sIdx) => (
           <div key={sIdx} className="grid grid-cols-8">
-            <div className="p-4 text-center text-gray-500 border-r border-gray-200">
+            <div className="p-1 md:p-4 flex items-center justify-center text-center text-gray-500 border-r border-gray-200 text-[10px] md:text-sm">
               {slot.label}
             </div>
 
             {weekDays.map((day, dIdx) => {
               const eventsForSlot = eventos.filter((ev) =>
-                isEventInTimeSlot(ev, day, slot.hour)
+                isEventInTimeSlot(ev, day, slot.hour),
               );
 
               return (
                 <div
                   key={dIdx}
-                  className={`min-h-[100px] p-2 border-r border-gray-200 
+                  className={`min-h-[60px] md:min-h-[100px] p-0.5 md:p-2 border-r border-gray-200 
                     ${dIdx === 6 ? "border-r-0" : ""}
                     ${isToday(day) ? "bg-blue-50" : ""}
                     ${
@@ -314,8 +309,8 @@ export function CalendarioSemana({
                     return (
                       <div
                         key={idx}
-                        className={`mb-2 p-3 rounded-lg shadow-sm border-l-4 hover:shadow-md cursor-pointer ${
-                          isLongEvent ? "min-h-[60px]" : ""
+                        className={`mb-0.5 md:mb-2 p-1 md:p-3 rounded-md md:rounded-lg shadow-sm border-l-2 md:border-l-4 hover:shadow-md cursor-pointer ${
+                          isLongEvent ? "min-h-[40px] md:min-h-[60px]" : ""
                         }`}
                         style={{
                           backgroundColor:
@@ -329,29 +324,23 @@ export function CalendarioSemana({
                           onEventClick?.(event);
                         }}
                       >
-                        <div className="flex justify-between items-start">
-                          <div className="text-xs font-medium opacity-90 mb-1">
-                            {formatTime(event.start)} - {formatTime(event.end)}
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-0.5">
+                          <div className="text-[7px] md:text-xs font-medium opacity-90">
+                            {formatTime(event.start)}
                           </div>
                           {event.extendedProps?.tipo && (
-                            <span className="text-[10px] bg-white/20 px-1 rounded">
+                            <span className="text-[6px] md:text-[10px] bg-white/20 px-0.5 md:px-1 rounded self-start">
                               {event.extendedProps.tipo}
                             </span>
                           )}
                         </div>
 
-                        <div className="font-semibold text-sm truncate">
+                        <div className="font-semibold text-[8px] md:text-sm truncate mt-0.5">
                           {event.title}
                         </div>
 
-                        {event.extendedProps?.descricao && (
-                          <div className="text-xs mt-1 opacity-90 line-clamp-2">
-                            {event.extendedProps.descricao}
-                          </div>
-                        )}
-
                         {event.extendedProps?.categoria && (
-                          <div className="text-xs mt-1 opacity-90">
+                          <div className="hidden md:block text-[9px] md:text-xs mt-1 opacity-90">
                             <span className="bg-white/20 px-1 rounded">
                               {event.extendedProps.categoria}
                             </span>

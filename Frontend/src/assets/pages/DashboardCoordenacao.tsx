@@ -120,43 +120,43 @@ function DashboardCoordenacao() {
     <img
       src={ImagenDocumentos}
       alt="Documentos"
-      className="w-20 h-20 object-contain"
+      className="w-16 h-16 md:w-20 md:h-20 object-contain"
     />
   );
   const MatriculaIcon = (
     <img
       src={ImagenPerfil}
       alt="Matrículas"
-      className="w-20 h-20 object-contain"
+      className="w-16 h-16 md:w-20 md:h-20 object-contain"
     />
   );
   const CalendarioIcon = (
     <img
       src={ImagenPortal}
       alt="Calendário"
-      className="w-20 h-20 object-contain"
+      className="w-16 h-16 md:w-20 md:h-20 object-contain"
     />
   );
   const MuralIcon = (
-    <img src={ImagenMural} alt="Mural" className="w-20 h-20 object-contain" />
+    <img src={ImagenMural} alt="Mural" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
   );
   const RelatoriosIcon = (
     <img
       src={ImagenMatricula}
       alt="Relatórios"
-      className="w-20 h-20 object-contain"
+      className="w-16 h-16 md:w-20 md:h-20 object-contain"
     />
   );
   const GerenciamentoIcon = (
     <img
       src={ImagenConfig}
       alt="Gerenciamento"
-      className="w-20 h-20 object-contain"
+      className="w-16 h-16 md:w-20 md:h-20 object-contain"
     />
   );
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen">
       <SideBarMenu
         navigateTo={navigateTo}
         menuItems={options.main}
@@ -165,7 +165,7 @@ function DashboardCoordenacao() {
       />
 
       <div className="flex-1 flex flex-col md:ml-52 bg-[#1D5D7F] overflow-hidden">
-        <div className="h-16">
+        <div className="h-14 md:h-16">
           <HeaderBar />
         </div>
 
@@ -174,14 +174,14 @@ function DashboardCoordenacao() {
     bg-[#E8E4DC]
     relative
     overflow-y-auto
-    px-4 py-4
-    md:p-8
+    px-3 py-4
+    md:px-8 md:py-8
     p-15
-    rounded-tl-[30px]"
+    rounded-t-[20px] md:rounded-t-none md:rounded-tl-[30px]"
         >
           {currentView === "home" ? (
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-              <div className="col-span-1 md:col-span-3 flex flex-col">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              <div className="col-span-1 lg:col-span-3 flex flex-col">
                 <CardMenuBackground>
                   <CardMenu
                     title="Mural"
@@ -211,11 +211,11 @@ function DashboardCoordenacao() {
                   />
                 </CardMenuBackground>
 
-                <h2 className="font-poppins text-[24px] text-[#3D7E8F] mb-4">
+                
+                <div className="flex-1 w-full rounded-xl bg-white mt-6 md:mt-10 lg:mt-12 p-4 md:p-0">
+                  <h2 className="font-poppins text-[20px] md:text-[24px] text-[#3D7E8F] mb-4 ml-2 md:ml-6 lg:ml-4">
                   Gráfico de Turma
                 </h2>
-
-                <div className="flex-1 w-full rounded-xl bg-white">
                   {loadingGrafico && (
                     <p className="text-center text-gray-400 p-6">
                       Carregando gráfico...
@@ -223,14 +223,14 @@ function DashboardCoordenacao() {
                   )}
 
                   {!loadingGrafico && estatisticas && (
-                    <div className="p-4 md:p-6 flex flex-col md:flex-row gap-6">
-                      <div className="flex-1">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="flex-1 w-full overflow-x-auto">
                         <GraficoDesempenho
                           data={estatisticas.graficoAlunosPorTurma}
                         />
                       </div>
 
-                      <div className="w-[220px] flex flex-col justify-center space-y-4">
+                      <div className="w-full md:w-[220px] flex flex-col sm:flex-row md:flex-col justify-center items-center md:items-stretch space-y-4 sm:space-y-0 sm:space-x-4 md:space-x-0 md:space-y-4 pb-4 md:pb-6">
                         <IndicadorCircular
                           value={estatisticas.indicadores.taxaOcupacaoGeral}
                           label="Taxa de ocupação"
@@ -251,9 +251,9 @@ function DashboardCoordenacao() {
                 </div>
               </div>
 
-              <div className="col-span-1 md:col-span-2 flex flex-col space-y-6 md:space-y-14">
+              <div className="col-span-1 lg:col-span-2 flex flex-col space-y-6 md:space-y-10 lg:space-y-14">
                 <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
-                <div className="-mt-2.5">
+                <div className="lg:-mt-2.5">
                   <CardCalendario />
                 </div>
               </div>

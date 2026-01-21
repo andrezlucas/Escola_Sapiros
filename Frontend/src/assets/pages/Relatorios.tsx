@@ -117,7 +117,7 @@ export default function Relatorios() {
       });
 
       const res = await authFetch(
-        `${API_BASE}/relatorios/performance/habilidades?${params}`
+        `${API_BASE}/relatorios/performance/habilidades?${params}`,
       );
 
       if (!res?.ok) {
@@ -163,7 +163,7 @@ export default function Relatorios() {
         });
 
         const res = await authFetch(
-          `${API_BASE}/relatorios/performance/comparativo-turmas?${params}`
+          `${API_BASE}/relatorios/performance/comparativo-turmas?${params}`,
         );
 
         if (!res?.ok) throw new Error("Erro ao carregar comparativo");
@@ -228,16 +228,16 @@ export default function Relatorios() {
   return (
     <div className="w-full h-auto p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-md flex flex-col gap-4">
       <div className="mb-8">
-        <h1 className="text-4xl text-[#1D5D7F]">
+        <h1 className="text-2xl md:text-4xl text-[#1D5D7F]  md:font-normal">
           Relatórios de Desempenho por Habilidades
         </h1>
-        <p className="text-[#333333] mt-2">
+        <p className="text-[#333333] mt-2 text-sm md:text-base">
           Análise de performance acadêmica da escola.
         </p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-5">
+      <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-8">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-5">
           Filtro de Análise
         </h2>
 
@@ -249,7 +249,7 @@ export default function Relatorios() {
             <select
               value={periodoLetivo}
               onChange={(e) => setPeriodoLetivo(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-white"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-white text-sm"
             >
               <option value="">Selecione</option>
               {bimestres.map((b) => (
@@ -268,7 +268,7 @@ export default function Relatorios() {
               value={disciplinaId}
               onChange={(e) => setDisciplinaId(e.target.value)}
               disabled={loadingListas}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-white"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-white text-sm"
             >
               <option value="">Selecione</option>
               {disciplinas.map((d) => (
@@ -287,7 +287,7 @@ export default function Relatorios() {
               value={turmaId}
               onChange={(e) => setTurmaId(e.target.value)}
               disabled={loadingListas}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-white"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-white text-sm"
             >
               {turmas.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -300,7 +300,7 @@ export default function Relatorios() {
           <div>
             <button
               onClick={aplicarFiltro}
-              className="w-full px-6 py-3 bg-[#1D5D7F] text-white font-medium rounded-md hover:bg-[#164a66] transition shadow-sm"
+              className="w-full px-6 py-3 bg-[#1D5D7F] text-white font-medium rounded-md hover:bg-[#164a66] transition shadow-sm active:scale-95"
             >
               Aplicar Filtro
             </button>
@@ -318,8 +318,8 @@ export default function Relatorios() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">
+          <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-6">
               Desempenho por Habilidade
             </h2>
             <div className="space-y-5">
@@ -330,21 +330,21 @@ export default function Relatorios() {
                     setHabilidadeSelecionadaId(hab.habilidadeId);
                     setHabilidadeNomeSelecionada(hab.habilidade);
                   }}
-                  className={`cursor-pointer p-5 rounded-xl transition-all duration-300 border-2 ${
+                  className={`cursor-pointer p-4 md:p-5 rounded-xl transition-all duration-300 border-2 ${
                     hab.habilidadeId === habilidadeSelecionadaId
                       ? "border-[#1D5D7F] bg-blue-50 shadow-lg"
                       : "border-transparent hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-gray-800 text-lg">
+                    <h3 className="font-semibold text-gray-800 text-base md:text-lg">
                       {hab.habilidade}
                     </h3>
-                    <span className="text-2xl font-bold text-gray-700">
+                    <span className="text-xl md:text-2xl font-bold text-gray-700">
                       {hab.percentual}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
+                  <div className="w-full bg-gray-200 rounded-full h-6 md:h-8 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-1000 ease-out"
                       style={{
@@ -353,14 +353,16 @@ export default function Relatorios() {
                       }}
                     />
                   </div>
-                  <p className="text-sm text-gray-600 mt-4">{hab.descricao}</p>
+                  <p className="text-xs md:text-sm text-gray-600 mt-4">
+                    {hab.descricao}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">
+          <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-6">
               Desempenho Comparativo por Turma
             </h2>
             {loadingComparativo ? (
@@ -372,13 +374,15 @@ export default function Relatorios() {
                 Não há dados suficientes para comparar turmas nesta habilidade.
               </div>
             ) : (
-              <div className="w-full h-72 md: lg:h-96">
-              <Chart
-                options={options}
-                series={series}
-                type="bar"
-                height={420}
-              />
+              <div className="w-full h-[300px] md:h-[420px] overflow-x-auto">
+                <div className="min-w-[300px] h-full">
+                  <Chart
+                    options={options}
+                    series={series}
+                    type="bar"
+                    height="100%"
+                  />
+                </div>
               </div>
             )}
           </div>

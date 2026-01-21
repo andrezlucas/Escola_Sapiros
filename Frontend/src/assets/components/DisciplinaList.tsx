@@ -67,33 +67,38 @@ export default function DisciplinaList() {
   const disciplinasFiltradas = disciplinas.filter(
     (disciplina) =>
       disciplina.nome_disciplina.toLowerCase().includes(search.toLowerCase()) ||
-      disciplina.codigo_disciplina.toLowerCase().includes(search.toLowerCase())
+      disciplina.codigo_disciplina.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex justify-between items-center">
-        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] w-full sm:max-w-130">
+    <div className="p-2 md:p-4">
+      <div className="mb-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] w-full md:max-w-md">
           <FaSearch className="w-4 h-4 text-[#1D5D7F]" />
           <input
             type="search"
             placeholder="Buscar disciplina"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent outline-none text-[#1D5D7F] text-sm"
+            className="flex-1 bg-transparent outline-none text-[#1D5D7F] text-sm placeholder:text-[#1D5D7F] placeholder:opacity-50"
           />
         </label>
 
         <button
           onClick={() => setModalCriarAberto(true)}
-          className="bg-[#1D5D7F] text-white px-4 py-2 rounded-lg"
+          className="bg-[#1D5D7F] text-white h-11 md:h-10 px-6 rounded-lg font-semibold hover:bg-[#164a66] transition-colors shadow-md active:scale-95"
         >
           + Adicionar Disciplina
         </button>
       </div>
 
       {loading ? (
-        <p className="text-center text-gray-500">Carregando...</p>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-[#1D5D7F]"></div>
+          <p className="mt-3 text-gray-500 font-medium">
+            Carregando disciplinas...
+          </p>
+        </div>
       ) : (
         <Tabela
           dados={disciplinasFiltradas}
@@ -101,11 +106,13 @@ export default function DisciplinaList() {
             {
               titulo: "Disciplina",
               render: (d) => (
-                <div>
-                  <div className="font-medium">{d.nome_disciplina}</div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[#1D5D7F] md:text-gray-900">
+                    {d.nome_disciplina}
+                  </span>
                   <div className="flex items-center gap-2 mt-1">
                     <FaBook className="w-3 h-3 text-gray-400" />
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs text-gray-500">
                       {d.codigo_disciplina}
                     </span>
                   </div>
@@ -122,14 +129,14 @@ export default function DisciplinaList() {
                         <span
                           key={hab.id}
                           title={hab.descricao}
-                          className="px-3 py-2 bg-blue-100 text-blue-800 text-xs rounded-full"
+                          className="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] md:text-xs rounded-full font-medium"
                         >
                           {hab.nome}
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <span className="text-gray-400 text-sm">
+                    <span className="text-gray-400 text-xs md:text-sm">
                       Nenhuma habilidade
                     </span>
                   )}
@@ -143,7 +150,7 @@ export default function DisciplinaList() {
                 setDisciplinaSelecionada(d);
                 setModalEditarAberto(true);
               }}
-              className="flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center justify-center gap-2 w-full md:w-auto px-4 py-2 border-2 border-[#1D5D7F] rounded-lg text-[#1D5D7F] font-bold text-xs hover:bg-[#1D5D7F] hover:text-white transition-all"
             >
               <FaEdit className="w-3 h-3" /> Editar
             </button>

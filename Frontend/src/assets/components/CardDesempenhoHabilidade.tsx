@@ -44,7 +44,7 @@ export function CardDesempenhoHabilidade({ turmaId }: Props) {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -104,12 +104,29 @@ export function CardDesempenhoHabilidade({ turmaId }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-6 flex flex-col gap-5 h-[360px]">
+    <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-6 flex flex-col gap-5 h-[360px] responsive-card-habilidade">
+      <style>{`
+        @media (max-width: 768px) {
+          .responsive-card-habilidade {
+            height: auto !important;
+            min-height: 400px !important;
+            padding: 1rem !important;
+          }
+          .responsive-card-habilidade h3 {
+            font-size: 1.125rem !important;
+            text-align: center !important;
+          }
+          .chart-container-mobile {
+            height: 300px !important;
+          }
+        }
+      `}</style>
+
       <h3 className="text-xl font-bold text-[#1D5D7F]">
         Desempenho por Habilidade da Turma
       </h3>
 
-      <div className="flex-1">
+      <div className="flex-1 chart-container-mobile">
         {!turmaId && (
           <div className="h-full flex items-center justify-center text-gray-500">
             Selecione uma turma para visualizar

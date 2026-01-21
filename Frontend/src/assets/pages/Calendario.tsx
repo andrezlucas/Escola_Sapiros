@@ -37,7 +37,7 @@ export default function CalendarioPage() {
   const [eventoSelecionado, setEventoSelecionado] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [avisoVisualizar, setAvisoVisualizar] = useState<AvisoBackend | null>(
-    null
+    null,
   );
   const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
 
@@ -84,7 +84,7 @@ export default function CalendarioPage() {
 
   function normalizarDataParaCalendario(
     dataString: string,
-    isEndOfDay = false
+    isEndOfDay = false,
   ) {
     const data = new Date(dataString);
 
@@ -106,7 +106,7 @@ export default function CalendarioPage() {
       return new Date(
         data.getUTCFullYear(),
         data.getUTCMonth(),
-        data.getUTCDate()
+        data.getUTCDate(),
       );
     }
 
@@ -122,7 +122,7 @@ export default function CalendarioPage() {
         data.getUTCDate(),
         23,
         59,
-        59
+        59,
       );
     }
 
@@ -145,7 +145,7 @@ export default function CalendarioPage() {
 
       const response = await fetch(
         `http://localhost:3000/avisos/calendario?inicio=${inicioSemana.toISOString()}&fim=${fimSemana.toISOString()}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (!response.ok) throw new Error("Erro ao carregar avisos");
@@ -197,7 +197,7 @@ export default function CalendarioPage() {
       });
 
       const eventosExistentes = eventos.filter(
-        (e) => !e.extendedProps?.isAviso
+        (e) => !e.extendedProps?.isAviso,
       );
       setEventos([...eventosExistentes, ...eventosConvertidos]);
     } catch (error) {
@@ -227,15 +227,15 @@ export default function CalendarioPage() {
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (response.ok) {
         setAvisosBackend((prev) =>
-          prev.filter((aviso) => aviso.id !== avisoId)
+          prev.filter((aviso) => aviso.id !== avisoId),
         );
         setEventos((prev) =>
-          prev.filter((evento) => evento.extendedProps?.avisoId !== avisoId)
+          prev.filter((evento) => evento.extendedProps?.avisoId !== avisoId),
         );
       }
     } catch (error) {
@@ -345,11 +345,11 @@ export default function CalendarioPage() {
 
   return (
     <div>
-      <div className="p-2">
-        <div className="p-2">
-          <header className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 h-15 p-2">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+      <div className="p-2 md:p-4 lg:p-6">
+        <div className="p-2 md:p-4 ">
+          <header className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-4">
+            <div className="flex items-center gap-3 w-full md:w-auto bg-white rounded-lg border border-gray-200 h-15 p-2">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0 ">
                 {usuario?.fotoPerfil ? (
                   <img
                     src={usuario.fotoPerfil}
@@ -357,34 +357,36 @@ export default function CalendarioPage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-white font-medium text-lg">
+                  <span className="text-white font-medium text-base md:text-lg">
                     {usuario?.nome?.charAt(0) || <MdEvent size={20} />}
                   </span>
                 )}
               </div>
 
-              <div className="flex flex-col">
-                <p className="font-semibold text-gray-800">
+              <div className="flex flex-col min-w-0">
+                <p className="font-semibold text-gray-800 text-sm md:text-base truncate">
                   {usuario?.nome || "Usuário"}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs md:text-sm text-gray-500">
                   {LetraMaiuscula(usuario?.role) || "Visitante"}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2 h-15">
+            <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2 h-12 md:h-15 w-full md:w-auto justify-center">
               <button
                 aria-label="Anterior"
-                className="px-2 text-gray-600 hover:text-gray-900"
+                className="px-2 md:px-3 text-gray-600 hover:text-gray-900 text-lg md:text-xl"
                 onClick={semanaAnterior}
               >
                 &lt;
               </button>
-              <span className="font-medium text-gray-700 px-2">Semana</span>
+              <span className="font-medium text-gray-700 px-2 md:px-4 text-sm md:text-base">
+                Semana
+              </span>
               <button
                 aria-label="Próximo"
-                className="px-2 text-gray-600 hover:text-gray-900"
+                className="px-2 md:px-3 text-gray-600 hover:text-gray-900 text-lg md:text-xl"
                 onClick={proximaSemana}
               >
                 &gt;
@@ -397,14 +399,14 @@ export default function CalendarioPage() {
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D5D7F] mx-auto mb-4"></div>
-              <p className="text-gray-500">
+              <p className="text-gray-500 text-sm md:text-base px-4">
                 Carregando avisos do calendário...
               </p>
             </div>
           </div>
         ) : (
-          <div className="flex gap-6">
-            <div className="flex-1">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+            <div className="flex-1 w-full overflow-x-auto">
               <CalendarioSemana
                 eventos={eventos}
                 date={currentDate}
@@ -413,45 +415,45 @@ export default function CalendarioPage() {
               />
             </div>
 
-            <aside className="w-[260px]">
-              <div className="scale-140 origin-top">
+            <aside className="w-full lg:w-[260px] space-y-4 lg:space-y-6">
+              <div className="hidden md:block scale-100 md:scale-110 lg:scale-140 origin-top">
                 <CardCalendario type="mini" />
               </div>
 
-              <div className="mt-6 bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-[#1D5D7F] mb-3">
+              <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
+                <h3 className="font-semibold text-[#1D5D7F] mb-3 text-sm md:text-base">
                   Avisos desta semana
                 </h3>
                 {avisosBackend.length === 0 ? (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs md:text-sm text-gray-500">
                     Nenhum aviso para esta semana
                   </p>
                 ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                  <div className="space-y-3 max-h-60 md:max-h-80 overflow-y-auto">
                     {avisosBackend.slice(0, 5).map((aviso) => (
                       <div
                         key={aviso.id}
-                        className="p-3 border-l-4 rounded-r border-gray-200 hover:bg-gray-50 cursor-pointer"
+                        className="p-2 md:p-3 border-l-4 rounded-r border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
                         style={{
                           borderLeftColor: getCorPorCategoria(aviso.categoria),
                         }}
                         onClick={() => abrirModalVisualizarAviso(aviso)}
                       >
-                        <div className="flex justify-between items-start">
-                          <span className="text-xs font-medium text-gray-500">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-[10px] md:text-xs font-medium text-gray-500">
                             {aviso.categoria}
                           </span>
-                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                          <span className="text-[10px] md:text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded flex-shrink-0">
                             {aviso.tipo}
                           </span>
                         </div>
-                        <h4 className="font-medium text-sm mt-1">
+                        <h4 className="font-medium text-xs md:text-sm mt-1">
                           {aviso.nome}
                         </h4>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        <p className="text-[10px] md:text-xs text-gray-600 mt-1 line-clamp-2">
                           {aviso.descricao}
                         </p>
-                        <div className="text-xs text-gray-400 mt-2">
+                        <div className="text-[10px] md:text-xs text-gray-400 mt-2">
                           {formatarDataUTC(aviso.dataInicio)}
                           {aviso.dataFinal && (
                             <> – {formatarDataUTC(aviso.dataFinal)}</>

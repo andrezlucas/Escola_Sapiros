@@ -81,7 +81,7 @@ export default function ModalCriarQuestao({
         const token = localStorage.getItem("token");
         const res = await fetch(
           `http://localhost:3000/disciplinas/${disciplinaId}/habilidades`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -110,10 +110,10 @@ export default function ModalCriarQuestao({
   function atualizarAlternativa(
     id: string,
     campo: "texto" | "correta",
-    valor: string | boolean
+    valor: string | boolean,
   ) {
     setAlternativas((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, [campo]: valor } : a))
+      prev.map((a) => (a.id === id ? { ...a, [campo]: valor } : a)),
     );
   }
 
@@ -164,7 +164,7 @@ export default function ModalCriarQuestao({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (!res.ok) throw new Error();
@@ -202,7 +202,7 @@ export default function ModalCriarQuestao({
             habilidadesIds: habilidadesSelecionadas.map((h) => h.id),
             tipos: [tipoQuestaoIA],
           }),
-        }
+        },
       );
 
       if (!resIA.ok) throw new Error();
@@ -228,7 +228,7 @@ export default function ModalCriarQuestao({
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(payload),
-          }
+          },
         );
 
         if (!resSave.ok) throw new Error();
@@ -237,7 +237,7 @@ export default function ModalCriarQuestao({
       }
 
       toast.success(
-        `${dataIA.questoes.length} questão(ões) adicionada(s) com IA!`
+        `${dataIA.questoes.length} questão(ões) adicionada(s) com IA!`,
       );
       onClose();
     } catch {
@@ -275,10 +275,8 @@ export default function ModalCriarQuestao({
           </button>
         </div>
 
-        {/* Conteúdo da aba */}
         {abaAtiva === "manual" ? (
           <>
-            {/* Tipo, enunciado, valor, alternativas... (igual antes) */}
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700">
@@ -336,7 +334,7 @@ export default function ModalCriarQuestao({
                           atualizarAlternativa(
                             alt.id,
                             "correta",
-                            e.target.checked
+                            e.target.checked,
                           )
                         }
                         className="mr-2"
@@ -348,7 +346,7 @@ export default function ModalCriarQuestao({
                         type="text"
                         className="input flex-1"
                         placeholder={`Alternativa ${String.fromCharCode(
-                          65 + i
+                          65 + i,
                         )}`}
                         value={alt.texto}
                         onChange={(e) =>
@@ -512,7 +510,6 @@ export default function ModalCriarQuestao({
           </>
         )}
 
-        {/* Botão Cancelar (sempre visível) */}
         <div className="mt-4 flex justify-end">
           <button
             onClick={onClose}

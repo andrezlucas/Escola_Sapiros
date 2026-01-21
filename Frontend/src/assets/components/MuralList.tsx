@@ -37,7 +37,7 @@ export default function MuralLista({ reload }: Props) {
         (aviso: Aviso) =>
           aviso.tipo === "GERAL" ||
           aviso.tipo === "TURMA" ||
-          aviso.tipo === "INDIVIDUAL"
+          aviso.tipo === "INDIVIDUAL",
       );
 
       setAvisos(filtrados);
@@ -61,7 +61,7 @@ export default function MuralLista({ reload }: Props) {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -77,8 +77,8 @@ export default function MuralLista({ reload }: Props) {
                 confirmado: true,
                 confirmadoEm: new Date().toISOString(),
               }
-            : aviso
-        )
+            : aviso,
+        ),
       );
     } catch (error) {
       console.error("Erro ao confirmar aviso:", error);
@@ -97,16 +97,22 @@ export default function MuralLista({ reload }: Props) {
   });
 
   if (loading) {
-    return <p className="text-gray-500">Carregando avisos...</p>;
+    return (
+      <p className="text-gray-500 text-center py-10">Carregando avisos...</p>
+    );
   }
 
   if (!avisos.length) {
-    return <p className="text-gray-500">Nenhum aviso disponível.</p>;
+    return (
+      <p className="text-gray-500 text-center py-10">
+        Nenhum aviso disponível.
+      </p>
+    );
   }
 
   return (
     <>
-      <div className="flex flex-row gap-4 mb-6">
+      <div className="flex flex-wrap sm:flex-row gap-3 sm:gap-4 mb-8">
         {[
           { key: "todos", label: "Todos" },
           { key: "confirmados", label: "Confirmados" },
@@ -114,19 +120,21 @@ export default function MuralLista({ reload }: Props) {
         ].map((item) => (
           <button
             key={item.key}
-            className={`w-40 h-9 px-4 py-2 rounded-lg shadow flex justify-center items-center ${
+            onClick={() => setFilter(item.key as any)}
+            className={`flex-1 sm:flex-none sm:w-40 h-10 px-2 sm:px-4 py-2 rounded-lg shadow-sm flex justify-center items-center transition-all ${
               filter === item.key
                 ? "bg-[#1D5D7F] text-white"
                 : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F]"
             }`}
-            onClick={() => setFilter(item.key as any)}
           >
-            <span className="text-sm font-bold">{item.label}</span>
+            <span className="text-xs sm:text-sm font-bold whitespace-nowrap">
+              {item.label}
+            </span>
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {avisosFiltrados.map((aviso) => (
           <CardAviso
             key={aviso.id}

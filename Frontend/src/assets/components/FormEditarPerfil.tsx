@@ -62,7 +62,7 @@ const FormEditarPerfil: React.FC = () => {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -165,7 +165,7 @@ const FormEditarPerfil: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
           body: formPayload,
-        }
+        },
       );
 
       if (!response.ok) {
@@ -183,7 +183,7 @@ const FormEditarPerfil: React.FC = () => {
         window.dispatchEvent(
           new CustomEvent("fotoPerfilAtualizada", {
             detail: updatedData.usuario.fotoPerfil,
-          })
+          }),
         );
       }
     } catch (err: any) {
@@ -204,10 +204,10 @@ const FormEditarPerfil: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 bg-white rounded-xl p-8 shadow-md">
-      <div className="flex items-center gap-4 mb-8">
+    <div className="flex-1 bg-white rounded-xl p-4 md:p-8 shadow-md">
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6 md:mb-8">
         <div
-          className="w-20 h-20 rounded-full bg-[#1D5D7F] flex items-center justify-center text-white text-3xl font-bold overflow-hidden cursor-pointer"
+          className="w-20 h-20 rounded-full bg-[#1D5D7F] flex items-center justify-center text-white text-2xl md:text-3xl font-bold overflow-hidden cursor-pointer flex-shrink-0"
           onClick={handleFotoClick}
         >
           {fotoPreview ? (
@@ -227,18 +227,18 @@ const FormEditarPerfil: React.FC = () => {
           ref={fileInputRef}
           onChange={handleFotoChange}
         />
-        <div>
-          <h2 className="font-bold text-2xl text-[#1D5D7F]">
+        <div className="text-center sm:text-left">
+          <h2 className="font-bold text-xl md:text-2xl text-[#1D5D7F] truncate max-w-[250px] sm:max-w-none">
             {usuario?.nome || formData.nome || "Nome"}
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-base md:text-lg text-gray-600">
             {usuario?.role.toLowerCase() === "aluno" ? turmaNome : "—"}
           </p>
         </div>
       </div>
 
       {showCrop && fotoPreview && (
-        <div className="relative w-full h-64 mb-6 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="relative w-full h-48 md:h-64 mb-6 bg-gray-100 rounded-lg overflow-hidden">
           <Cropper
             image={fotoPreview}
             crop={crop}
@@ -252,14 +252,14 @@ const FormEditarPerfil: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowCrop(false)}
-              className="px-4 py-2 bg-gray-300 rounded"
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-gray-300 rounded text-sm md:text-base"
             >
               Cancelar
             </button>
             <button
               type="button"
               onClick={handleCropSave}
-              className="px-4 py-2 bg-[#1D5D7F] text-white rounded"
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-[#1D5D7F] text-white rounded text-sm md:text-base"
             >
               Salvar
             </button>
@@ -267,18 +267,24 @@ const FormEditarPerfil: React.FC = () => {
         </div>
       )}
 
-      <h3 className="font-bold text-xl mb-6 text-[#1D5D7F]">Editar Perfil</h3>
+      <h3 className="font-bold text-lg md:text-xl mb-4 md:mb-6 text-[#1D5D7F]">
+        Editar Perfil
+      </h3>
 
       {error && (
-        <p className="text-red-600 mb-4 bg-red-50 p-3 rounded">{error}</p>
+        <p className="text-red-600 mb-4 bg-red-50 p-3 rounded text-sm md:text-base">
+          {error}
+        </p>
       )}
       {success && (
-        <p className="text-green-600 mb-4 bg-green-50 p-3 rounded">{success}</p>
+        <p className="text-green-600 mb-4 bg-green-50 p-3 rounded text-sm md:text-base">
+          {success}
+        </p>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
             Nome completo:
           </label>
           <input
@@ -286,13 +292,13 @@ const FormEditarPerfil: React.FC = () => {
             name="nome"
             value={formData.nome}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
+            className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] text-sm md:text-base"
             placeholder="Digite seu nome completo"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
             Email:
           </label>
           <input
@@ -300,13 +306,13 @@ const FormEditarPerfil: React.FC = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
+            className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] text-sm md:text-base"
             placeholder="seuemail@exemplo.com"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
             Telefone:
           </label>
           <input
@@ -314,42 +320,42 @@ const FormEditarPerfil: React.FC = () => {
             name="telefone"
             value={formData.telefone}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
+            className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] text-sm md:text-base"
             placeholder="(DD) 99999-9999"
           />
         </div>
 
         <div className="flex flex-col">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
             Senha:
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
             <input
               type="password"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-gray-100 cursor-not-allowed"
+              className="flex-1 px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D5D7F] bg-gray-100 cursor-not-allowed text-sm md:text-base"
               placeholder="••••••••"
               disabled
             />
             <button
               type="button"
               onClick={handleRedirectToChangePassword}
-              className="px-6 py-3 bg-[#1D5D7F] text-white rounded-lg font-medium hover:bg-[#1D5D7F]/90 transition whitespace-nowrap"
+              className="px-4 md:px-6 py-2 md:py-3 bg-[#1D5D7F] text-white rounded-lg font-medium hover:bg-[#1D5D7F]/90 transition whitespace-nowrap text-sm md:text-base"
             >
               Alterar
             </button>
           </div>
         </div>
 
-        <div className="flex justify-center gap-4 mt-8">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 mt-6 md:mt-8">
           <button
             type="button"
-            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
+            className="order-2 sm:order-1 px-4 md:px-6 py-2 md:py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition text-sm md:text-base"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-6 py-3 bg-[#1D5D7F] text-white rounded-lg font-medium hover:bg-[#1D5D7F]/90 transition"
+            className="order-1 sm:order-2 px-4 md:px-6 py-2 md:py-3 bg-[#1D5D7F] text-white rounded-lg font-medium hover:bg-[#1D5D7F]/90 transition text-sm md:text-base"
           >
             Concluir
           </button>

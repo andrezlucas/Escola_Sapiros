@@ -52,7 +52,7 @@ function DashboardProfessor() {
         });
         return next;
       },
-      { replace: true }
+      { replace: true },
     );
   };
 
@@ -68,7 +68,7 @@ function DashboardProfessor() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         const data = await response.json();
@@ -142,6 +142,52 @@ function DashboardProfessor() {
 
   return (
     <div className="flex min-h-screen">
+      <style>{`
+        @media (max-width: 1024px) {
+          .main-content-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
+          }
+          .dashboard-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 1.5rem !important;
+            height: auto !important;
+          }
+          .col-span-3, .col-span-2 {
+            width: 100% !important;
+            height: auto !important;
+          }
+          .inner-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 1.5rem !important;
+            height: auto !important;
+          }
+          .welcome-card {
+            flex-direction: column-reverse !important;
+            text-align: center !important;
+            padding: 1.5rem !important;
+          }
+          .welcome-card img {
+            margin-bottom: 1rem !important;
+          }
+          .responsive-container {
+            padding: 1rem !important;
+            border-top-left-radius: 20px !important;
+          }
+          /* Remove as alturas fixas das divs que envolvem os cards no mobile */
+          .h-48, .h-96, .h-64, .h-90 {
+            height: auto !important;
+          }
+          .card-container-mobile {
+            height: auto !important;
+            min-height: fit-content !important;
+            margin-bottom: 1rem;
+          }
+        }
+      `}</style>
+
       <SideBarMenu
         navigateTo={navigateTo}
         menuItems={options.main}
@@ -149,21 +195,21 @@ function DashboardProfessor() {
         activeView={currentView}
       />
 
-      <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
+      <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden main-content-wrapper">
         <div className="h-16">
           <HeaderBar />
         </div>
 
-        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
+        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px] responsive-container">
           {currentView === "home" ? (
-            <div className="grid grid-cols-5 gap-6 h-full">
+            <div className="grid grid-cols-5 gap-6 h-full dashboard-grid">
               <div className="col-span-3 flex flex-col space-y-6">
-                <div className="w-full p-6 bg-white rounded-xl shadow-md flex items-center justify-between border-2 border-[#1D5D7F]">
+                <div className="w-full p-6 bg-white rounded-xl shadow-md flex items-center justify-between border-2 border-[#1D5D7F] welcome-card">
                   <h1 className="text-2xl font-bold text-[#1D5D7F]">
                     Olá, <span className="text-[#1D5D7F]">{nome}!</span>
                   </h1>
                   <p className="text-[#1D5D7F]">
-                    Bem-vindo(a) ao seu painel de controle.
+                    Bem-vindo(a) ao seu painel de professor.
                   </p>
                   <img
                     src={ImagenPortal}
@@ -172,9 +218,9 @@ function DashboardProfessor() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-6 pb-8">
-                  <div className="h-48">
-                    <div className="h-48">
+                <div className="grid grid-cols-2 gap-6 pb-8 inner-grid">
+                  <div className="h-48 card-container-mobile">
+                    <div className="h-full">
                       <div className="flex items-center gap-4 mb-4">
                         <label className="text-sm font-medium text-[#1D5D7F]">
                           Selecionar turma:
@@ -197,29 +243,31 @@ function DashboardProfessor() {
                     </div>
                   </div>
 
-                  <div className="h-96">
-                    <div className="flex items-center gap-4 mb-4">
-                      <label className="text-sm font-medium text-[#1D5D7F]">
-                        Selecionar turma:
-                      </label>
+                  <div className="h-96 card-container-mobile">
+                    <div className="h-full">
+                      <div className="flex items-center gap-4 mb-4">
+                        <label className="text-sm font-medium text-[#1D5D7F]">
+                          Selecionar turma:
+                        </label>
 
-                      <select
-                        value={turmaSelecionada}
-                        onChange={(e) => setTurmaSelecionada(e.target.value)}
-                        className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
-                      >
-                        {turmas.map((turma) => (
-                          <option key={turma.id} value={turma.id}>
-                            {turma.nome_turma}
-                          </option>
-                        ))}
-                      </select>
+                        <select
+                          value={turmaSelecionada}
+                          onChange={(e) => setTurmaSelecionada(e.target.value)}
+                          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D7F]"
+                        >
+                          {turmas.map((turma) => (
+                            <option key={turma.id} value={turma.id}>
+                              {turma.nome_turma}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <CardEvolucaoTurma turmaId={turmaSelecionada} />
                     </div>
-                    <CardEvolucaoTurma turmaId={turmaSelecionada} />
                   </div>
                 </div>
 
-                <div className="h-64">
+                <div className="h-64 card-container-mobile">
                   <CardMinhasTurmas
                     onVerDetalhes={() => navigateTo("minhas turmas")}
                     onVerMaterial={() => navigateTo("atividades")}
@@ -228,11 +276,11 @@ function DashboardProfessor() {
               </div>
 
               <div className="col-span-2 flex flex-col space-y-6">
-                <div className="h-90 ">
+                <div className="h-90 card-container-mobile">
                   <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
                 </div>
 
-                <div className="h-96">
+                <div className="h-96 card-container-mobile">
                   <CardHabilidadeDestaque
                     onVerRelatorio={() => navigateTo("minhas turmas")}
                   />

@@ -373,6 +373,19 @@ export class SimuladoService {
       .getMany();
   }
 
+  async findDisponiveisParaAluno(alunoId: string) {
+    const aluno = await this.dataSource.getRepository(Aluno).findOne({
+      where: { usuario: { id: alunoId } },
+      relations: ['turma'],
+    });
+
+    if (!aluno?.turma) {
+      return [];
+    }
+
+    return this.findByTurma(aluno.turma.id);
+  }
+
   async iniciarSimulado(simuladoId: string, usuarioId: string) {
     const aluno = await this.buscarTurmaDoAluno(usuarioId);
     const simulado = await this.simuladoRepository.findOne({

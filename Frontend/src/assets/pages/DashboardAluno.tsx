@@ -70,7 +70,6 @@ function DashboardAluno() {
         return <DesempenhoAluno />;
       case "vestibular":
         return <Vestibular />;
-
       case "configuracoes":
         return <Configuracao />;
       case "documentos":
@@ -89,9 +88,8 @@ function DashboardAluno() {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-          }
+          },
         );
-
         const data = await res.json();
         setHabilidades(data);
       } catch (error) {
@@ -100,7 +98,6 @@ function DashboardAluno() {
         setLoadingHabilidades(false);
       }
     };
-
     carregarHabilidades();
   }, []);
 
@@ -113,9 +110,8 @@ function DashboardAluno() {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-          }
+          },
         );
-
         const data = await res.json();
         setResumoSimulados(data);
       } catch (error) {
@@ -124,7 +120,6 @@ function DashboardAluno() {
         setLoadingResumo(false);
       }
     };
-
     carregarResumoSimulados();
   }, []);
 
@@ -137,9 +132,8 @@ function DashboardAluno() {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-          }
+          },
         );
-
         const data = await res.json();
         setNotas(data);
       } catch (error) {
@@ -148,7 +142,6 @@ function DashboardAluno() {
         setLoadingNotas(false);
       }
     };
-
     carregarNotas();
   }, []);
 
@@ -157,7 +150,7 @@ function DashboardAluno() {
     .slice(0, 5);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <SideBarMenu
         navigateTo={navigateTo}
         menuItems={options.main}
@@ -165,26 +158,28 @@ function DashboardAluno() {
         activeView={currentView}
       />
 
-      <div className="flex-1 flex flex-col ml-52 bg-[#1D5D7F] overflow-hidden">
-        <div className="h-16">
+      <div className="flex-1 flex flex-col lg:ml-52 bg-[#1D5D7F] overflow-hidden w-full">
+        <div className="h-16 shrink-0">
           <HeaderBar />
         </div>
 
-        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-15 rounded-tl-[30px]">
+        <div className="flex-1 bg-[#E8E4DC] relative overflow-y-auto p-4 sm:p-8 lg:p-15 rounded-tl-[30px] w-full">
           {currentView === "home" ? (
-            <div className="grid grid-cols-5 gap-6 h-full">
-              <div className="col-span-3 flex flex-col space-y-6">
-                <div className="w-full p-6 bg-white rounded-xl shadow-md flex items-center justify-between border-2 border-[#1D5D7F]">
-                  <h1 className="text-2xl font-bold text-[#1D5D7F]">
-                    Olá, <span className="text-[#1D5D7F]">{nome}!</span>!
-                  </h1>
-                  <p className="text-[#1D5D7F]">
-                    Aqui está um resumo do seu progresso. Continue assim!
-                  </p>
+            <div className="flex flex-col lg:grid lg:grid-cols-5 gap-6">
+              <div className="flex flex-col space-y-6 lg:col-span-3">
+                <div className="w-full p-6 bg-white rounded-xl shadow-md flex flex-row items-center justify-between border-2 border-[#1D5D7F] gap-4">
+                  <div className="flex flex-col">
+                    <h1 className="text-xl sm:text-2xl font-bold text-[#1D5D7F]">
+                      Olá, <span className="text-[#1D5D7F]">{nome}!</span>!
+                    </h1>
+                    <p className="text-sm sm:text-base text-[#1D5D7F] mt-1">
+                      Aqui está um resumo do seu progresso. Continue assim!
+                    </p>
+                  </div>
                   <img
                     src={ImagenPortal}
                     alt="Ícone do portal"
-                    className="w-20 h-20 object-contain"
+                    className="w-16 h-16 sm:w-20 sm:h-20 object-contain shrink-0"
                   />
                 </div>
 
@@ -202,12 +197,11 @@ function DashboardAluno() {
                 {!loadingNotas && <CardDesempenhoAcademico notas={notas} />}
               </div>
 
-              <div className="col-span-2 flex flex-col space-y-6">
-                <div className="h-1/2">
+              <div className="flex flex-col space-y-6 lg:col-span-2">
+                <div className="lg:h-1/2">
                   <CardMuralDashboard onVerMural={() => navigateTo("mural")} />
                 </div>
-
-                <div className="h-1/2">
+                <div className="lg:h-1/2">
                   <CardAtividadesAluno type={"mini"} />
                 </div>
               </div>

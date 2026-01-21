@@ -42,7 +42,7 @@ export default function DesempenhoSimuladosAluno() {
     BarElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
   );
 
   const [historicoCompleto, setHistoricoCompleto] = useState<
@@ -69,12 +69,12 @@ export default function DesempenhoSimuladosAluno() {
     setLoadingDisponiveis(true);
     try {
       const res = await fetch(
-        `http://localhost:3000/simulados/turma/${turmaId}`,
+        "http://localhost:3000/simulados/aluno/disponiveis",
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!res.ok) {
@@ -160,7 +160,7 @@ export default function DesempenhoSimuladosAluno() {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!res.ok) {
@@ -183,7 +183,7 @@ export default function DesempenhoSimuladosAluno() {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!res.ok) {
@@ -210,7 +210,7 @@ export default function DesempenhoSimuladosAluno() {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!res.ok) throw new Error();

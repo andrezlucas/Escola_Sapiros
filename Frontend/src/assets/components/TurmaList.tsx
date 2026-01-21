@@ -60,8 +60,8 @@ export default function TurmaList() {
         turno: (turma.turno?.toUpperCase() === "TARDE"
           ? "TARDE"
           : turma.turno?.toUpperCase() === "NOITE"
-          ? "NOITE"
-          : "MANHÃ") as "MANHÃ" | "TARDE" | "NOITE",
+            ? "NOITE"
+            : "MANHÃ") as "MANHÃ" | "TARDE" | "NOITE",
       }));
 
       setTurmas(turmasFormatadas);
@@ -79,10 +79,10 @@ export default function TurmaList() {
 
   const turmasFiltradas = turmas
     .filter((t) =>
-      filter === "ativas" ? t.ativa : filter === "inativas" ? !t.ativa : true
+      filter === "ativas" ? t.ativa : filter === "inativas" ? !t.ativa : true,
     )
     .filter((t) =>
-      (t.nome_turma ?? "").toLowerCase().includes(search.toLowerCase())
+      (t.nome_turma ?? "").toLowerCase().includes(search.toLowerCase()),
     );
 
   const getNomeProfessor = (professor?: Professor) => {
@@ -96,47 +96,49 @@ export default function TurmaList() {
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex justify-between items-center">
-        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] w-full sm:max-w-130">
+    <div className="p-2 md:p-4">
+      <div className="mb-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+        <label className="flex items-center gap-2 px-3 py-2 bg-[#e6eef880] rounded-2xl border-2 border-solid border-[#1D5D7F] w-full md:max-w-md">
           <FaSearch className="w-4 h-4 text-[#1D5D7F]" />
           <input
             type="search"
             placeholder="Buscar turma"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent outline-none text-[#1D5D7F] text-sm"
+            className="flex-1 bg-transparent outline-none text-[#1D5D7F] text-sm placeholder:text-[#1D5D7F] placeholder:opacity-50"
           />
         </label>
 
         <button
           onClick={() => setModalCriarAberto(true)}
-          className="bg-[#1D5D7F] text-white px-4 py-2 rounded-lg hover:bg-[#164a66]"
+          className="bg-[#1D5D7F] text-white h-11 md:h-10 px-6 rounded-lg font-semibold hover:bg-[#164a66] transition-colors shadow-md active:scale-95"
         >
           + Adicionar Turma
         </button>
       </div>
 
-      <div className="flex gap-4 mb-4">
+      <div className="flex flex-wrap gap-2 md:gap-4 mb-6">
         {["todos", "ativas", "inativas"].map((tipo) => (
           <button
             key={tipo}
             onClick={() => setFilter(tipo)}
-            className={`w-32 h-9 rounded-lg font-bold ${
+            className={`flex-1 md:flex-none md:w-32 h-10 rounded-lg font-bold transition-all duration-200 ${
               filter === tipo
-                ? "bg-[#1D5D7F] text-white"
+                ? "bg-[#1D5D7F] text-white shadow-md"
                 : "bg-white text-[#1D5D7F] border-2 border-[#1D5D7F] hover:bg-gray-50"
             }`}
           >
-            {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+            <span className="text-xs md:text-sm">
+              {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+            </span>
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D5D7F]"></div>
-          <p className="mt-2 text-gray-500">Carregando turmas...</p>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-[#1D5D7F]"></div>
+          <p className="mt-3 text-gray-500 font-medium">Carregando turmas...</p>
         </div>
       ) : (
         <Tabela
@@ -145,11 +147,13 @@ export default function TurmaList() {
             {
               titulo: "Turma",
               render: (t) => (
-                <div>
-                  <div className="font-medium">
-                    {t.nome_turma ?? "—"} - {formatarTurno(t.turno)}
-                  </div>
-                  <div className="text-sm text-gray-500">{t.ano_letivo}</div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[#1D5D7F] md:text-gray-900">
+                    {t.nome_turma ?? "—"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {formatarTurno(t.turno)} • {t.ano_letivo}
+                  </span>
                 </div>
               ),
             },
@@ -157,8 +161,10 @@ export default function TurmaList() {
               titulo: "Professor",
               render: (t) => (
                 <div className="flex items-center gap-2">
-                  <FaUserGraduate className="text-gray-400" />
-                  <span>{getNomeProfessor(t.professor)}</span>
+                  <FaUserGraduate className="text-gray-400 hidden md:block" />
+                  <span className="text-sm">
+                    {getNomeProfessor(t.professor)}
+                  </span>
                 </div>
               ),
             },
@@ -167,7 +173,7 @@ export default function TurmaList() {
               render: (t) => (
                 <div className="flex items-center gap-2">
                   <FaUsers className="text-gray-400" />
-                  <span className="font-medium">
+                  <span className="font-semibold text-sm">
                     {t.alunos?.length ?? 0}/{t.capacidade_maxima ?? 0}
                   </span>
                 </div>
@@ -177,10 +183,10 @@ export default function TurmaList() {
               titulo: "Status",
               render: (t) => (
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  className={`px-3 py-1 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider ${
                     t.ativa
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
+                      ? "bg-green-100 text-green-700 border border-green-200"
+                      : "bg-red-100 text-red-700 border border-red-200"
                   }`}
                 >
                   {t.ativa ? "Ativa" : "Inativa"}
@@ -194,7 +200,7 @@ export default function TurmaList() {
                 setTurmaSelecionada(t);
                 setModalEditarAberto(true);
               }}
-              className="flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center justify-center gap-2 w-full md:w-auto px-4 py-2 border-2 border-[#1D5D7F] rounded-lg text-[#1D5D7F] font-bold text-xs hover:bg-[#1D5D7F] hover:text-white transition-all"
             >
               <FaEdit className="w-3 h-3" /> Editar
             </button>

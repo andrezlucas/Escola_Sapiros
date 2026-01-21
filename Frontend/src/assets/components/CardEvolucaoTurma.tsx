@@ -29,7 +29,7 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (!response.ok) throw new Error(`Erro ${response.status}`);
@@ -137,13 +137,33 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
     );
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-4 sm:p-6 flex flex-col gap-4 h-auto sm:h-[360px]">
+    <div className="bg-white rounded-xl shadow-md border border-[#1D5D7F]/20 p-4 sm:p-6 flex flex-col gap-4 h-auto sm:h-[360px] responsive-card-evolucao">
+      <style>{`
+        @media (max-width: 768px) {
+          .responsive-card-evolucao {
+            height: auto !important;
+            padding: 1rem !important;
+          }
+          .responsive-card-evolucao h3 {
+            font-size: 1.125rem !important;
+            text-align: center !important;
+          }
+          .stats-grid-mobile {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 1rem !important;
+          }
+          .chart-wrapper-mobile {
+            min-height: 250px !important;
+          }
+        }
+      `}</style>
+
       <h3 className="text-lg sm:text-xl font-bold text-[#1D5D7F]">
         Evolução Semanal da Turma
       </h3>
 
-      <div className="w-full overflow-x-auto">
-        <div className="min-w-[320px]">
+      <div className="w-full overflow-x-auto chart-wrapper-mobile">
+        <div className="min-w-[300px]">
           <ApexCharts
             options={chartOptions}
             series={series}
@@ -153,7 +173,7 @@ export default function CardEvolucaoTurma({ turmaId }: { turmaId: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200 stats-grid-mobile">
         {dados.map((item, index) => (
           <div key={index} className="text-center">
             <div className="text-xs sm:text-sm text-[#1D5D7F]">
