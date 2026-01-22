@@ -35,11 +35,10 @@ export class IaQueryService {
    * - "qual a nota do aluno João Silva"
    * - "frequência da aluna maria"
    */
-  private extrairNomeAluno(texto: string): string | null {
-    const regex =
-      /(aluno|aluna)\s+([a-zà-ú]+(?:\s+[a-zà-ú]+)*)(?=\s+(tem|está|vai|precisa|com|em|no|na|de)|\?|$)/i;
+private extrairNomeAluno(texto: string): string | null {
+  const regex = /(aluno|aluna)\s+([a-zà-ú]+(?:\s+[a-zà-ú]+){0,4})/i;
+  const match = texto.match(regex);
+  return match ? match[2].trim() : null;
+}
 
-    const match = texto.match(regex);
-    return match ? match[2].trim() : null;
-  }
 }

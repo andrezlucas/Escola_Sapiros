@@ -31,6 +31,7 @@ import { AccessAuditMiddleware } from './audit/access-audit.middleware';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+
     }),
 
     TypeOrmModule.forRootAsync({
@@ -43,7 +44,7 @@ import { AccessAuditMiddleware } from './audit/access-audit.middleware';
         database: process.env.MYSQL_DB_NAME,
        autoLoadEntities: true,        // Carrega todas as entidades automaticamente
         synchronize: false,            // Nunca use synchronize com migrations
-        migrationsRun: true,           // Executa todas as migrations pendentes
+        migrationsRun: true,    // Executa todas as migrations pendentes
         migrations: ['dist/database/migrations/*.js'],
         cli: {
           migrationsDir: 'src/database/migrations',

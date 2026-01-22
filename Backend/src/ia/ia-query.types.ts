@@ -5,16 +5,22 @@ export type EntidadeIA =
   | 'habilidade'
   | 'atividade'
   | 'simulado'
-  | 'disciplina';
+  | 'disciplina'
+  | 'ia';
 
 export type AcaoIA =
   | 'media_geral'
   | 'melhor_disciplina'
   | 'pior_disciplina'
+  | 'ranking'
   | 'buscar_por_data'
   | 'pendencias'
   | 'quantidade'
-  | 'consultar';
+  | 'consultar'
+  | 'score'
+  | 'disciplinas_criticas'
+  | 'sugestao_reforco'
+  | 'evolucao';
 
 export interface IntentIA {
   entidade: EntidadeIA;
