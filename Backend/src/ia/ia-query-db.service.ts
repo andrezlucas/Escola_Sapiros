@@ -136,19 +136,38 @@ export class IaQueryDbService {
   /* =====================
      HABILIDADE / DISCIPLINA MAIS FORTE
   ====================== */
-  async habilidadeMaisForte(alunoId: string) {
-    return this.notaRepository
-      .createQueryBuilder('n')
-      .innerJoin('n.disciplina', 'd')
-      .select('d.id_disciplina', 'disciplinaId')
-      .addSelect('d.nome_disciplina', 'disciplina')
-      .addSelect('AVG((n.nota_1 + n.nota_2) / 2)', 'media')
-      .where('n.aluno_id = :alunoId', { alunoId })
-      .groupBy('d.id_disciplina')
-      .orderBy('media', 'DESC')
-      .limit(1)
-      .getRawOne();
-  }
+async habilidadeMaisForte(alunoId: string) {
+  const melhorDisciplina = await this.notaRepository
+    .createQueryBuilder('n')
+    .innerJoin('n.disciplina', 'd')
+    .select('d.id_disciplina', 'disciplinaId')
+    .addSelect('d.nome_disciplina', 'disciplina')
+    .addSelect(
+      'AVG((COALESCE(n.nota_1,0) + COALESCE(n.nota_2,0)) / 2)',
+      'media',
+    )
+    .where('n.aluno_id = :alunoId', { alunoId })
+    .groupBy('d.id_disciplina')
+    .addGroupBy('d.nome_disciplina')
+    .orderBy('media', 'DESC')
+    .limit(1)
+    .getRawOne();
+
+  if (!melhorDisciplina) return null;
+
+  const habilidades = await this.habilidadeRepository.find({
+    where: { disciplina: { id_disciplina: melhorDisciplina.disciplinaId } },
+    select: ['id', 'nome', 'descricao'],
+  });
+
+  return {
+    disciplina: melhorDisciplina.disciplina,
+    media: Number(Number(melhorDisciplina.media).toFixed(2)),
+    habilidades,
+  };
+}
+
+
 
   /* =====================
      BUSCAR ALUNO POR NOME
@@ -162,6 +181,146 @@ export class IaQueryDbService {
       })
       .getOne();
   }
+
+  /* =====================
+   RANKING DE DISCIPLINAS
+====================== */
+async rankingDisciplinas(alunoId: string) {
+  return this.notaRepository
+    .createQueryBuilder('n')
+    .innerJoin('n.disciplina', 'd')
+    .select('d.id_disciplina', 'disciplinaId')
+    .addSelect('d.nome_disciplina', 'disciplina')
+    .addSelect(
+      'AVG((COALESCE(n.nota_1,0) + COALESCE(n.nota_2,0)) * 1.0 / 2)',
+      'media',
+    )
+    .where('n.aluno_id = :alunoId', { alunoId })
+    .groupBy('d.id_disciplina')
+    .addGroupBy('d.nome_disciplina')
+    .orderBy('media', 'DESC')
+    .getRawMany();
 }
+
+/* =====================
+   DISCIPLINAS CRÍTICAS
+====================== */
+async disciplinasCriticas(alunoId: string, limite = 6) {
+  return this.notaRepository
+    .createQueryBuilder('n')
+    .innerJoin('n.disciplina', 'd')
+    .select('d.id_disciplina', 'disciplinaId')
+    .addSelect('d.nome_disciplina', 'disciplina')
+    .addSelect(
+      'AVG((COALESCE(n.nota_1,0) + COALESCE(n.nota_2,0)) * 1.0 / 2)',
+      'media',
+    )
+    .where('n.aluno_id = :alunoId', { alunoId })
+    .groupBy('d.id_disciplina')
+    .addGroupBy('d.nome_disciplina')
+    .having('media < :limite', { limite })
+    .orderBy('media', 'ASC')
+    .getRawMany();
+}
+/* =====================
+   SCORE COGNITIVO
+====================== */
+async scoreCognitivo(alunoId: string) {
+  const media = await this.mediaGeral(alunoId);
+
+  const frequencia = await this.frequenciaRepository
+    .createQueryBuilder('f')
+    .where('f.aluno_id = :alunoId', { alunoId })
+    .getCount();
+
+  const simulados = await this.quantidadeSimulados(alunoId);
+
+  const score =
+    media.media * 0.6 +
+    Math.min(frequencia, 100) * 0.2 +
+    simulados.quantidade * 2 * 0.2;
+
+  return {
+    media: media.media,
+    frequencia,
+    simulados: simulados.quantidade,
+    score: Number(score.toFixed(2)),
+    classificacao:
+      score >= 8
+        ? 'Excelente'
+        : score >= 6
+        ? 'Bom'
+        : score >= 4
+        ? 'Regular'
+        : 'Crítico',
+  };
+}
+
+/* =====================
+   EVOLUÇÃO TEMPORAL
+====================== */
+async evolucaoDesempenho(alunoId: string) {
+  return this.notaRepository
+    .createQueryBuilder('n')
+    .select('DATE(n.criado_em)', 'data')
+    .addSelect('AVG((n.nota_1 + n.nota_2) / 2)', 'media')
+    .where('n.aluno_id = :alunoId', { alunoId })
+    .groupBy('DATE(n.criado_em)')
+    .orderBy('data', 'ASC')
+    .getRawMany();
+}
+
+
+/* =====================
+   SUGESTÃO DE REFORÇO
+====================== */
+async sugestaoReforco(alunoId: string) {
+  const ranking = await this.rankingDisciplinas(alunoId);
+  const fracas = await this.disciplinasCriticas(alunoId);
+
+  if (!ranking.length) {
+    return {
+      status: 'sem_dados',
+      mensagem: 'Ainda não há dados suficientes para gerar um plano pedagógico.',
+    };
+  }
+
+  // Caso crítico
+  if (fracas.length) {
+    return {
+      status: 'reforco',
+      mensagem: `Recomenda-se reforço prioritário nas disciplinas: ${fracas
+        .map((d) => d.disciplina)
+        .join(', ')}.`,
+      plano: fracas.map((d) => ({
+        disciplina: d.disciplina,
+        media: Number(d.media),
+        sugestao: `Revisar conteúdos base e realizar exercícios extras em ${d.disciplina}.`,
+      })),
+    };
+  }
+
+  // Caso bom desempenho → plano de evolução
+  return {
+    status: 'excelente',
+    mensagem:
+      'Excelente desempenho geral! Recomenda-se um plano de manutenção e evolução contínua.',
+    pontosFortes: ranking.slice(0, 3).map((d) => ({
+      disciplina: d.disciplina,
+      media: Number(d.media),
+    })),
+    plano: [
+      'Manter rotina semanal de estudos',
+      'Realizar simulados quinzenais',
+      'Explorar conteúdos avançados nas disciplinas de maior desempenho',
+      'Participar de projetos interdisciplinares',
+    ],
+  };
+}
+
+
+}
+
+
 
 

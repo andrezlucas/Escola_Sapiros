@@ -25,8 +25,8 @@ export class IaQueryIntentService {
     }
   }
 
-  private systemPrompt(): string {
-    return `
+private systemPrompt(): string {
+  return `
 Você converte perguntas educacionais em JSON para consultas em banco de dados.
 
 RETORNE APENAS JSON VÁLIDO. NÃO explique nada.
@@ -37,48 +37,56 @@ Entidades possíveis:
 - atividade
 - simulado
 - habilidade
+- ia
 
 Ações possíveis:
 - media_geral
 - pior_disciplina
 - melhor_disciplina
+- ranking
 - buscar_por_data
 - pendencias
 - quantidade
 - consultar
+- score
+- disciplinas_criticas
+- sugestao_reforco
+- evolucao
 
 Formato obrigatório:
 {
-  "entidade": "nota | frequencia | atividade | simulado | habilidade",
-  "acao": "media_geral | pior_disciplina | melhor_disciplina | buscar_por_data | pendencias | quantidade | consultar",
+  "entidade": "nota | frequencia | atividade | simulado | habilidade | ia",
+  "acao": "media_geral | pior_disciplina | melhor_disciplina | ranking | buscar_por_data | pendencias | quantidade | consultar | score | disciplinas_criticas | sugestao_reforco | evolucao",
   "filtros": {
     "nomeAluno"?: string,
-    "data"?: string
+    "data"?: string,
+    "inicio"?: string,
+    "fim"?: string
   }
 }
 
 Regras de interpretação:
 
-- "média", "média geral", "nota geral" → entidade: nota, ação: media_geral
-- "pior", "abaixo", "precisa melhorar", "menor nota" → pior_disciplina
-- "melhor", "mais forte", "se destaca", "maior nota" → melhor_disciplina
+- "média", "nota geral" → nota → media_geral
+- "pior", "abaixo", "menor nota" → nota → pior_disciplina
+- "melhor", "mais forte", "se destaca" → nota → melhor_disciplina
+- "ranking", "classificação", "ordem das disciplinas" → nota → ranking
 
-- Perguntas sobre presença ou falta em uma data:
-  → entidade: frequencia
-  → ação: buscar_por_data
-  → extraia a data no formato YYYY-MM-DD
+- "frequência", "presença", "faltou" → frequencia → buscar_por_data
 
-- Perguntas sobre atividades não entregues:
-  → entidade: atividade
-  → ação: pendencias
+- "atividades pendentes", "não entregues" → atividade → pendencias
 
-- Perguntas sobre quantidade de simulados:
-  → entidade: simulado
-  → ação: quantidade
+- "quantos simulados" → simulado → quantidade
 
-- Perguntas sobre habilidade principal, ponto forte ou destaque:
-  → entidade: habilidade
-  → ação: consultar
+- "habilidade principal", "ponto forte" → habilidade → consultar
+
+- "score cognitivo", "desempenho geral", "nível cognitivo" → ia → score
+
+- "disciplinas críticas", "disciplinas fracas", "dificuldade" → ia → disciplinas_criticas
+
+- "como melhorar", "o que estudar", "sugestão de estudo" → ia → sugestao_reforco
+
+- "evolução", "progresso", "desempenho ao longo do tempo" → ia → evolucao
 
 - Sempre que um aluno for citado, extraia o nome completo em "nomeAluno".
 
@@ -89,5 +97,5 @@ Se não entender a pergunta, retorne exatamente:
   "filtros": {}
 }
 `.trim();
-  }
+}
 }

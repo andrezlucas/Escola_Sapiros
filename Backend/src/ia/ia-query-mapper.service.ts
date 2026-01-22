@@ -31,50 +31,55 @@ export class IaQueryMapperService {
 
     switch (intent.entidade) {
       case 'nota':
-        if (intent.acao === 'media_geral') {
-          return this.db.mediaGeral(alunoId);
-        }
+        switch (intent.acao) {
+          case 'media_geral':
+            return this.db.mediaGeral(alunoId);
 
-        if (intent.acao === 'pior_disciplina') {
-          return this.db.disciplinaPiorDesempenho(alunoId);
-        }
+          case 'pior_disciplina':
+            return this.db.disciplinaPiorDesempenho(alunoId);
 
-        if (intent.acao === 'melhor_disciplina') {
-          return this.db.habilidadeMaisForte(alunoId);
-        }
+          case 'melhor_disciplina':
+            return this.db.habilidadeMaisForte(alunoId);
 
-        throw new BadRequestException('Ação inválida para nota');
+          case 'ranking':
+            return this.db.rankingDisciplinas(alunoId);
+        }
+        break;
 
       case 'frequencia':
-        if (intent.acao !== 'buscar_por_data' && intent.acao !== 'consultar') {
-          throw new BadRequestException('Ação inválida para frequência');
-        }
-
         if (!filtros.data) {
           throw new BadRequestException('Data obrigatória');
         }
-
         return this.db.frequenciaPorData(alunoId, filtros.data);
 
       case 'atividade':
-        if (intent.acao !== 'pendencias' && intent.acao !== 'consultar') {
-          throw new BadRequestException('Ação inválida para atividade');
-        }
-
         return this.db.atividadesPendentes(alunoId);
 
       case 'simulado':
-        if (intent.acao !== 'quantidade' && intent.acao !== 'consultar') {
-          throw new BadRequestException('Ação inválida para simulado');
-        }
-
         return this.db.quantidadeSimulados(alunoId);
 
       case 'habilidade':
         return this.db.habilidadeMaisForte(alunoId);
 
-      default:
-        throw new BadRequestException(`Entidade inválida: ${intent.entidade}`);
+      case 'ia':
+        switch (intent.acao) {
+          case 'score':
+            return this.db.scoreCognitivo(alunoId);
+
+          case 'disciplinas_criticas':
+            return this.db.disciplinasCriticas(alunoId);
+
+          case 'sugestao_reforco':
+            return this.db.sugestaoReforco(alunoId);
+
+          case 'evolucao':
+            return this.db.evolucaoDesempenho(alunoId);
+        }
+        break;
     }
+
+    throw new BadRequestException(
+      `Combinação inválida: ${intent.entidade} → ${intent.acao}`,
+    );
   }
 }
