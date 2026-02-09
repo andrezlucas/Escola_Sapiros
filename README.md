@@ -1,12 +1,17 @@
 <h1 align="center">🎓 Escola Sapiros — Plataforma de Gestão Escolar</h1>
 
 <p align="center">
+  <img src="https://raw.githubusercontent.com/andrezlucas/Escola_Sapiros/main/Frontend/src/assets/imagens/logo.sapiros.png" alt="Logo Escola Sapiros" width="220" />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Status-Finalizado-success?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Front--end-React-blue?style=for-the-badge&logo=react" />
   <img src="https://img.shields.io/badge/Back--end-NestJS-E0234E?style=for-the-badge&logo=nestjs" />
   <img src="https://img.shields.io/badge/Build-Vite-purple?style=for-the-badge&logo=vite" />
   <img src="https://img.shields.io/badge/Estilo-TailwindCSS-38B2AC?style=for-the-badge&logo=tailwindcss" />
 </p>
+
 
 ---
 
