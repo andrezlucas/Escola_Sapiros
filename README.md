@@ -64,8 +64,8 @@ A Escola Sapiros propõe uma **solução unificada**, moderna e segura, voltada 
 - **Node.js**  
 - **NestJS**  
 - **TypeScript** 
-- **ESLint** — Análise e padronização de código  
-- **TypeORM** — ORM para banco de dados  
+- **ESLint**
+- **TypeORM**  
 - **MySQL (mysql2)** 
 - **JWT** 
 - **Bcrypt**  
